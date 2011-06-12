@@ -1,0 +1,46 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="UTF-8">
+    <title>xsnippet.tk</title>
+    
+    <link rel="stylesheet" href="/static/styles/style.css" type="text/css">
+    <link rel="shortcut icon" type="image/x-icon" href="favicon.ico">
+    
+    <!-- include highligh.js library -->
+    <link rel="stylesheet" href="/static/highlight.js/styles/default.css">
+    <script src="/static/highlight.js/highlight.pack.js"></script>
+    <script>
+      hljs.tabReplace = '    ';
+      hljs.initHighlightingOnLoad();
+    </script>
+    <!-- /include highligh.js library -->
+    
+    <!--[if IE]>
+    <script src="http://html5shim.googlecode.com/svn/trunk/html5.js"></script>
+    <![endif]-->
+    
+    
+  <body>
+
+    <div class="header-wrapper">
+    <header>
+      <h1><a href="http://xsnippet.tk/">xsnippet.tk</a></h1>
+        
+      <nav>
+        <li> <a href="/">new</a>
+        <li> <a href="/about">about</a>
+      </nav>
+    </header>
+    </div>
+
+    <article>
+        {% block content %}
+        { %endblock %}
+    </article>
+
+    <footer>
+      &copy; 2010-2011 <a href="/">xsnippet.tk</a>
+      <br> All Rights Reserved
+    </footer>
+

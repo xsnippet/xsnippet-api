@@ -1,0 +1,247 @@
+@charset 'utf-8';
+
+/*
+ *  STYLE:  xSnippet Default Style 2.0
+ */ 
+
+* {
+    margin: 0px;
+    padding: 0px;
+}
+
+html { 
+    font-family: verdana, tahoma, arial, 'times new roman'; 
+    background: #eeeeee;
+}
+
+article, aside, dialog, figure, footer, header, hgroup, menu, nav, section { 
+    display: block; 
+}
+
+.clear {
+    clear: both;
+}
+
+/*
+ * SHARED STYLE
+ */
+
+
+/*
+ * WRAPPERS SECTION
+ */
+
+.header-wrapper {
+    background: #282828;
+    border-bottom: 2px solid #555;
+}
+
+
+/*
+ * COMMON SECTION
+ */
+
+header, article, footer {
+    width: 940px;
+    margin: 0 auto;
+    padding: 5px 15px;
+}
+
+/*
+ * HEADER SECTION
+ */
+ 
+header {
+    height: 30px;
+}
+
+header a { 
+    text-decoration: none;
+    color: #dfdfdf;
+}
+
+header a:hover { 
+    color: #efefef;
+    text-shadow: #ddd 0px 0px 2px;
+    text-decoration: underline; 
+}
+
+header h1 {
+    float: left;
+    margin-top: 2px;
+    letter-spacing: 2px;
+    font: 24px/24px Verdana, Monaco;
+    text-shadow: #111 0px 2px 2px;
+}
+
+header nav {
+    float: right;
+    list-style: none;
+    display: block;
+    padding-top: 3px;
+}
+
+header nav a {
+    display: block;
+    height: 24px;
+    line-height: 24px;
+    letter-spacing: 1.5px;
+    margin: 0px 10px;
+    font-size: 12px;
+}
+
+header nav li {
+    float: left;
+    border-right: 1px solid #444;
+}
+
+header nav li:first-child {
+    border-left: 1px solid #444;
+}
+
+
+/*
+ * ARTICLE SECTION
+ */
+
+article {
+    padding-top: 30px;
+}
+
+article a {
+    color: #800000;
+    line-height: 24px;
+    font-size: 16px; 
+}
+
+article a:hover {
+    color: #B00000;
+}
+
+article table {
+    margin: 0px auto;
+    width: 450px;
+}
+
+article table td {
+    border-right: 1px solid #dddddd;
+    text-align: center;
+    width: 150px;
+}
+
+article table td:last-child {
+    border-right: 0px solid #dddddd;
+}
+
+article pre code {
+    font-family: monospace;
+    background: #ffffff;
+    line-height: 16px;
+    min-height: 400px;
+    font-size: 12px;
+    overflow: auto;
+    display: block; 
+    padding: 5px;
+    border: 1px solid #cccccc;
+    margin: 0px auto;
+    width: 800px;
+}
+
+article ul.actions {
+    list-style: none;
+    width: 800px;
+    text-align: right;
+    margin: 0px auto;
+}
+
+article ul.actions li a {
+    font-size: 12px;
+    line-height: 14px;
+    margin-right: -5px;
+    letter-spacing: 1.5px;
+    font-family: georgia;
+}
+
+article div.sidebar {
+    float: left;
+}
+
+article div.sidebar div {
+    display: block;
+}
+
+article textarea {
+    float: left;
+    font-family: monospace;
+    line-height: 14px;
+    background:	#ffffff;
+    min-height: 400px;
+    font-size: 11px;
+    padding: 5px;
+    margin: 0px 30px 25px 0px;
+    border: 1px solid #cccccc;
+    width: 730px;
+    resize: none;
+}
+
+article select {
+    background: #eeeeff;
+    padding: 5px;
+    border: 1px solid #cccccc;
+    color: #333333;
+    font-family: monospace;
+    min-width: 168px;
+}
+
+article input#submit {
+    margin-top: 30px;
+    padding: 5px 30px;
+    border: 1px solid #cccccc;
+    color: #eeeeee;
+    width: 100px;
+    
+    background: #2e76cf; 
+    background-image: -moz-linear-gradient(100% 100% 90deg, #2e76cf, #52a8e8) !important; 
+    background-image: -webkit-gradient(linear, 0% 0%, 0% 100%, from(#52a8e8), to(#2e76cf)) !important; 
+}
+
+article input#submit:hover {
+    background: #195ebc; 
+    background-image: -moz-linear-gradient(100% 100% 90deg, #195ebc, #307ec8) !important; 
+    background-image: -webkit-gradient(linear, 0% 0%, 0% 100%, from(#307ec8), to(#195ebc)) !important; 
+}
+
+article label {
+    font-size: 13px;
+    color: #444;
+    letter-spacing: 2px;
+}
+
+article input[type="text"] {
+    width: 300px;
+    padding: 3px;
+    font-size: 13px;
+    border: 1px solid #cccccc;
+    margin: 3px 0px;
+}
+
+/*
+ * FOOTER SECTION
+ */
+
+footer {
+    text-align: center;
+    margin-top: 30px;
+    border-top: 1px solid #cccccc;
+    font: 11px/18px Verdana;
+}
+  
+footer a {
+    color: #800000;
+    text-decoration: none;
+}
+
+footer a:hover {
+    color: #B00000;
+    text-decoration: underline;
+}

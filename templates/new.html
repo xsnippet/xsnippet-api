@@ -1,0 +1,82 @@
+{% extends "base.html" %}
+
+{% block content %}
+<form name="newcode" method="post" action="index.php">
+  <textarea name="code" placeholder="paste code here..."></textarea>
+
+  <div class="sidebar">
+    <div>
+      <select name="language" size="20">
+        <option selected="selected">Autodetection</option>
+        
+        <option disabled></option>
+        <option>C++</option>
+        <option>Java</option>
+        <option>C#</option>
+        <option>Python</option>
+        <option>Bash</option>
+
+        <option>html (xml)</option>
+        <option>CSS</option>
+        <option>JavaScript</option>
+        <option>PHP</option>
+        <option>SQL</option>
+        <option>Ruby</option>
+
+        
+        <option disabled></option>
+        <option>1C</option>
+        <option>Apache</option>
+        <option>AVR Assembler</option>
+        <option>Axapta</option>
+        <option>CMake</option>
+
+        <option>Delphi</option>
+        <option>Diff</option>
+        <option>Django</option>
+        <option>DOS .bat</option>
+        <option>Erlang</option>
+        <option>Go</option>
+
+        <option>Haskell</option>
+        <option>Ini</option>
+        <option>Lisp</option>
+        <option>Lua</option>
+        <option>MEL</option>
+        <option>Nginx</option>
+
+        <option>Objective C</option>
+        <option>Parser3</option>
+        <option>Perl</option>
+        <option>Python profile</option>
+        <option>RenderMan</option>
+        <option>Scala</option>
+
+        <option>Smalltalk</option>
+        <option>TeX</option>
+        <option>Vala</option>
+        <option>VBScript</option>
+        <option>VHDL</option>
+        <option>Text</option>
+
+      </select>
+    </div>
+
+    <div>
+      <input name="submit" type="submit" id="submit" value="post">  
+    </div>
+  </div><!-- sidebar -->
+  
+  <div class="clear"></div>
+  
+  <input type="text" name="title" id="title" placeholder="snippet title">
+  <label for="title">title </label><br>
+  
+  <input type="text" name="author" id="author" placeholder="author">
+  <label for="author">author </label><br>
+  
+  <input type="text" name="tags" id="tags" placeholder="separate tags by comma">
+  <label for="tags">tags </label><br>
+  
+</form>
+{ %endblock %}
