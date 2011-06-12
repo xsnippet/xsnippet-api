@@ -1,7 +1,10 @@
 from google.appengine.ext import webapp
 from google.appengine.ext.webapp.util import run_wsgi_app
 
-application = webapp.WSGIApplication([], debug=True)
+from handlers import NewSnippet
+
+application = webapp.WSGIApplication([('/new', NewSnippet)],
+                                     debug=True)
 
 def main():
     run_wsgi_app(application)
