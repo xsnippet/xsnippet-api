@@ -1,8 +1,8 @@
 {% extends "base.html" %}
 
 {% block content %}
-<form name="newcode" method="post" action="index.php">
-  <textarea name="code" placeholder="paste code here..."></textarea>
+<form name="newcode" method="post" action="new">
+  <textarea name="content" placeholder="paste code here..."></textarea>
 
   <div class="sidebar">
     <div>
@@ -79,4 +79,4 @@
   <label for="tags">tags </label><br>
   
 </form>
-{ %endblock %}
+{% endblock %}
