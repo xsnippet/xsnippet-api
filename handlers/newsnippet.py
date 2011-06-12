@@ -36,5 +36,5 @@ class NewSnippet(webapp.RequestHandler):
         snippet.tags = self.request.get('tags').split(',')
         snippet.put()
 
-        self.redirect('/show?id=' + str(snippet.key().id()))
+        self.redirect('/' + str(snippet.key().id()))
 
