@@ -1,1 +1,6 @@
-xsnippet is a simple Pastebin service written in Python.
+xsnippet
+========
+
+**xsnippet** is a simple [Pastebin](http://en.wikipedia.org/wiki/Pastebin) 
+service written in Python.
+
