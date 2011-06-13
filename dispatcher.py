@@ -9,7 +9,7 @@ from handlers import RawSnippet
 application = webapp.WSGIApplication([('/', MainPage),
                                       ('/new', NewSnippet),
                                       ('/[0-9]+', ShowSnippet),
-                                      ('/raw', RawSnippet)],
+                                      ('/[0-9]+/raw', RawSnippet)],
                                       debug=True)
 
 def main():
