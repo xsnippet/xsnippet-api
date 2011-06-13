@@ -26,9 +26,9 @@ class ShowSnippet(webapp.RequestHandler):
             # escape html to make '<', '>' and other special characters visible
             snippet.content = cgi.escape(snippet.content)
             # get language full name
-            snippet.language = Snippet.languages[snippet.language]
+            languagefull = Snippet.languages[snippet.language]
 
-            template_values = {'snippet': snippet}
+            template_values = {'snippet': snippet, 'languagefull': languagefull}
             path = os.path.join(os.getcwd(), 'templates', 'show.html')
         else:
             template_values = {'error': 'Snippet with id %s not found' % self.request.path[1:]}
