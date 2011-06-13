@@ -52,3 +52,35 @@ class Snippet(db.Model):
             "vhdl": "VHDL",
             "no-highlight": "Text"
     }
+
+    # language highlight.js name to filename extension mapping 
+    extensions = {
+            "cpp": ".cpp",
+            "java": ".java",
+            "cs": ".cs",
+            "python": ".py",
+            "bash": ".sh",
+            "xml": ".xml",
+            "css": ".css",
+            "javascript": ".js",
+            "php": ".php",
+            "sql": ".sql",
+            "ruby": ".rb",
+            "diff": ".diff",
+            "dos": ".bat",
+            "erlang": ".erl",
+            "go": ".go",
+            "haskell": ".hs",
+            "ini": ".ini",
+            "lisp": ".lisp",
+            "lua": ".lua",
+            "objectivec": ".m",
+            "perl": ".pl",
+            "scala": ".scala",
+            "smalltalk": ".sm",
+            "tex": ".tex",
+            "vala": ".vala",
+            "vbscript": ".vbs",
+            "vhdl": ".hdl",
+            "no-highlight": ".txt"
+    }
