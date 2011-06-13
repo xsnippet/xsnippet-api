@@ -50,7 +50,8 @@ class Snippet(db.Model):
             "vala": "Vala",
             "vbscript": "VBScript",
             "vhdl": "VHDL",
-            "no-highlight": "Text"
+            "no-highlight": "Text",
+            "" : "Autodetection",
     }
 
     # language highlight.js name to filename extension mapping 
