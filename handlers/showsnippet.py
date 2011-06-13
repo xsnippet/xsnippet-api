@@ -11,22 +11,23 @@ class ShowSnippet(webapp.RequestHandler):
 
         Processes GET and POST requests.
 
-        Params:
-            id --- the unique identifier of a snippet entry
+        Snippet id is specified as url path (part between the host name and params), i.e.:
+            GET xsnippet.tk/1 will return page for snippet with id 1
     '''
 
     def get(self):
         self.post()
 
     def post(self):
-        snippet = Snippet.get_by_id(int(self.request.get('id')))
+        snippet = Snippet.get_by_id(int(self.request.path[1:]))
 
         if snippet is not None:
             template_values = {'snippet': snippet}
             path = os.path.join(os.getcwd(), 'templates', 'show.html')
         else:
-            template_values = {'error': 'Snippet with id %s not found' % self.request.get('id')}
+            template_values = {'error': 'Snippet with id %s not found' % self.request.path[1:]}
             path = os.path.join(os.getcwd(), 'templates', '404.html')
+            self.error(404)
 
         self.response.headers['Content-Type'] = 'text/html'
         self.response.out.write(template.render(path, template_values))

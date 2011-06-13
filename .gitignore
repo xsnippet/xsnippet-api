@@ -1,0 +1,5 @@
+#
+# xSnippet's .gitignore file
+#
+
+*.pyc
