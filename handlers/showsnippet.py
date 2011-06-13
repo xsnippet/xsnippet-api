@@ -1,4 +1,5 @@
 import os
+import cgi
 
 from google.appengine.ext import webapp
 from google.appengine.ext.webapp import template
@@ -22,6 +23,9 @@ class ShowSnippet(webapp.RequestHandler):
         snippet = Snippet.get_by_id(int(self.request.path[1:]))
 
         if snippet is not None:
+            # escape html to make '<', '>' and other special characters visible
+            snippet.content = cgi.escape(snippet.content)
+
             template_values = {'snippet': snippet}
             path = os.path.join(os.getcwd(), 'templates', 'show.html')
         else:
