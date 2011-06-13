@@ -66,6 +66,14 @@ header a:hover {
     text-decoration: underline; 
 }
 
+header img {
+    float: left;
+    width: 24px;
+    height: 24px;
+    margin-right: 10px;
+    margin-top: 5px;
+}
+
 header h1 {
     float: left;
     margin-top: 2px;
@@ -110,21 +118,79 @@ article {
 
 article a {
     color: #800000;
-    line-height: 24px;
-    font-size: 16px; 
 }
 
 article a:hover {
     color: #B00000;
 }
 
-article h2 {
+/* showsnippet subsection */
+
+article header.snippetinfo {
+    background: #f6f6f6;
+    font-size: 12px;
+    display: block; 
+    padding: 5px;
+    border: 1px solid #cccccc;
+    margin: 0px auto 0px;
+    width: 800px;
+    height: 35px;
+}
+
+article header.snippetinfo h2 {
     font-size: 16px;
     font-weight: normal;
     color: #444;
     width: 810px;
     margin: 0px auto;
     display: block; 
+    font-family: georgia, serif;
+}
+
+article header.snippetinfo .author {
+    margin-right: 20px;
+    font-size: 11px;
+    float: left;
+}
+
+article header.snippetinfo .tags {
+    list-style: none;
+    float: right;
+}
+
+article header.snippetinfo .tags li {
+    float: left;
+}
+
+article header.snippetinfo .tags li a {
+    color: #000080;
+}
+
+article header.snippetinfo .tags li a:hover {
+    color: #0000B0;
+}
+
+article header.snippetinfo ul.actions {
+    list-style: none;
+    float: right;
+    margin-top: -7px;
+}
+
+article header.snippetinfo ul.actions li {
+    float: left;
+    padding: 0px 10px;
+    border-right: 1px solid #ccc;
+}
+
+article header.snippetinfo ul.actions li:last-child {
+    border-right: none;
+}
+
+article ul.actions li a {
+    font-size: 12px;
+    line-height: 14px;
+    letter-spacing: 1.5px;
+    font-family: georgia;
 }
 
 article pre code {
@@ -141,20 +207,7 @@ article pre code {
     width: 800px;
 }
 
-article ul.actions {
-    list-style: none;
-    width: 800px;
-    text-align: right;
-    margin: 0px auto;
-}
-
-article ul.actions li a {
-    font-size: 12px;
-    line-height: 14px;
-    margin-right: -5px;
-    letter-spacing: 1.5px;
-    font-family: georgia;
-}
+/* form subsection */
 
 article div.sidebar {
     float: left;
@@ -212,7 +265,7 @@ article label {
 }
 
 article input[type="text"] {
-    width: 300px;
+    width: 365px;
     padding: 3px;
     font-size: 13px;
     border: 1px solid #cccccc;
