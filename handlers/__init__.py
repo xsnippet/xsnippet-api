@@ -1,5 +1,7 @@
-from newsnippet import NewSnippet
 from mainpage import MainPage
+from newsnippet import NewSnippet
+from showsnippet import ShowSnippet
 
-__all__ = ('NewSnippet',
-           'MainPage')
+__all__ = ('MainPage',
+           'NewSnippet',
+           'ShowSnippet')
