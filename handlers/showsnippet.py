@@ -16,11 +16,11 @@ class ShowSnippet(webapp.RequestHandler):
             GET xsnippet.tk/1 will return page for snippet with id 1
     '''
 
-    def get(self):
-        self.post()
+    def get(self, snippetid):
+        self.post(snippetid)
 
-    def post(self):
-        snippet = Snippet.get_by_id(int(self.request.path[1:]))
+    def post(self, snippetid):
+        snippet = Snippet.get_by_id(int(snippetid))
 
         if snippet is not None:
             # escape html to make '<', '>' and other special characters visible
@@ -31,7 +31,7 @@ class ShowSnippet(webapp.RequestHandler):
             template_values = {'snippet': snippet, 'languagefull': languagefull}
             path = os.path.join(os.getcwd(), 'templates', 'show.html')
         else:
-            template_values = {'error': 'Snippet with id %s not found' % self.request.path[1:]}
+            template_values = {'error': 'Snippet with id %s not found' % snippetid}
             path = os.path.join(os.getcwd(), 'templates', '404.html')
             self.error(404)
 

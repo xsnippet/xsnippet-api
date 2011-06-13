@@ -9,9 +9,9 @@ from handlers import DownloadSnippet
 
 application = webapp.WSGIApplication([('/', MainPage),
                                       ('/new', NewSnippet),
-                                      ('/[0-9]+', ShowSnippet),
-                                      ('/[0-9]+/raw', RawSnippet),
-                                      ('/[0-9]+/download', DownloadSnippet)],
+                                      (r'/([0-9]+)', ShowSnippet),
+                                      (r'/([0-9]+)/raw', RawSnippet),
+                                      (r'/([0-9]+)/download', DownloadSnippet)],
                                       debug=True)
 
 def main():

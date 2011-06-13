@@ -15,15 +15,14 @@ class DownloadSnippet(webapp.RequestHandler):
             GET xsnippet.tk/1/download will return content of snippet with id 1 as a file
     '''
 
-    def get(self):
-        self.post()
+    def get(self, snippetid):
+        self.post(snippetid)
 
-    def post(self):
-        snippetid = int(self.request.path.split('/')[1])
-        snippet = Snippet.get_by_id(snippetid)
+    def post(self, snippetid):
+        snippet = Snippet.get_by_id(int(snippetid))
 
         if snippet is not None:
-            filename = str(snippetid)
+            filename = snippetid
             extension = snippet.extensions[snippet.language] if snippet.language in snippet.extensions else '.txt'
             attachment = 'attachment; filename="%s%s"' % (filename, extension)
 

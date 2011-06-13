@@ -15,12 +15,11 @@ class RawSnippet(webapp.RequestHandler):
             GET xsnippet.tk/1/raw will return text content of snippet with id 1
     '''
 
-    def get(self):
-        self.post()
+    def get(self, snippetid):
+        self.post(snippetid)
 
-    def post(self):
-        snippetid = int(self.request.path.split('/')[1])
-        snippet = Snippet.get_by_id(snippetid)
+    def post(self, snippetid):
+        snippet = Snippet.get_by_id(int(snippetid))
 
         if snippet is not None:
             self.response.headers['Content-Type'] = 'text/plain'
