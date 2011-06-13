@@ -1,7 +1,11 @@
 {% extends "base.html" %}
 
 {% block content %}
-<h2>{{ snippet.title }}</h2>
+<h2>
+    <b>Title:</b> {{ snippet.title }} &nbsp;
+    <b>Author:</b> {{ snippet.author }} &nbsp;
+    <b>Language:</b> {{ snippet.language }}
+</h2>
 
 <pre><code class="{{ snippet.language }}">{{ snippet.content }}
 </code></pre>
