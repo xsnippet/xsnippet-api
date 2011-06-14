@@ -9,6 +9,7 @@ class Snippet(db.Model):
 
     # language name to highlight.js name mapping
     languages = {
+            "Autodetection": "",
             "C": "cpp",
             "C++": "cpp",
             "C#": "cs",
@@ -49,6 +50,7 @@ class Snippet(db.Model):
 
     # language name to filename extension mapping 
     extensions = {
+            "Autodetection": ".txt",
             "C": ".c",
             "C++": ".cpp",
             "C#": ".cs",
@@ -82,6 +84,5 @@ class Snippet(db.Model):
             "TeX": ".tex",
             "VBScript": ".vbs",
             "VHDL": ".vhdl",
-            "Text": ".txt",
-            "Autodetection": ".txt"
+            "Text": ".txt"
     }
