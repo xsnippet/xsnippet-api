@@ -29,11 +29,27 @@ class NewSnippet(webapp.RequestHandler):
 
     def post(self):
         snippet = Snippet()
+
         snippet.author = self.request.get('author')
+        if not snippet.author:
+            snippet.author = 'Anonymous'
+
         snippet.title = self.request.get('title')
+        if not snippet.title:
+            snippet.title = 'Untitled'
+
         snippet.language = self.request.get('language')
+        if not snippet.language:
+            snippet.language = 'Text'
+
         snippet.content = self.request.get('content')
-        snippet.tags = self.request.get('tags').split(',')
+
+        tags = self.request.get('tags')
+        if tags:
+            snippet.tags = snippet.tags.split(',')
+        else:
+            snippet.tags = []
+
         snippet.put()
 
         self.redirect('/' + str(snippet.key().id()))
