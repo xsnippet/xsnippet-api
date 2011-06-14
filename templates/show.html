@@ -8,7 +8,15 @@
 </h2>-->
 
 <header class="snippetinfo">
-  <h2>{{ snippet.title }} ( {{ languagefull }} )</h2>
+  <h2>
+  {% if snippet.title %}
+    {{ snippet.title }}
+  {% else %}
+    Snippet #{{ snippet.key.id }}
+  {% endif %}
+  
+  ( {{ languagefull }} )
+  </h2>
   
   {% if snippet.author %}
   <span class="author">by <a href="/author/{{ snippet.author }}">{{ snippet.author }}</a></span>
