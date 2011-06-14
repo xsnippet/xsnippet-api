@@ -22,10 +22,10 @@ class ShowSnippet(webapp.RequestHandler):
         snippet = Snippet.get_by_id(int(snippetid))
 
         if snippet is not None:
-            # get language full name
-            languagefull = Snippet.languages[snippet.language]
+            # get language highlight.js name
+            languagehl = Snippet.languages[snippet.language]
 
-            template_values = {'snippet': snippet, 'languagefull': languagefull}
+            template_values = {'snippet': snippet, 'languagehl': languagehl}
             path = os.path.join(os.getcwd(), 'templates', 'show.html')
         else:
             template_values = {'error': 'Snippet with id %s not found' % snippetid}
