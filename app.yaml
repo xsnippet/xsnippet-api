@@ -13,3 +13,6 @@ handlers:
 
 - url: /.*
   script: dispatcher.py
+
+builtins:
+- datastore_admin: on
