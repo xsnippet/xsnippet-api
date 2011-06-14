@@ -1,5 +1,4 @@
 import os
-import cgi
 
 from google.appengine.ext import webapp
 from google.appengine.ext.webapp import template
@@ -23,8 +22,6 @@ class ShowSnippet(webapp.RequestHandler):
         snippet = Snippet.get_by_id(int(snippetid))
 
         if snippet is not None:
-            # escape html to make '<', '>' and other special characters visible
-            snippet.content = cgi.escape(snippet.content)
             # get language full name
             languagefull = Snippet.languages[snippet.language]
 
