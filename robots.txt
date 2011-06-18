@@ -1,0 +1,6 @@
+User-agent: *
+Disallow: /handlers/
+Disallow: /templates/
+Disallow: /static/
+Disallow: /model/
+Allow: /
