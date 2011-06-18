@@ -11,6 +11,10 @@ handlers:
   static_files: static/images/favicon.ico
   upload: favicon.ico
 
+- url: /robots.txt
+  static_files: static/robots.txt
+  upload: robots.txt
+
 - url: /.*
   script: dispatcher.py
 
