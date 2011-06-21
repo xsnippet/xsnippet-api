@@ -147,6 +147,10 @@ article header.snippetinfo h2 {
     font-family: georgia, serif;
 }
 
+article header.snippetinfo h2 a.title {
+    color: #444;
+}
+
 article header.snippetinfo h2 a {
     color: #264;
 }

@@ -4,7 +4,8 @@
   {% for snippet in snippets %}
   <header class="snippetinfo">
     <h2>
-      {{ snippet.title }} [ <a href="/language/{{ snippet.language}}">{{ snippet.language }}</a> ]
+      <a href="/{{ snippet.key.id }}" class="title">{{ snippet.title }}</a>
+      [ <a href="/language/{{ snippet.language}}">{{ snippet.language }}</a> ]
     </h2>
     
     {% if snippet.author %}
