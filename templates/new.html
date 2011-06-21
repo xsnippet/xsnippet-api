@@ -86,7 +86,10 @@
       function loadUsername()
       {
           if ('localStorage' in window && window['localStorage'] !== null)
-              document.getElementById("author").value = localStorage["author"];
+          {
+              if (localStorage["author"] != null)
+                  document.getElementById("author").value = localStorage["author"];
+          }
       }
   
       loadUsername();
