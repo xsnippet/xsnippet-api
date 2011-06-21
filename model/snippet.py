@@ -6,6 +6,7 @@ class Snippet(db.Model):
     content = db.TextProperty()
     language = db.StringProperty()
     tags = db.StringListProperty()
+    date = db.DateTimeProperty(auto_now=True)
 
     # language name to highlight.js name mapping
     languages = {

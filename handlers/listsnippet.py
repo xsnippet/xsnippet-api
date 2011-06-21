@@ -31,6 +31,7 @@ class ListSnippet(webapp.RequestHandler):
 
         query = Snippet.all()
         query.filter("%s =" % key, value)
+        query.order("-date")
         snippets = query.fetch(20)
 
         template_values = {'snippets': snippets}
