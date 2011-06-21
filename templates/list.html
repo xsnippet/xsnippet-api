@@ -1,0 +1,29 @@
+{% extends "base.html" %}
+
+{% block content %}
+  {% for snippet in snippets %}
+  <header class="snippetinfo">
+    <h2>
+      {{ snippet.title }} ( {{ snippet.language }} )
+    </h2>
+    
+    {% if snippet.author %}
+    <span class="author">by <a href="/author/{{ snippet.author }}">{{ snippet.author }}</a></span>
+    {% endif %}
+    
+    {% if not snippet.tags %}
+    <ul class="tags">
+      {% for tag in snippet.tags %}
+      <li><a href="/tag/{{ tag }}">{{ tag }}</a>
+      {% endfor %}
+    </ul>
+    {% endif %}
+    
+    <ul class="actions">
+      <li><a href="{{ snippet.key.id }}/raw">raw</a>
+      <li><a href="{{ snippet.key.id }}/download">download</a>
+    </ul>
+    
+  </header>
+  {% endfor %}
+{% endblock %}
