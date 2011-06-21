@@ -4,14 +4,15 @@
   {% for snippet in snippets %}
   <header class="snippetinfo">
     <h2>
-      {{ snippet.title }} ( {{ snippet.language }} )
+      {{ snippet.title }} [ <a href="/language/{{ snippet.language}}">{{ snippet.language }}</a> ]
     </h2>
     
     {% if snippet.author %}
     <span class="author">by <a href="/author/{{ snippet.author }}">{{ snippet.author }}</a></span>
     {% endif %}
     
-    {% if not snippet.tags %}
+    {% if snippet.tags %}
+    <span class="separator">/</span>
     <ul class="tags">
       {% for tag in snippet.tags %}
       <li><a href="/tag/{{ tag }}">{{ tag }}</a>

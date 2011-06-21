@@ -147,19 +147,29 @@ article header.snippetinfo h2 {
     font-family: georgia, serif;
 }
 
+article header.snippetinfo h2 a {
+    color: #264;
+}
+
 article header.snippetinfo .author {
-    margin-right: 20px;
+    margin-right: 10px;
     font-size: 11px;
+    float: left;
+}
+
+article header.snippetinfo .separator {
     float: left;
 }
 
 article header.snippetinfo .tags {
     list-style: none;
-    float: right;
+    float: left;
+    font-size: 11px;
 }
 
 article header.snippetinfo .tags li {
     float: left;
+    margin-left: 10px;
 }
 
 article header.snippetinfo .tags li a {
