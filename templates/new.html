@@ -58,7 +58,7 @@
     </div>
 
     <div>
-      <input name="submit" type="submit" id="submit" value="post">  
+      <input name="submit" type="submit" id="submit" value="post" onclick="saveUsername()" >  
     </div>
   </div><!-- sidebar -->
   
@@ -72,6 +72,25 @@
   
   <input type="text" name="tags" id="tags" placeholder="separate tags by comma">
   <label for="tags">tags </label><br>
+
+  <script>
+      function saveUsername()
+      {
+          if ('localStorage' in window && window['localStorage'] !== null)
+          {
+              var author = document.getElementById("author").value;
+              localStorage["author"] = author;
+          }
+      }
+
+      function loadUsername()
+      {
+          if ('localStorage' in window && window['localStorage'] !== null)
+              document.getElementById("author").value = localStorage["author"];
+      }
+  
+      loadUsername();
+  </script>
   
 </form>
 {% endblock %}
