@@ -6,12 +6,14 @@ from handlers import NewSnippet
 from handlers import ShowSnippet
 from handlers import RawSnippet
 from handlers import DownloadSnippet
+from handlers import ListSnippet
 
 application = webapp.WSGIApplication([('/', MainPage),
                                       ('/new', NewSnippet),
                                       (r'/([0-9]+)', ShowSnippet),
                                       (r'/([0-9]+)/raw', RawSnippet),
-                                      (r'/([0-9]+)/download', DownloadSnippet)],
+                                      (r'/([0-9]+)/download', DownloadSnippet),
+                                      (r'/(.*)/(.*)', ListSnippet)],
                                       debug=True)
 
 def main():
