@@ -46,7 +46,7 @@ class NewSnippet(webapp.RequestHandler):
 
         tags = self.request.get('tags')
         if tags:
-            snippet.tags = tags.split(',')
+            snippet.tags = [tag.lstrip() for tag in tags.split(',')]
         else:
             snippet.tags = []
 
