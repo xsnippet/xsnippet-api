@@ -13,7 +13,7 @@ application = webapp.WSGIApplication([('/', MainPage),
                                       (r'/([0-9]+)', ShowSnippet),
                                       (r'/([0-9]+)/raw', RawSnippet),
                                       (r'/([0-9]+)/download', DownloadSnippet),
-                                      (r'/(.*)/(.*)', ListSnippet)],
+                                      (r'/(\w+)/(\w+)/?(\d+)?', ListSnippet)],
                                       debug=True)
 
 def main():
