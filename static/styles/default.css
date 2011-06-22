@@ -286,6 +286,14 @@ article input[type="text"] {
     margin: 3px 0px;
 }
 
+article input#file {
+    width: 365px;
+    padding: 3px;
+    font-size: 13px;
+    border: 1px solid #cccccc;
+    margin: 3px 0px;
+}
+
 /*
  * FOOTER SECTION
  */
