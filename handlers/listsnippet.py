@@ -25,17 +25,16 @@ class ListSnippet(webapp.RequestHandler):
 
     FETCH_LIMIT = 20
 
-    def get(self, key, value, limit):
+    def get(self, key, value, limit=FETCH_LIMIT):
         self.post(key, value, limit)
 
-    def post(self, key, value, limit):
+    def post(self, key, value, limit=FETCH_LIMIT):
         value = urllib.unquote(value).decode('utf-8')
-        limit = int(limit) if limit else ListSnippet.FETCH_LIMIT
 
         query = Snippet.all()
         query.filter("%s =" % key, value)
         query.order("-date")
-        snippets = query.fetch(limit)
+        snippets = query.fetch(int(limit))
 
         template_values = {'snippets': snippets}
         path = os.path.join(os.getcwd(), 'templates', 'list.html')
