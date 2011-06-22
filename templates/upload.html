@@ -3,10 +3,8 @@
 {% block content %}
 <form name="newcode" method="post" action="new">
 
-  <input type = "file" name="file" id="file">
+  <input type = "file" name="file" id="file"><br>
 
-  <input name="submit" type="submit" id="submit" value="post" onclick="saveUsername()" >  
-  
   <input type="text" name="title" id="title" placeholder="snippet title">
   <label for="title">title </label><br>
   
@@ -15,6 +13,8 @@
   
   <input type="text" name="tags" id="tags" placeholder="separate tags by comma">
   <label for="tags">tags </label><br>
+
+  <input name="submit" type="submit" id="submit" value="post" onclick="saveUsername()" >  
 
   <script>
       function saveUsername()
