@@ -1,8 +1,8 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
-  {% for snippet in snippets %}
+  {% for key in keys %}
     <url>
-      <loc>http://www.xsnippet.tk/{{ snippet.key.id }}</loc>
+      <loc>http://www.xsnippet.tk/{{ key.id }}</loc>
     </url>
   {% endfor %}
 </urlset>

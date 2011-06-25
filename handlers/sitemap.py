@@ -16,10 +16,9 @@ class Sitemap(webapp.RequestHandler):
         self.post()
 
     def post(self):
+        keys = Snippet.all(keys_only=True).order("-date")
 
-        snippets = Snippet.all().order('-date')
-
-        template_values = {'snippets': snippets}
+        template_values = {'keys': keys}
         path = os.path.join(os.getcwd(), 'templates', 'sitemap.xml')
 
         self.response.headers['Content-Type'] = 'text/xml'
