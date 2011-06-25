@@ -7,14 +7,16 @@ from handlers import ShowSnippet
 from handlers import RawSnippet
 from handlers import DownloadSnippet
 from handlers import ListSnippet
+from handlers import Sitemap
 
-application = webapp.WSGIApplication([('/', MainPage),
-                                      ('/new', NewSnippet),
+application = webapp.WSGIApplication([(r'/', MainPage),
+                                      (r'/new', NewSnippet),
                                       (r'/([0-9]+)', ShowSnippet),
                                       (r'/([0-9]+)/raw', RawSnippet),
                                       (r'/([0-9]+)/download', DownloadSnippet),
                                       (r'/(\w+)/([a-zA-Z0-9_%-]+)/?', ListSnippet),
-                                      (r'/(\w+)/([a-zA-Z0-9_%-]+)/(\d+)?', ListSnippet)],
+                                      (r'/(\w+)/([a-zA-Z0-9_%-]+)/(\d+)?', ListSnippet),
+                                      (r'/sitemap.xml', Sitemap)],
                                       debug=True)
 
 def main():

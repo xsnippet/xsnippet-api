@@ -4,3 +4,5 @@ Disallow: /templates/
 Disallow: /static/
 Disallow: /model/
 Allow: /
+
+Sitemap: http://www.xsnippet.tk/sitemap.xml
