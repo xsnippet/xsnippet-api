@@ -1,5 +1,6 @@
 from mainpage import MainPage
 from aboutpage import AboutPage
+from uploadpage import UploadPage
 from newsnippet import NewSnippet
 from showsnippet import ShowSnippet
 from rawsnippet import RawSnippet
@@ -11,6 +12,7 @@ from sitemap import Sitemap
 
 __all__ = ('MainPage',
            'AboutPage',
+           'UploadPage',
            'NewSnippet',
            'ShowSnippet',
            'RawSnippet',
