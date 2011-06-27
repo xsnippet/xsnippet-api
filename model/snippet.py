@@ -20,7 +20,7 @@ class Snippet(db.Model):
             "HTML": "xml",
             "XML": "xml",
             "CSS": "css",
-            "JavaScript": "javascript",
+            "JavaScript": "js",
             "PHP": "php",
             "SQL": "sql",
             "Ruby": "ruby",
