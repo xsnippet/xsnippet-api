@@ -18,11 +18,14 @@ class EmbedSnippet(webapp.RequestHandler):
     @staticmethod
     def escape(text):
         escape_table = {
-            "'": "\\'",
+            "'": r"\'",
             ">": "&gt;",
             "<": "&lt;",
         }
-        return ''.join(escape_table.get(c,c) for c in text)
+
+        for k, v in escape_table.items():
+            text = text.replace(k, v)
+        return text
 
     def get(self, snippetid):
         self.post(snippetid)
@@ -33,22 +36,22 @@ class EmbedSnippet(webapp.RequestHandler):
         if snippet is not None:
             self.response.headers['Content-Type'] = 'text/html'
 
-            code = "\\r\\n\\\r\n".join(line for line in iter(snippet.content.splitlines()))
+            code = r"\n".join(line for line in snippet.content.splitlines())
             code = EmbedSnippet.escape(code)
 
             html = \
-            ''' \\
-              <link rel="stylesheet" href="http://www.xsnippet.tk/static/highlight.js/styles/xsnippet.css"> \\
-              <script src="http://www.xsnippet.tk/static/highlight.js/highlight.pack.js"></script> \\
-              <pre><code id="xsnippet_%s" class="%s">%s</code></pre> \\
-              <script> \\
-                  hljs.tabReplace = "    "; \\
-                  var code = document.getElementById("xsnippet_%s"); \\
-                  hljs.highlightBlock(code); \\
-              </script> \\
+            '''
+              <link rel="stylesheet" href="http://www.xsnippet.tk/static/highlight.js/styles/xsnippet.css">
+              <script src="http://www.xsnippet.tk/static/highlight.js/highlight.pack.js"></script>
+              <pre><code id="xsnippet_%s" class="%s">%s</code></pre>
+              <script>
+                  hljs.tabReplace = "    ";
+                  var code = document.getElementById("xsnippet_%s");
+                  hljs.highlightBlock(code);
+              </script>
             ''' % (snippetid, Snippet.languages[snippet.language], code, snippetid)
 
-            js = '''document.write('%s');''' % (html)
+            js = "document.write('%s');" % (''.join(html.splitlines()))
             self.response.out.write(js)
 
         else:
