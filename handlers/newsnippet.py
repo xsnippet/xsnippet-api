@@ -61,7 +61,7 @@ class NewSnippet(webapp.RequestHandler):
             info = re.match(r"file=FieldStorage\('file',\+'(.*)'\)", body)
             filename, extension = os.path.splitext(info.groups(0)[0])
 
-            if not self.request.get('title'):
+            if snippet.title == 'Untitled':
                 snippet.title = filename
             snippet.language = Snippet.extensions_reverse.get(extension, 'Text')
         else:
