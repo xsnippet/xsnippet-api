@@ -2,6 +2,7 @@ from google.appengine.ext import webapp
 from google.appengine.ext.webapp.util import run_wsgi_app
 
 from handlers import MainPage
+from handlers import AboutPage
 from handlers import NewSnippet
 from handlers import ShowSnippet
 from handlers import RawSnippet
@@ -12,6 +13,7 @@ from handlers import RecentSnippet
 from handlers import Sitemap
 
 application = webapp.WSGIApplication([(r'/', MainPage),
+                                      (r'/about', AboutPage),
                                       (r'/new', NewSnippet),
                                       (r'/([0-9]+)', ShowSnippet),
                                       (r'/([0-9]+)/raw', RawSnippet),
