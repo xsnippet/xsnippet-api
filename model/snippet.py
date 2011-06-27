@@ -87,3 +87,6 @@ class Snippet(db.Model):
             "VHDL": ".vhdl",
             "Text": ".txt"
     }
+
+    # filename extension to language name mapping
+    extensions_reverse = dict([(v, k) for (k, v) in extensions.items()])
