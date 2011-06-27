@@ -313,6 +313,12 @@ article input#file {
     margin: 3px 0px;
 }
 
+article div.about {
+    text-align: justify;
+    width: 700px;
+    margin: 0px auto;
+}
+
 article h2 {
     font-size: 18px;
     margin-bottom: 15px;
