@@ -46,6 +46,12 @@ class NewSnippet(webapp.RequestHandler):
         if not snippet.language:
             snippet.language = 'Text'
 
+        tags = self.request.get('tags')
+        if tags:
+            snippet.tags = [tag.lstrip() for tag in tags.split(',')]
+        else:
+            snippet.tags = []
+
         filedata = self.request.get('file')
         if filedata:
             snippet.content = filedata.decode('utf-8')
@@ -61,13 +67,6 @@ class NewSnippet(webapp.RequestHandler):
         else:
             snippet.content = self.request.get('content')
 
-        tags = self.request.get('tags')
-        if tags:
-            snippet.tags = [tag.lstrip() for tag in tags.split(',')]
-        else:
-            snippet.tags = []
-
         snippet.put()
 
         self.redirect('/' + str(snippet.key().id()))
-
