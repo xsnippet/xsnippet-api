@@ -18,6 +18,7 @@ class EmbedSnippet(webapp.RequestHandler):
     @staticmethod
     def escape(text):
         escape_table = {
+            "\\": "\\\\",
             "'": r"\'",
             ">": "&gt;",
             "<": "&lt;",
@@ -36,8 +37,8 @@ class EmbedSnippet(webapp.RequestHandler):
         if snippet is not None:
             self.response.headers['Content-Type'] = 'text/html'
 
-            code = r"\n".join(line for line in snippet.content.splitlines())
-            code = EmbedSnippet.escape(code)
+            code = r"\n".join(EmbedSnippet.escape(line) for line in snippet.content.splitlines())
+            #code = EmbedSnippet.escape(code)
 
             html = \
             '''
