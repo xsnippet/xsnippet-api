@@ -312,6 +312,33 @@ article input#file {
     margin: 3px 0px;
 }
 
+article h2 {
+    font-size: 18px;
+    margin-bottom: 15px;
+    color: #333;
+}
+
+article p {
+    color: #333;
+    font-size: 14px;
+    margin: 10px 0px;
+}
+
+article p a, article ul.authors a {
+    text-decoration: none;
+}
+
+article p a:hover, article ul.authors a:hover {
+    border-bottom: 1px dashed #800;
+}
+
+article ul.authors {
+    color: #333;
+    font-size: 14px;
+    list-style: none;
+    margin-left: 25px;
+}
+
 /*
  * FOOTER SECTION
  */
