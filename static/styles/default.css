@@ -82,7 +82,7 @@ header h1 {
     text-shadow: #111 0px 2px 2px;
 }
 
-header ul {
+header ul.navigation {
     float: right;
     list-style: none;
     display: block;
