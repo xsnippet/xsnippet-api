@@ -14,7 +14,7 @@ class EmbedSnippet(webapp.RequestHandler):
         Snippet id is specified as url path (part between the host name and params), i.e.:
             GET xsnippet.tk/1/embed will return js code for pasting snippet on your page
     '''
-    
+
     @staticmethod
     def escape(text):
         escape_table = {
@@ -35,22 +35,22 @@ class EmbedSnippet(webapp.RequestHandler):
 
             code = snippet.content.replace('\r\n', '\\r\\n\\\r\n')
             code = EmbedSnippet.escape(code)
-            
+
             html = \
             ''' \\
               <link rel="stylesheet" href="http://www.xsnippet.tk/static/highlight.js/styles/xsnippet.css"> \\
               <script src="http://www.xsnippet.tk/static/highlight.js/highlight.pack.js"></script> \\
-              <pre id="xsnippet_%s"><code class="%s">%s</code></pre> \\
+              <pre><code id="xsnippet_%s" class="%s">%s</code></pre> \\
               <script> \\
                   hljs.tabReplace = "    "; \\
                   var code = document.getElementById("xsnippet_%s"); \\
                   hljs.highlightBlock(code); \\
               </script> \\
             ''' % (snippetid, Snippet.languages[snippet.language], code, snippetid)
-            
+
             js = '''document.write('%s');''' % (html)
             self.response.out.write(js)
-            
+
         else:
             template_values = {'error': 'Snippet with id %s not found' % snippetid}
             path = os.path.join(os.getcwd(), 'templates', '404.html')
