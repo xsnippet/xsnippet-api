@@ -207,6 +207,24 @@ article ul.actions li a {
     font-family: georgia;
 }
 
+article div#embed {
+    font-size: 12px;
+    color: #005;
+    background: #fff;
+    margin: 5px auto 0px;
+    padding: 5px;
+    width: 800px;
+    border: 1px dashed #ccc;
+}
+
+article div#embed pre code {
+    background: transparent;
+    margin: 0px;
+    min-height: 0px !important;
+    width: auto;
+    border: none;
+}
+
 article pre code {
     font-family: monospace;
     background: #ffffff;
