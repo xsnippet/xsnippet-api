@@ -9,11 +9,19 @@ handlers:
 
 - url: /favicon.ico
   static_files: static/images/favicon.ico
-  upload: favicon.ico
+  upload: static/images/favicon.ico
 
 - url: /robots.txt
   static_files: static/robots.txt
-  upload: robots.txt
+  upload: static/robots.txt
+
+- url: /google7734a10e4d4c894f.html
+  static_files: static/verifications/google7734a10e4d4c894f.html
+  upload: static/verifications/google7734a10e4d4c894f.html
+
+- url: /yandex_6fbaa0368039cfec.html
+  static_files: static/verifications/yandex_6fbaa0368039cfec.html
+  upload: static/verifications/yandex_6fbaa0368039cfec.html
 
 - url: /.*
   script: dispatcher.py
