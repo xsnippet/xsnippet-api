@@ -207,6 +207,24 @@ article ul.actions li a {
     font-family: georgia;
 }
 
+article div#embed {
+    font-size: 12px;
+    color: #005;
+    background: #fff;
+    margin: 5px auto 0px;
+    padding: 5px;
+    width: 800px;
+    border: 1px dashed #ccc;
+}
+
+article div#embed pre code {
+    background: transparent;
+    margin: 0px;
+    min-height: 0px !important;
+    width: auto;
+    border: none;
+}
+
 article pre code {
     font-family: monospace;
     background: #ffffff;
@@ -292,6 +310,33 @@ article input#file {
     font-size: 13px;
     border: 1px solid #cccccc;
     margin: 3px 0px;
+}
+
+article h2 {
+    font-size: 18px;
+    margin-bottom: 15px;
+    color: #333;
+}
+
+article p {
+    color: #333;
+    font-size: 14px;
+    margin: 10px 0px;
+}
+
+article p a, article ul.authors a {
+    text-decoration: none;
+}
+
+article p a:hover, article ul.authors a:hover {
+    border-bottom: 1px dashed #800;
+}
+
+article ul.authors {
+    color: #333;
+    font-size: 14px;
+    list-style: none;
+    margin-left: 25px;
 }
 
 /*

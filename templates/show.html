@@ -25,9 +25,26 @@
   <ul class="actions">
     <li><a href="/{{ snippet.key.id }}/raw">raw</a>
     <li><a href="/{{ snippet.key.id }}/download">download</a>
+    <li><a href="#" onclick="showHideEmbedBlock()">embed</a>
   </ul>
   
 </header>
 
+<div id="embed" style="display: none;">
+  In order to embed this content into your website or blog, simply copy and paste code provided below:
+  <pre><code class="js">&lt;script src="http://www.xsnippet.tk/{{ snippet.key.id }}/embed"&gt;&lt;/script&gt;</code></pre>
+</div>
+
 <pre><code class="{{ languagehl }}">{{ snippet.content|escape }}</code></pre>
+
+<script>
+    function showHideEmbedBlock()
+    {
+        var embed = document.getElementById('embed');
+        if (embed.style.display == 'none')
+            embed.style.display = 'block';
+        else
+            embed.style.display = 'none';
+    }
+</script>
 {% endblock %}
