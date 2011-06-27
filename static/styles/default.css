@@ -82,14 +82,14 @@ header h1 {
     text-shadow: #111 0px 2px 2px;
 }
 
-header nav {
+header ul {
     float: right;
     list-style: none;
     display: block;
     padding-top: 3px;
 }
 
-header nav a {
+header ul a {
     display: block;
     height: 24px;
     line-height: 24px;
@@ -98,12 +98,12 @@ header nav a {
     font-size: 12px;
 }
 
-header nav li {
+header ul li {
     float: left;
     border-right: 1px solid #444;
 }
 
-header nav li:first-child {
+header ul li:first-child {
     border-left: 1px solid #444;
 }
 
