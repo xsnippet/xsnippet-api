@@ -89,7 +89,7 @@ header ul {
     padding-top: 3px;
 }
 
-header ul a {
+header ul.navigation a {
     display: block;
     height: 24px;
     line-height: 24px;
@@ -98,12 +98,12 @@ header ul a {
     font-size: 12px;
 }
 
-header ul li {
+header ul.navigation li {
     float: left;
     border-right: 1px solid #444;
 }
 
-header ul li:first-child {
+header ul.navigation li:first-child {
     border-left: 1px solid #444;
 }
 
@@ -187,12 +187,13 @@ article header.snippetinfo .tags li a:hover {
 article header.snippetinfo ul.actions {
     list-style: none;
     float: right;
-    margin-top: -7px;
+    margin-top: -9px;
 }
 
 article header.snippetinfo ul.actions li {
     float: left;
     padding: 0px 10px;
+    border-left: none;
     border-right: 1px solid #ccc;
 }
 
