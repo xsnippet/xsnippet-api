@@ -1,3 +1,7 @@
+import os
+import re
+import urllib
+
 from google.appengine.ext import webapp
 
 from model import Snippet
@@ -42,7 +46,20 @@ class NewSnippet(webapp.RequestHandler):
         if not snippet.language:
             snippet.language = 'Text'
 
-        snippet.content = self.request.get('content')
+        filedata = self.request.get('file')
+        if filedata:
+            snippet.content = filedata
+
+            # get the name of uploaded file from request body
+            body = urllib.unquote(self.request.body)
+            info = re.match(r"file=FieldStorage\('file',\+'(.*)'\)", body)
+            filename, extension = os.path.splitext(info.groups(0)[0])
+
+            if not self.request.get('title'):
+                snippet.title = filename
+            snippet.language = Snippet.extensions_reverse.get(extension, 'Text')
+        else:
+            snippet.content = self.request.get('content')
 
         tags = self.request.get('tags')
         if tags:
