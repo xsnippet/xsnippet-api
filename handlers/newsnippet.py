@@ -48,7 +48,7 @@ class NewSnippet(webapp.RequestHandler):
 
         filedata = self.request.get('file')
         if filedata:
-            snippet.content = filedata
+            snippet.content = filedata.decode('utf-8')
 
             # get the name of uploaded file from request body
             body = urllib.unquote(self.request.body)
