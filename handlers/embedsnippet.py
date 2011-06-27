@@ -33,7 +33,7 @@ class EmbedSnippet(webapp.RequestHandler):
         if snippet is not None:
             self.response.headers['Content-Type'] = 'text/html'
 
-            code = snippet.content.replace('\r\n', '\\r\\n\\\r\n')
+            code = "\\r\\n\\\r\n".join(line for line in iter(snippet.content.splitlines()))
             code = EmbedSnippet.escape(code)
 
             html = \
