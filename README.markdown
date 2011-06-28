@@ -1,6 +1,21 @@
-xsnippet
-========
+xsnippet.tk
+===========
 
-**xsnippet** is a simple [Pastebin](http://en.wikipedia.org/wiki/Pastebin) 
-service written in Python.
+[xsnippet.tk](http://www.xsnippet.tk) is a simple web-service to share code 
+snippets on the Internet. It's written in Python using 
+[webapp](http://code.google.com/appengine/docs/python/tools/webapp/) framework 
+to run on [Google App Engine](http://code.google.com/appengine/) platform. 
+
+The source code is distributed under GNU GPL v3 license. It's available on GitHub: 
+    
+<https://github.com/bloodeclipse/xsnippet>
+
+Feel free to contribute sending us pull requests or patches. Your feedback is 
+welcome as well. 
+
+
+**Authors:** 
+
+- Igor Kalnitsky (igor.kalnitsky@gmail.com) 
+- Roman Podolyaka (roman.podolyaka@gmail.com)
 
