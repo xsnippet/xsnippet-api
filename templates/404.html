@@ -3,6 +3,13 @@
 {% block title %}Not found | xsnippet.tk{% endblock %}
 
 {% block content %}
-  <h1>Error 404</h1>
-  <h2>{{error}}</h2>
+
+  <div class="logo">
+    <img src="/static/images/404.png" width="300px">
+  </div>
+  <div class="error">
+    <h2>Error 404</h1>
+    <p>{{error}}</p>
+  </div>
+  <div class="clear"></div>
 {% endblock %}

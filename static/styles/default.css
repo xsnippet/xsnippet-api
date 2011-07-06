@@ -204,7 +204,7 @@ article header.snippetinfo ul.actions li:last-child {
 article ul.actions li a {
     font-size: 12px;
     line-height: 14px;
-    letter-spacing: 1.5px;
+    letter-slpacing: 1.5px;
     font-family: georgia;
 }
 
@@ -344,6 +344,18 @@ article ul.authors {
     font-size: 14px;
     list-style: none;
     margin-left: 25px;
+}
+
+article div.logo {
+    display: block;
+    float: left;
+}
+
+article div.error {
+    display: block;
+    float: left;
+    margin-top: 100px;
+    margin-left: 50px;
 }
 
 /*
