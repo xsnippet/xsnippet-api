@@ -108,6 +108,17 @@ header ul.navigation li:first-child {
 }
 
 
+header ul.navigation li.gplusone {
+    padding-left: 10px;
+    padding-top: 2px;
+    width: 70px;
+}
+
+div#plusone {
+    padding: 0;
+}
+
+
 /*
  * ARTICLE SECTION
  */
