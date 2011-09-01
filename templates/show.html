@@ -1,23 +1,23 @@
 {% extends "base.html" %}
 
-{% block title %}{{ snippet.title }} | xsnippet.tk{% endblock %}
+{% block title %}{{ snippet.title|escape }} | xsnippet.tk{% endblock %}
 
 {% block content %}
 <header class="snippetinfo">
   <h2>
-    {{ snippet.title }}
-    [ <a href="/language/{{ snippet.language}}">{{ snippet.language }}</a> ]
+    {{ snippet.title|escape }}
+    [ <a href="/language/{{ snippet.language|escape}}">{{ snippet.language|escape }}</a> ]
   </h2>
   
   {% if snippet.author %}
-  <span class="author">by <a href="/author/{{ snippet.author }}">{{ snippet.author }}</a></span>
+  <span class="author">by <a href="/author/{{ snippet.author|escape }}">{{ snippet.author|escape }}</a></span>
   {% endif %}
   
   {% if snippet.tags %}
   <span class="separator">/</span>
   <ul class="tags">
     {% for tag in snippet.tags %}
-    <li><a href="/tags/{{ tag }}">{{ tag }}</a>
+    <li><a href="/tags/{{ tag|escape }}">{{ tag|escape }}</a>
     {% endfor %}
   </ul>
   {% endif %}
