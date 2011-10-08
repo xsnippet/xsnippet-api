@@ -261,17 +261,18 @@ article div.sidebar div {
     display: block;
 }
 
-article textarea {
+article textarea,
+article .CodeMirror {
     float: left;
     font-family: monospace;
-    line-height: 14px;
+    line-height: 15px;
     background:	#ffffff;
-    min-height: 400px;
-    font-size: 11px;
+    
+    font-size:13px;
     padding: 5px;
     margin: 0px 30px 25px 0px;
     border: 1px solid #cccccc;
-    width: 730px;
+    width: 700px;
     resize: none;
 }
 

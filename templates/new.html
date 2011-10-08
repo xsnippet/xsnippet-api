@@ -2,13 +2,19 @@
 
 {% block title %}xsnippet.tk{% endblock %}
 
+{% block head %}
+<link rel="stylesheet" href="/static/codemirror/lib/codemirror.css">
+<link rel="stylesheet" href="/static/codemirror/theme/default.css">
+<script src="/static/codemirror/lib/codemirror.js"></script>
+{% endblock %}
+
 {% block content %}
 <form name="newcode" method="post" action="new">
-  <textarea name="content" placeholder="paste code here..."></textarea>
+  <textarea id="code" name="content" placeholder="paste code here..."></textarea>
 
   <div class="sidebar">
     <div>
-      <select name="language" size="20">
+      <select name="language" size="20" onchange="languageChange()">
         <option value="Autodetection" selected="selected">Autodetection</option>
         
         <option disabled></option>
@@ -76,6 +82,62 @@
   <label for="tags">tags </label><br>
 
   <script>
+      var codeEditor = CodeMirror.fromTextArea(document.getElementById('code'), {
+          lineNumbers: true,
+          matchBrackets: true,
+          indentUnit: 4,
+          tabMode: "shift",
+          enterMode: "keep",
+          mode: "text/x-csrc"
+      });
+      
+      function languageChange()
+      {
+            var modes = [];
+            modes['C'] = 'text/x-csrc';
+            modes['C++'] = 'text/x-c++src';
+            modes['Java'] = 'text/x-java';
+            modes['C#'] = '';
+            modes['Python'] = 'text/x-python';
+            modes['Perl'] = '';
+            modes['Bash'] = '';
+
+            modes['XML'] = 'text/html';
+            modes['HTML'] = 'text/html';
+            modes['CSS'] = 'text/css';
+            modes['JavaScript'] = 'text/javascript';
+            modes['PHP'] = 'application/x-httpd-php';
+            modes['SQL'] = 'text/x-plsql';
+            modes['Ruby'] = 'text/x-ruby';
+            modes['Django'] = '';
+
+            modes['Go'] = 'text/x-csrc';
+            modes['Haskell'] = 'text/x-haskell';
+            modes['Erlang'] = '';
+            modes['Lisp'] = '';
+            modes['Lua'] = 'text/x-lua';
+            modes['Objective-C'] = 'text/x-csrc';
+            modes['Scala'] = '';
+            modes['Smalltalk'] = 'text/x-stsrc';
+            modes['VBScript'] = '';
+            modes['VHDL'] = '';
+
+            modes['1C'] = '';
+            modes['Apache'] = '';
+            modes['Nginx'] = '';
+            modes['CMake'] = '';
+            modes['diff'] = 'text/x-diff';
+            modes['DOS'] = '';
+            modes['Delphi'] = 'text/x-pascal';
+            modes['ini'] = '';
+            modes['TeX'] = 'text/stex';
+
+            var language = document.forms["newcode"]["language"].value;
+            var mode = modes[language];
+
+            codeEditor.setOption('mode', mode);
+      }
+  
       function saveUsername()
       {
           if ('localStorage' in window && window['localStorage'] !== null)
