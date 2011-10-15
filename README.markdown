@@ -1,7 +1,7 @@
-xsnippet.tk
-===========
+xsnippet.org
+============
 
-[xsnippet.tk](http://www.xsnippet.tk) is a simple web-service to share code 
+[xsnippet.org](http://www.xsnippet.org) is a simple web-service to share code 
 snippets on the Internet. It's written in Python using 
 [webapp](http://code.google.com/appengine/docs/python/tools/webapp/) framework 
 to run on [Google App Engine](http://code.google.com/appengine/) platform. 
@@ -16,6 +16,6 @@ welcome as well.
 
 **Authors:** 
 
-- Igor Kalnitsky (igor.kalnitsky@gmail.com) 
+- Igor Kalnitsky (igor@kalnitsky.org) 
 - Roman Podolyaka (roman.podolyaka@gmail.com)
 
