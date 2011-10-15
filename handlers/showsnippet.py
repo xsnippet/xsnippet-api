@@ -3,6 +3,10 @@ import os
 from google.appengine.ext import webapp
 from google.appengine.ext.webapp import template
 
+from pygments import highlight
+from pygments.lexers import get_lexer_by_name
+from pygments.formatters import HtmlFormatter
+
 from model import Snippet
 
 class ShowSnippet(webapp.RequestHandler):
@@ -22,10 +26,14 @@ class ShowSnippet(webapp.RequestHandler):
         snippet = Snippet.get_by_id(int(snippetid))
 
         if snippet is not None:
-            # get language highlight.js name
+            # pygments highlighting
             languagehl = Snippet.languages[snippet.language]
 
-            template_values = {'snippet': snippet, 'languagehl': languagehl}
+            lexer = get_lexer_by_name(languagehl, stripall=True)
+            formatter = HtmlFormatter(linenos='table')
+            snippet.content = highlight(snippet.content, lexer, formatter)
+
+            template_values = {'snippet': snippet}
             path = os.path.join(os.getcwd(), 'templates', 'show.html')
         else:
             template_values = {'error': 'Snippet with id %s not found' % snippetid}

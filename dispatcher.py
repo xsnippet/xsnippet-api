@@ -1,3 +1,9 @@
+import sys
+import os
+
+# add third-party python libs into PYTHONPATH
+sys.path.insert(0, os.path.join(os.path.dirname(__file__), 'lib'))
+
 from google.appengine.ext import webapp
 from google.appengine.ext.webapp.util import run_wsgi_app
 
