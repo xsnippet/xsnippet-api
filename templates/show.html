@@ -1,6 +1,6 @@
 {% extends "base.html" %}
 
-{% block title %}{{ snippet.title|escape }} | xsnippet.tk{% endblock %}
+{% block title %}{{ snippet.title|escape }} | xsnippet.org{% endblock %}
 
 {% block head %}
 <!-- include highligh.js library -->
@@ -43,7 +43,7 @@
 
 <div id="embed" style="display: none;">
   In order to embed this content into your website or blog, simply copy and paste code provided below:
-  <pre><code class="js">&lt;script src="http://www.xsnippet.tk/{{ snippet.key.id }}/embed"&gt;&lt;/script&gt;</code></pre>
+  <pre><code class="js">&lt;script src="http://www.xsnippet.org/{{ snippet.key.id }}/embed"&gt;&lt;/script&gt;</code></pre>
 </div>
 
 <pre><code class="{{ languagehl }}">{{ snippet.content|escape }}</code></pre>

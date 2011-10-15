@@ -2,7 +2,7 @@
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
   {% for key in keys %}
     <url>
-      <loc>http://www.xsnippet.tk/{{ key.id }}</loc>
+      <loc>http://www.xsnippet.org/{{ key.id }}</loc>
     </url>
   {% endfor %}
 </urlset>
