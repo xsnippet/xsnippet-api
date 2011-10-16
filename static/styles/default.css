@@ -241,9 +241,6 @@ article div#embed pre code {
     padding-left: 7px;
 }
 
-/*
- *  TODO: fix code styles
- */
 article table.highlighttable {
     font-family: monospace;
     background: #ffffff;
@@ -257,19 +254,18 @@ article table.highlighttable {
     font-size: 12px;
 }
 
-article div.highlight {
+article td.linenos {
+    background: #f8f8f8;
+    border-right: 1px solid #cccccc;
+    padding: 5px 7px 4px;
+    display: block;
     min-height: 400px;
 }
 
-article div.linenodiv {
-    border-right: 1px solid #cccccc;
-    margin-right: 5px;
-    display: block;
-    min-height: 400px;
-    padding-top: 2px;
-    padding-right: 7px;
-    padding-left: 7px;
-    background: #f8f8f8;
+article td.code {
+    width: 100%;
+    padding: 4px;
+    vertical-align: top;
 }
 
 /* form subsection */

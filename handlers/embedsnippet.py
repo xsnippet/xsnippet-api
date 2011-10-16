@@ -3,6 +3,10 @@ import os
 from google.appengine.ext import webapp
 from google.appengine.ext.webapp import template
 
+from pygments import highlight
+from pygments.lexers import get_lexer_by_name, guess_lexer
+from pygments.formatters import HtmlFormatter
+
 from model import Snippet
 
 class EmbedSnippet(webapp.RequestHandler):
@@ -15,19 +19,6 @@ class EmbedSnippet(webapp.RequestHandler):
             GET xsnippet.tk/1/embed will return js code for pasting snippet on your page
     '''
 
-    @staticmethod
-    def escape(text):
-        escape_table = {
-            "\\": "\\\\",
-            "'": r"\'",
-            ">": "&gt;",
-            "<": "&lt;",
-        }
-
-        for k, v in escape_table.items():
-            text = text.replace(k, v)
-        return text
-
     def get(self, snippetid):
         self.post(snippetid)
 
@@ -37,22 +28,24 @@ class EmbedSnippet(webapp.RequestHandler):
         if snippet is not None:
             self.response.headers['Content-Type'] = 'text/html'
 
-            code = r"\n".join(EmbedSnippet.escape(line) for line in snippet.content.splitlines())
-            #code = EmbedSnippet.escape(code)
+            languagehl = Snippet.languages[snippet.language]
+
+            if languagehl:
+                lexer = get_lexer_by_name(languagehl, stripall=True)
+            else:
+                lexer = guess_lexer(snippet.content)
+
+            formatter = HtmlFormatter(linenos='table')
+            snippet.content = highlight(snippet.content, lexer, formatter)
 
             html = \
             '''
-              <link rel="stylesheet" href="http://www.xsnippet.tk/static/highlight.js/styles/xsnippet.css">
-              <script src="http://www.xsnippet.tk/static/highlight.js/highlight.pack.js"></script>
-              <pre><code id="xsnippet_%s" class="%s">%s</code></pre>
-              <script>
-                  hljs.tabReplace = "    ";
-                  var code = document.getElementById("xsnippet_%s");
-                  hljs.highlightBlock(code);
-              </script>
-            ''' % (snippetid, Snippet.languages[snippet.language], code, snippetid)
+              <link rel="stylesheet" href="http://localhost:8080/static/pygments/styles/colorful.css">
+              <link rel="stylesheet" href="http://localhost:8080/static/styles/embed.css">
+              %s
+            ''' % (snippet.content)
 
-            js = "document.write('%s');" % (''.join(html.splitlines()))
+            js = "document.write('%s');" % (r'\n'.join(html.splitlines()))
             self.response.out.write(js)
 
         else:
