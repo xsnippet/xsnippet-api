@@ -4,7 +4,7 @@ from google.appengine.ext import webapp
 from google.appengine.ext.webapp import template
 
 from pygments import highlight
-from pygments.lexers import get_lexer_by_name
+from pygments.lexers import get_lexer_by_name, guess_lexer
 from pygments.formatters import HtmlFormatter
 
 from model import Snippet
@@ -29,7 +29,11 @@ class ShowSnippet(webapp.RequestHandler):
             # pygments highlighting
             languagehl = Snippet.languages[snippet.language]
 
-            lexer = get_lexer_by_name(languagehl, stripall=True)
+            if languagehl:
+                lexer = get_lexer_by_name(languagehl, stripall=True)
+            else:
+                lexer = guess_lexer(snippet.content)
+
             formatter = HtmlFormatter(linenos='table')
             snippet.content = highlight(snippet.content, lexer, formatter)
 
