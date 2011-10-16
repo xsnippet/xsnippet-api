@@ -220,8 +220,8 @@ article ul.actions li a {
 }
 
 article div#embed {
-    font-size: 12px;
-    color: #005;
+    font-size: 11px;
+    color: #777;
     background: #fff;
     margin: 5px auto 0px;
     padding: 5px;
@@ -231,10 +231,14 @@ article div#embed {
 
 article div#embed pre code {
     background: transparent;
-    margin: 0px;
+    margin: 5px 1px;
+    display: block;
     min-height: 0px !important;
     width: auto;
     border: none;
+    color: #005;
+    border-left: 1px solid #005;
+    padding-left: 7px;
 }
 
 /*
