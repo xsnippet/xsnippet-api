@@ -1,0 +1,25 @@
+@charset 'utf-8';
+
+table.highlighttable {
+    font-family: monospace;
+    background: #ffffff;
+    overflow: auto;
+    display: block;
+    border: 1px solid #cccccc;
+    margin: 5px auto 0px;
+    line-height: 16px;
+    font-size: 12px;
+    width: 100%;
+}
+
+td.linenos {
+    background: #f8f8f8;
+    border-right: 1px solid #cccccc;
+    padding: 5px 7px 4px;
+}
+
+td.code {
+    width: 100%;
+    padding: 4px;
+}
+
