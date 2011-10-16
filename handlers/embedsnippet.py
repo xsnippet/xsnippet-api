@@ -40,8 +40,8 @@ class EmbedSnippet(webapp.RequestHandler):
 
             html = \
             '''
-              <link rel="stylesheet" href="http://localhost:8080/static/pygments/styles/colorful.css">
-              <link rel="stylesheet" href="http://localhost:8080/static/styles/embed.css">
+              <link rel="stylesheet" href="http://www.xsnippet.org/static/pygments/styles/colorful.css">
+              <link rel="stylesheet" href="http://www.xsnippet.org/static/styles/embed.css">
               %s
             ''' % (snippet.content)
 
