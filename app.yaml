@@ -19,9 +19,9 @@ handlers:
   static_files: static/verifications/google7734a10e4d4c894f.html
   upload: static/verifications/google7734a10e4d4c894f.html
 
-- url: /yandex_6fbaa0368039cfec.html
-  static_files: static/verifications/yandex_6fbaa0368039cfec.html
-  upload: static/verifications/yandex_6fbaa0368039cfec.html
+- url: /yandex_78be63ee9b494616.html
+  static_files: static/verifications/yandex_78be63ee9b494616.html
+  upload: static/verifications/yandex_78be63ee9b494616.html
 
 - url: /.*
   script: dispatcher.py
