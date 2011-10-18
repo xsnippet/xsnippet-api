@@ -43,7 +43,7 @@ class Snippet(db.Model):
             "Smalltalk": "smalltalk",
             "TeX": "tex",
             "VBScript": "vbnet",
-            "Verilog": "verilog",
+            "Verilog": "v",
             "Text": "text"
     }
 
