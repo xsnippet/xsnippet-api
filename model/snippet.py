@@ -44,7 +44,10 @@ class Snippet(db.Model):
             "TeX": "tex",
             "VBScript": "vbnet",
             "Verilog": "v",
-            "Text": "text"
+            "Text": "text",
+            "Nasm": "nasm",
+            "Gas": "gas",
+            "LLVM": "llvm"
     }
 
     # language name to filename extension mapping 
@@ -83,7 +86,10 @@ class Snippet(db.Model):
             "TeX": ".tex",
             "VBScript": ".vbs",
             "VHDL": ".vhdl",
-            "Text": ".txt"
+            "Text": ".txt",
+            "Nasm": ".asm",
+            "Gas": ".s",
+            "LLVM": ".ll"
     }
 
     # filename extension to language name mapping
