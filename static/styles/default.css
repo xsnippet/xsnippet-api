@@ -283,8 +283,7 @@ article .CodeMirror {
     float: left;
     font-family: monospace;
     line-height: 15px;
-    background:	#ffffff;
-    
+    background: #ffffff;
     font-size: 13px;
     padding: 5px;
     margin: 0px 30px 25px 0px;
@@ -308,7 +307,7 @@ article input#submit {
     border: 1px solid #cccccc;
     color: #eeeeee;
     width: 100px;
-    
+
     background: #2e76cf; 
     background-image: -moz-linear-gradient(100% 100% 90deg, #2e76cf, #52a8e8) !important; 
     background-image: -webkit-gradient(linear, 0% 0%, 0% 100%, from(#52a8e8), to(#2e76cf)) !important; 
@@ -346,6 +345,11 @@ article div.about {
     text-align: justify;
     width: 700px;
     margin: 0px auto;
+}
+
+article div.about h4 {
+    margin-top: 30px;
+    display: block;
 }
 
 article h2 {
