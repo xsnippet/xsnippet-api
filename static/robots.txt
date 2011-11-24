@@ -3,6 +3,9 @@ Disallow: /handlers/
 Disallow: /templates/
 Disallow: /static/
 Disallow: /model/
+Disallow: */raw
+Disallow: */embed
+Disallow: */download
 Allow: /
 
 Sitemap: http://www.xsnippet.tk/sitemap.xml
