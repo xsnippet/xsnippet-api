@@ -67,6 +67,8 @@ class NewSnippet(webapp.RequestHandler):
         else:
             snippet.content = self.request.get('content')
 
-        snippet.put()
-
-        self.redirect('/' + str(snippet.key().id()))
+        if snippet.content:
+            snippet.put()
+            self.redirect('/' + str(snippet.key().id()))
+        else:
+            self.redirect('/')
