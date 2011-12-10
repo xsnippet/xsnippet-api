@@ -1,6 +1,6 @@
 {% extends "base.html" %}
 
-{% block title %}xsnippet.org{% endblock %}
+{% block title %}xsnippet{% endblock %}
 
 {% block head %}
 <link rel="stylesheet" href="/static/codemirror/lib/codemirror.css">
@@ -16,7 +16,7 @@
     <div>
       <select name="language" size="20" onchange="languageChange()">
         <option value="Autodetection" selected="selected">Autodetection</option>
-        
+
         <option disabled></option>
         <option value="C">C</option>
         <option value="C++">C++</option>
@@ -71,15 +71,15 @@
       <input name="submit" type="submit" id="submit" value="post" onclick="saveUsername()" >  
     </div>
   </div><!-- sidebar -->
-  
+
   <div class="clear"></div>
-  
+
   <input type="text" name="title" id="title" placeholder="snippet title">
   <label for="title">title </label><br>
-  
+
   <input type="text" name="author" id="author" placeholder="author">
   <label for="author">author </label><br>
-  
+
   <input type="text" name="tags" id="tags" placeholder="separate tags by comma">
   <label for="tags">tags </label><br>
 
@@ -92,7 +92,7 @@
           enterMode: "keep",
           mode: "text/x-csrc"
       });
-      
+
       function languageChange()
       {
             var modes = [];
@@ -139,7 +139,7 @@
 
             codeEditor.setOption('mode', mode);
       }
-  
+
       function saveUsername()
       {
           if ('localStorage' in window && window['localStorage'] !== null)
@@ -157,9 +157,9 @@
                   document.getElementById("author").value = localStorage["author"];
           }
       }
-  
+
       loadUsername();
   </script>
-  
+
 </form>
 {% endblock %}

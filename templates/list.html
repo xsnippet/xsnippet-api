@@ -1,6 +1,6 @@
 {% extends "base.html" %}
 
-{% block title %}xsnippet.org{% endblock %}
+{% block title %}xsnippet{% endblock %}
 
 {% block content %}
   {% for snippet in snippets %}
@@ -9,11 +9,11 @@
       <a href="/{{ snippet.key.id }}" class="title">{{ snippet.title|escape }}</a>
       [ <a href="/language/{{ snippet.language|escape}}">{{ snippet.language|escape }}</a> ]
     </h2>
-    
+
     {% if snippet.author %}
     <span class="author">by <a href="/author/{{ snippet.author|escape }}">{{ snippet.author|escape }}</a></span>
     {% endif %}
-    
+
     {% if snippet.tags %}
     <span class="separator">/</span>
     <ul class="tags">
@@ -22,13 +22,13 @@
       {% endfor %}
     </ul>
     {% endif %}
-    
+
     <ul class="actions">
       <li><a href="/{{ snippet.key.id }}/raw">raw</a>
       <li><a href="/{{ snippet.key.id }}/download">download</a>
       <li><a href="/{{ snippet.key.id }}" class="title">show</a>
     </ul>
-    
+
   </header>
   {% endfor %}
 {% endblock %}

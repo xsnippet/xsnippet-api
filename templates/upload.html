@@ -1,6 +1,6 @@
 {% extends "base.html" %}
 
-{% block title %}xsnippet.org{% endblock %}
+{% block title %}xsnippet{% endblock %}
 
 {% block content %}
 <form name="newcode" method="post" action="new" enctype="multipart/form-data">
@@ -9,10 +9,10 @@
 
   <input type="text" name="title" id="title" placeholder="snippet title">
   <label for="title">title </label><br>
-  
+
   <input type="text" name="author" id="author" placeholder="author">
   <label for="author">author </label><br>
-  
+
   <input type="text" name="tags" id="tags" placeholder="separate tags by comma">
   <label for="tags">tags </label><br>
 
@@ -36,9 +36,9 @@
                   document.getElementById("author").value = localStorage["author"];
           }
       }
-  
+
       loadUsername();
   </script>
-  
+
 </form>
 {% endblock %}
