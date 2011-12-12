@@ -10,6 +10,8 @@
     <!--[if IE]>
     <script src="http://html5shim.googlecode.com/svn/trunk/html5.js"></script>
     <![endif]-->
+    <script src="/static/js/jquery.min.js"></script>
+    <script src="/static/js/jquery.tooltip.js"></script>
 
     {% block head %}
     {% endblock %}
@@ -34,7 +36,13 @@
       <h1><a href="/">xsnippet</a></h1>
 
       <form id="searchform">
-        <input id="search" type="text" name="search" placeholder="search...">
+        <input id="search" type="text" name="search" placeholder="search..."
+        title="<b>Search syntax examples</b>:<br>
+
+               <code>author:ikalnitsky</code>
+               <code>author:Roman Podolyaka, tags:mpi</code>
+               <code>title:primes, language:python</code>
+              ">
       </form>
 
       <ul class="navigation">
@@ -56,5 +64,14 @@
       &amp; <a href="http://www.amd4ever.org.ua">Roman Podolyaka</a> 
       <br> All Rights Reserved
     </footer>
+
+      <script>
+          $('#search').tooltip({
+              position: 'bottom center',
+              offset: [5, 0],
+              effect: 'fade',
+              opacity: 0.9
+          });
+    </script>
   </body>
 </html>
