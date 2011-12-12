@@ -16,6 +16,7 @@ from handlers import RawSnippet
 from handlers import DownloadSnippet
 from handlers import EmbedSnippet
 from handlers import ListSnippet
+from handlers import SearchSnippet
 from handlers import RecentSnippet
 from handlers import Sitemap
 
@@ -23,6 +24,7 @@ application = webapp.WSGIApplication([(r'/', MainPage),
                                       (r'/about', AboutPage),
                                       (r'/upload', UploadPage),
                                       (r'/new', NewSnippet),
+                                      (r'/search', SearchSnippet),
                                       (r'/([0-9]+)', ShowSnippet),
                                       (r'/([0-9]+)/raw', RawSnippet),
                                       (r'/([0-9]+)/download', DownloadSnippet),
