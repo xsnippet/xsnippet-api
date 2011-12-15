@@ -37,7 +37,7 @@
 
       <form id="searchform" action="/search" method="POST">
         <input id="search" type="text" name="search" placeholder="search..."
-        title="<b>Search syntax examples</b>:<br>
+        title="<span class='title'>Search syntax examples</span>
 
                <code>author:ikalnitsky</code>
                <code>author:Roman Podolyaka, tags:mpi</code>
@@ -68,9 +68,10 @@
       <script>
           $('#search').tooltip({
               position: 'bottom center',
-              offset: [5, 0],
+              offset: [2, 70],
               effect: 'fade',
-              opacity: 0.9
+              opacity: 0.9,
+              fadeInSpeed: 250
           });
     </script>
   </body>

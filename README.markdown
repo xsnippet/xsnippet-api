@@ -7,7 +7,7 @@ snippets on the Internet. It's written in Python using
 to run on [Google App Engine](http://code.google.com/appengine/) platform. 
 
 The source code is distributed under GNU GPL v3 license. It's available on GitHub: 
-    
+
 <https://github.com/bloodeclipse/xsnippet>
 
 Feel free to contribute sending us pull requests or patches. Your feedback is 
