@@ -1,12 +1,12 @@
 import os
 import re
 
-from google.appengine.ext import webapp
+import webapp2
 from google.appengine.ext.webapp import template
 
 from model import Snippet
 
-class SearchSnippet(webapp.RequestHandler):
+class SearchSnippet(webapp2.RequestHandler):
     '''
         Return the list of snippets that meet the given requirements (author, language, etc)
 
@@ -47,4 +47,4 @@ class SearchSnippet(webapp.RequestHandler):
         path = os.path.join(os.getcwd(), 'templates', 'list.html')
 
         self.response.headers['Content-Type'] = 'text/html'
-        self.response.out.write(template.render(path, template_values))
+        self.response.write(template.render(path, template_values))

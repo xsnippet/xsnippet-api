@@ -1,6 +1,6 @@
 import os
 
-from google.appengine.ext import webapp
+import webapp2
 from google.appengine.ext.webapp import template
 
 from pygments import highlight
@@ -9,14 +9,14 @@ from pygments.formatters import HtmlFormatter
 
 from model import Snippet
 
-class EmbedSnippet(webapp.RequestHandler):
+class EmbedSnippet(webapp2.RequestHandler):
     '''
         Get a javascript code for pasting snippet anywhere on the web.
 
         Processes GET and POST requests.
 
         Snippet id is specified as url path (part between the host name and params), i.e.:
-            GET xsnippet.tk/1/embed will return js code for pasting snippet on your page
+            GET xsnippet.org/1/embed will return js code for pasting snippet on your page
     '''
 
     def get(self, snippetid):
@@ -54,5 +54,5 @@ class EmbedSnippet(webapp.RequestHandler):
 
             self.error(404)
             self.response.headers['Content-Type'] = 'text/html'
-            self.response.out.write(template.render(path, template_values))
+            self.response.write(template.render(path, template_values))
 

@@ -1,7 +1,14 @@
 application: xsnppt
 version: 1
-runtime: python
+runtime: python27
 api_version: 1
+threadsafe: true
+
+
+libraries:
+- name: PIL
+  version: latest
+
 
 handlers:
 - url: /static
@@ -24,7 +31,7 @@ handlers:
   upload: static/verifications/yandex_78be63ee9b494616.html
 
 - url: /.*
-  script: dispatcher.py
+  script: xsnippet.application
 
 builtins:
 - datastore_admin: on

@@ -1,16 +1,16 @@
 import os
 
-from google.appengine.ext import webapp
+import webapp2
 from google.appengine.ext.webapp import template
 
 from model import Snippet
 
-class RecentSnippet(webapp.RequestHandler):
+class RecentSnippet(webapp2.RequestHandler):
     '''
         Return the list of recently posted snippets.
 
         The number of snippets to show is specified as url path, i.e. :
-            GET /recent/15
+            GET xsnippet.org/recent/15
         will return a list of 15 posted last snippets. But the number of
         snippets can't exceed the FETCH_LIMIT (currently 20, but it is
         a subject to change)
@@ -36,5 +36,5 @@ class RecentSnippet(webapp.RequestHandler):
         path = os.path.join(os.getcwd(), 'templates', 'list.html')
 
         self.response.headers['Content-Type'] = 'text/html'
-        self.response.out.write(template.render(path, template_values))
+        self.response.write(template.render(path, template_values))
 

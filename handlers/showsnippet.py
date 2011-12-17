@@ -45,5 +45,5 @@ class ShowSnippet(webapp.RequestHandler):
             self.error(404)
 
         self.response.headers['Content-Type'] = 'text/html'
-        self.response.out.write(template.render(path, template_values))
+        self.response.write(template.render(path, template_values))
 

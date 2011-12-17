@@ -22,5 +22,5 @@ class Sitemap(webapp.RequestHandler):
         path = os.path.join(os.getcwd(), 'templates', 'sitemap.xml')
 
         self.response.headers['Content-Type'] = 'text/xml'
-        self.response.out.write(template.render(path, template_values))
+        self.response.write(template.render(path, template_values))
 

@@ -2,11 +2,11 @@ import os
 import re
 import urllib
 
-from google.appengine.ext import webapp
+import webapp2
 
 from model import Snippet
 
-class NewSnippet(webapp.RequestHandler):
+class NewSnippet(webapp2.RequestHandler):
     '''
         Create a new snippet entry
 
