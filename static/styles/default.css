@@ -258,7 +258,7 @@ article header.snippetinfo ul.actions li:last-child {
 article ul.actions li a {
     font-size: 12px;
     line-height: 14px;
-    letter-slpacing: 1.5px;
+    letter-spacing: 1.5px;
     font-family: georgia;
 }
 
@@ -384,6 +384,7 @@ article input[type="text"] {
     font-size: 13px;
     border: 1px solid #cccccc;
     margin: 3px 0px;
+    background: #ffffff;
 }
 
 article input#file {
@@ -392,6 +393,7 @@ article input#file {
     font-size: 13px;
     border: 1px solid #cccccc;
     margin: 3px 0px;
+    background: #ffffff;
 }
 
 article div.about {
@@ -401,8 +403,10 @@ article div.about {
 }
 
 article div.about h4 {
+    font-size: 14px;
     margin-top: 30px;
     display: block;
+    color: #333;
 }
 
 article h2 {
@@ -428,7 +432,7 @@ article p a:hover, article ul.authors a:hover {
 article ul.authors {
     color: #333;
     font-size: 14px;
-    list-style: none;
+    list-style: square;
     margin-left: 25px;
 }
 
@@ -454,7 +458,7 @@ footer {
     border-top: 1px solid #cccccc;
     font: 11px/18px Verdana;
 }
-  
+
 footer a {
     color: #800000;
     text-decoration: none;
