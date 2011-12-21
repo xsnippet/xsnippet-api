@@ -1,11 +1,9 @@
-import os
-
-import webapp2
-from google.appengine.ext.webapp import template
-
+# coding: utf-8
+from basehandler import BaseHandler
 from model import Snippet
 
-class RawSnippet(webapp2.RequestHandler):
+
+class RawSnippet(BaseHandler):
     '''
         Get a raw text representation of snippet content
 
@@ -25,10 +23,6 @@ class RawSnippet(webapp2.RequestHandler):
             self.response.headers['Content-Type'] = 'text/plain'
             self.response.write(snippet.content)
         else:
-            template_values = {'error': 'Snippet with id %s not found' % snippetid}
-            path = os.path.join(os.getcwd(), 'templates', '404.html')
-
             self.error(404)
-            self.response.headers['Content-Type'] = 'text/html'
-            self.response.write(template.render(path, template_values))
-
+            template_values = {'error': 'Snippet with id {0} not found'.format(snippetid)}
+            self.render_to_response('404.html', **template_values)

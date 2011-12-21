@@ -1,9 +1,8 @@
-import os
+# coding: utf-8
+from basehandler import BaseHandler
 
-import webapp2
-from google.appengine.ext.webapp import template
 
-class AboutPage(webapp2.RequestHandler):
+class AboutPage(BaseHandler):
     '''
         Renders about page template.
     '''
@@ -12,7 +11,4 @@ class AboutPage(webapp2.RequestHandler):
         self.post()
 
     def post(self):
-        path = os.path.join(os.getcwd(), 'templates', 'about.html')
-        self.response.headers['Content-Type'] = 'text/html'
-        self.response.write(template.render(path, {}))
-
+        self.render_to_response('about.html', **{})

@@ -1,15 +1,13 @@
-import os
-
-import webapp2
-from google.appengine.ext.webapp import template
-
+# coding: utf-8
 from pygments import highlight
 from pygments.lexers import get_lexer_by_name, guess_lexer
 from pygments.formatters import HtmlFormatter
 
+from basehandler import BaseHandler
 from model import Snippet
 
-class EmbedSnippet(webapp2.RequestHandler):
+
+class EmbedSnippet(BaseHandler):
     '''
         Get a javascript code for pasting snippet anywhere on the web.
 
@@ -42,17 +40,13 @@ class EmbedSnippet(webapp2.RequestHandler):
             '''
               <link rel="stylesheet" href="http://www.xsnippet.org/static/pygments/styles/colorful.css">
               <link rel="stylesheet" href="http://www.xsnippet.org/static/styles/embed.css">
-              %s
-            ''' % (snippet.content)
+              {0}
+            '''.format(snippet.content)
 
-            js = "document.write('%s');" % (r'\n'.join(html.splitlines()))
-            self.response.out.write(js)
+            js = "document.write('{0}');".format(r'\n'.join(html.splitlines()))
+            self.response.write(js)
 
         else:
-            template_values = {'error': 'Snippet with id %s not found' % snippetid}
-            path = os.path.join(os.getcwd(), 'templates', '404.html')
-
             self.error(404)
-            self.response.headers['Content-Type'] = 'text/html'
-            self.response.write(template.render(path, template_values))
-
+            template_values = {'error': 'Snippet with id {0} not found'.format(snippetid)}
+            self.render_to_response('404.html', **template_values)

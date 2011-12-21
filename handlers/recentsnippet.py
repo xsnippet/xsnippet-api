@@ -1,11 +1,9 @@
-import os
-
-import webapp2
-from google.appengine.ext.webapp import template
-
+# coding: utf-8
+from basehandler import BaseHandler
 from model import Snippet
 
-class RecentSnippet(webapp2.RequestHandler):
+
+class RecentSnippet(BaseHandler):
     '''
         Return the list of recently posted snippets.
 
@@ -33,8 +31,4 @@ class RecentSnippet(webapp2.RequestHandler):
         snippets = query.fetch(int(limit))
 
         template_values = {'snippets': snippets}
-        path = os.path.join(os.getcwd(), 'templates', 'list.html')
-
-        self.response.headers['Content-Type'] = 'text/html'
-        self.response.write(template.render(path, template_values))
-
+        self.render_to_response('list.html', **template_values)

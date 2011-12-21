@@ -1,11 +1,9 @@
-import os
-
-import webapp2
-from google.appengine.ext.webapp import template
-
+# coding: utf-8
+from basehandler import BaseHandler
 from model import Snippet
 
-class DownloadSnippet(webapp2.RequestHandler):
+
+class DownloadSnippet(BaseHandler):
     '''
         Download snippet content as a file
 
@@ -24,16 +22,12 @@ class DownloadSnippet(webapp2.RequestHandler):
         if snippet is not None:
             filename = snippetid
             extension = snippet.extensions[snippet.language] if snippet.language in snippet.extensions else '.txt'
-            attachment = 'attachment; filename="%s%s"' % (filename, extension)
+            attachment = 'attachment; filename="{0}{1}"'.format(filename, extension)
 
             self.response.headers['Content-Type'] = 'text/plain'
             self.response.headers['Content-Disposition'] = attachment
             self.response.write(snippet.content)
         else:
-            template_values = {'error': 'Snippet with id %s not found' % snippetid}
-            path = os.path.join(os.getcwd(), 'templates', '404.html')
-
             self.error(404)
-            self.response.headers['Content-Type'] = 'text/html'
-            self.response.write(template.render(path, template_values))
-
+            template_values = {'error': 'Snippet with id {0} not found'.format(snippetid)}
+            self.render_to_response('404.html', **template_values)

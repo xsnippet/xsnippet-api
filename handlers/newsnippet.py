@@ -1,12 +1,13 @@
+# coding: utf-8
 import os
 import re
 import urllib
 
-import webapp2
-
+from basehandler import BaseHandler
 from model import Snippet
 
-class NewSnippet(webapp2.RequestHandler):
+
+class NewSnippet(BaseHandler):
     '''
         Create a new snippet entry
 

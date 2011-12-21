@@ -1,12 +1,11 @@
-import os
+# coding: utf-8
 import re
 
-import webapp2
-from google.appengine.ext.webapp import template
-
+from basehandler import BaseHandler
 from model import Snippet
 
-class SearchSnippet(webapp2.RequestHandler):
+
+class SearchSnippet(BaseHandler):
     '''
         Return the list of snippets that meet the given requirements (author, language, etc)
 
@@ -34,17 +33,14 @@ class SearchSnippet(webapp2.RequestHandler):
     def post(self, limit=FETCH_LIMIT):
         querystr = self.request.get('search')
 
-        pattern = ur"(author|language|tags|title):([^,]+),?"
+        pattern = ur'(author|language|tags|title):([^,]+),?'
         conditions = re.findall(pattern, querystr)
 
         query = Snippet.all()
         for key, value in conditions:
-            query.filter("%s =" % key, value)
-        query.order("-date")
+            query.filter('{0} ='.format(key), value)
+        query.order('-date')
         snippets = query.fetch(int(limit))
 
         template_values = {'snippets': snippets}
-        path = os.path.join(os.getcwd(), 'templates', 'list.html')
-
-        self.response.headers['Content-Type'] = 'text/html'
-        self.response.write(template.render(path, template_values))
+        self.render_to_response('list.html', **template_values)
