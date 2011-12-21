@@ -22,7 +22,7 @@ class RawSnippet(webapp.RequestHandler):
         snippet = Snippet.get_by_id(int(snippetid))
 
         if snippet is not None:
-            self.response.headers['Content-Type'] = 'text/plain'
+            self.response.headers['Content-Type'] = 'text/plain; charset=utf-8'
             self.response.out.write(snippet.content)
         else:
             template_values = {'error': 'Snippet with id %s not found' % snippetid}
