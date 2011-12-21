@@ -6,27 +6,27 @@
   {% for snippet in snippets %}
   <header class="snippetinfo">
     <h2>
-      <a href="/{{ snippet.key.id }}" class="title">{{ snippet.title|escape }}</a>
-      [ <a href="/language/{{ snippet.language|escape}}">{{ snippet.language|escape }}</a> ]
+      <a href="/{{ snippet.key().id() }}" class="title">{{ snippet.title }}</a>
+      [ <a href="/language/{{ snippet.language}}">{{ snippet.language }}</a> ]
     </h2>
 
     {% if snippet.author %}
-    <span class="author">by <a href="/author/{{ snippet.author|escape }}">{{ snippet.author|escape }}</a></span>
+    <span class="author">by <a href="/author/{{ snippet.author }}">{{ snippet.author }}</a></span>
     {% endif %}
 
     {% if snippet.tags %}
     <span class="separator">/</span>
     <ul class="tags">
       {% for tag in snippet.tags %}
-      <li><a href="/tags/{{ tag|escape }}">{{ tag|escape }}</a>
+      <li><a href="/tags/{{ tag }}">{{ tag }}</a>
       {% endfor %}
     </ul>
     {% endif %}
 
     <ul class="actions">
-      <li><a href="/{{ snippet.key.id }}/raw">raw</a>
-      <li><a href="/{{ snippet.key.id }}/download">download</a>
-      <li><a href="/{{ snippet.key.id }}" class="title">show</a>
+      <li><a href="/{{ snippet.key().id() }}/raw">raw</a>
+      <li><a href="/{{ snippet.key().id() }}/download">download</a>
+      <li><a href="/{{ snippet.key().id() }}" class="title">show</a>
     </ul>
 
   </header>

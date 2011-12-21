@@ -1,12 +1,13 @@
+# coding: utf-8
 import os
 import re
 import urllib
 
-from google.appengine.ext import webapp
-
+from basehandler import BaseHandler
 from model import Snippet
 
-class NewSnippet(webapp.RequestHandler):
+
+class NewSnippet(BaseHandler):
     '''
         Create a new snippet entry
 

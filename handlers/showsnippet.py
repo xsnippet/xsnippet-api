@@ -1,22 +1,20 @@
-import os
-
-from google.appengine.ext import webapp
-from google.appengine.ext.webapp import template
-
+# coding: utf-8
 from pygments import highlight
 from pygments.lexers import get_lexer_by_name, guess_lexer
 from pygments.formatters import HtmlFormatter
 
+from basehandler import BaseHandler
 from model import Snippet
 
-class ShowSnippet(webapp.RequestHandler):
+
+class ShowSnippet(BaseHandler):
     '''
         Show the highlighted code of snippet and additional information
 
         Processes GET and POST requests.
 
         Snippet id is specified as url path (part between the host name and params), i.e.:
-            GET xsnippet.tk/1 will return page for snippet with id 1
+            GET xsnippet.org/1 will return page for snippet with id 1
     '''
 
     def get(self, snippetid):
@@ -38,12 +36,10 @@ class ShowSnippet(webapp.RequestHandler):
             snippet.content = highlight(snippet.content, lexer, formatter)
 
             template_values = {'snippet': snippet}
-            path = os.path.join(os.getcwd(), 'templates', 'show.html')
+            template = 'show.html'
         else:
-            template_values = {'error': 'Snippet with id %s not found' % snippetid}
-            path = os.path.join(os.getcwd(), 'templates', '404.html')
+            template_values = {'error': 'Snippet with id {0} not found'.format(snippetid)}
+            template = '404.html'
             self.error(404)
 
-        self.response.headers['Content-Type'] = 'text/html'
-        self.response.out.write(template.render(path, template_values))
-
+        self.render_to_response(template, **template_values)

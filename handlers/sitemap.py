@@ -1,11 +1,9 @@
-import os
-
-from google.appengine.ext import webapp
-from google.appengine.ext.webapp import template
-
+# coding: utf-8
+from basehandler import BaseHandler
 from model import Snippet
 
-class Sitemap(webapp.RequestHandler):
+
+class Sitemap(BaseHandler):
     '''
         Generate sitemap.xml.
 
@@ -17,10 +15,5 @@ class Sitemap(webapp.RequestHandler):
 
     def post(self):
         keys = Snippet.all(keys_only=True).order("-date")
-
         template_values = {'keys': keys}
-        path = os.path.join(os.getcwd(), 'templates', 'sitemap.xml')
-
-        self.response.headers['Content-Type'] = 'text/xml'
-        self.response.out.write(template.render(path, template_values))
-
+        self.render_to_response('sitemap.xml', **template_values)

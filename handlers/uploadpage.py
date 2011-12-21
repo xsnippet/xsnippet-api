@@ -1,9 +1,8 @@
-import os
+# coding: utf-8
+from basehandler import BaseHandler
 
-from google.appengine.ext import webapp
-from google.appengine.ext.webapp import template
 
-class UploadPage(webapp.RequestHandler):
+class UploadPage(BaseHandler):
     '''
         Show the upload page where user can upload a file snippet
 
@@ -11,11 +10,7 @@ class UploadPage(webapp.RequestHandler):
     '''
 
     def get(self):
-        path = os.path.join(os.getcwd(), 'templates', 'upload.html')
-
-        self.response.headers['Content-Type'] = 'text/html'
-        self.response.out.write(template.render(path, {}))
+        self.post()
 
     def post(self):
-        self.get()
-
+        self.render_to_response('upload.html', **{})

@@ -1,6 +1,6 @@
 {% extends "base.html" %}
 
-{% block title %}{{ snippet.title|escape }} | xsnippet{% endblock %}
+{% block title %}{{ snippet.title }} | xsnippet{% endblock %}
 
 {% block head %}
 <link rel="stylesheet" href="/static/pygments/styles/colorful.css">
@@ -9,26 +9,26 @@
 {% block content %}
 <header class="snippetinfo">
   <h2>
-    {{ snippet.title|escape }}
-    [ <a href="/language/{{ snippet.language|escape}}">{{ snippet.language|escape }}</a> ]
+    {{ snippet.title }}
+    [ <a href="/language/{{ snippet.language }}">{{ snippet.language }}</a> ]
   </h2>
 
   {% if snippet.author %}
-  <span class="author">by <a href="/author/{{ snippet.author|escape }}">{{ snippet.author|escape }}</a></span>
+  <span class="author">by <a href="/author/{{ snippet.author }}">{{ snippet.author }}</a></span>
   {% endif %}
 
   {% if snippet.tags %}
   <span class="separator">/</span>
   <ul class="tags">
     {% for tag in snippet.tags %}
-    <li><a href="/tags/{{ tag|escape }}">{{ tag|escape }}</a>
+    <li><a href="/tags/{{ tag }}">{{ tag }}</a>
     {% endfor %}
   </ul>
   {% endif %}
 
   <ul class="actions">
-    <li><a href="/{{ snippet.key.id }}/raw">raw</a>
-    <li><a href="/{{ snippet.key.id }}/download">download</a>
+    <li><a href="/{{ snippet.key().id() }}/raw">raw</a>
+    <li><a href="/{{ snippet.key().id() }}/download">download</a>
     <li><a href="#" class="embed">embed</a>
   </ul>
 
@@ -36,10 +36,10 @@
 
 <div id="embed" style="display: none;">
   In order to embed this content into your website or blog, simply copy and paste code provided below:
-  <pre><code class="js">&lt;script src="http://www.xsnippet.org/{{ snippet.key.id }}/embed"&gt;&lt;/script&gt;</code></pre>
+  <pre><code class="js">&lt;script src="http://www.xsnippet.org/{{ snippet.key().id() }}/embed"&gt;&lt;/script&gt;</code></pre>
 </div>
 
-{{ snippet.content }}
+{{ snippet.content|safe }}
 
 <script>
     $("a.embed").click(function() {

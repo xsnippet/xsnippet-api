@@ -1,12 +1,11 @@
-import os
+# coding: utf-8
 import urllib
 
-from google.appengine.ext import webapp
-from google.appengine.ext.webapp import template
-
+from basehandler import BaseHandler
 from model import Snippet
 
-class ListSnippet(webapp.RequestHandler):
+
+class ListSnippet(BaseHandler):
     '''
         Return the list of snippets that meet the given requirements (author, language, etc)
 
@@ -32,13 +31,9 @@ class ListSnippet(webapp.RequestHandler):
         value = urllib.unquote(value).decode('utf-8')
 
         query = Snippet.all()
-        query.filter("%s =" % key, value)
+        query.filter("{0} =".format(key), value)
         query.order("-date")
         snippets = query.fetch(int(limit))
 
         template_values = {'snippets': snippets}
-        path = os.path.join(os.getcwd(), 'templates', 'list.html')
-
-        self.response.headers['Content-Type'] = 'text/html'
-        self.response.out.write(template.render(path, template_values))
-
+        self.render_to_response('list.html', **template_values)

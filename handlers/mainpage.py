@@ -1,9 +1,8 @@
-import os
+# coding: utf-8
+from basehandler import BaseHandler
 
-from google.appengine.ext import webapp
-from google.appengine.ext.webapp import template
 
-class MainPage(webapp.RequestHandler):
+class MainPage(BaseHandler):
     '''
         Show the main page where user can enter a new snippet
 
@@ -11,11 +10,7 @@ class MainPage(webapp.RequestHandler):
     '''
 
     def get(self):
-        path = os.path.join(os.getcwd(), 'templates', 'new.html')
-
-        self.response.headers['Content-Type'] = 'text/html'
-        self.response.out.write(template.render(path, {}))
+        self.post()
 
     def post(self):
-        self.get()
-
+        self.render_to_response('new.html', **{})

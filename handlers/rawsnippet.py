@@ -1,18 +1,16 @@
-import os
-
-from google.appengine.ext import webapp
-from google.appengine.ext.webapp import template
-
+# coding: utf-8
+from basehandler import BaseHandler
 from model import Snippet
 
-class RawSnippet(webapp.RequestHandler):
+
+class RawSnippet(BaseHandler):
     '''
         Get a raw text representation of snippet content
 
         Processes GET and POST requests.
 
         Snippet id is specified as url path (part between the host name and params), i.e.:
-            GET xsnippet.tk/1/raw will return text content of snippet with id 1
+            GET xsnippet.org/1/raw will return text content of snippet with id 1
     '''
 
     def get(self, snippetid):
@@ -22,13 +20,9 @@ class RawSnippet(webapp.RequestHandler):
         snippet = Snippet.get_by_id(int(snippetid))
 
         if snippet is not None:
-            self.response.headers['Content-Type'] = 'text/plain'
-            self.response.out.write(snippet.content)
+            self.response.headers['Content-Type'] = 'text/plain; charset=utf-8'
+            self.response.write(snippet.content)
         else:
-            template_values = {'error': 'Snippet with id %s not found' % snippetid}
-            path = os.path.join(os.getcwd(), 'templates', '404.html')
-
             self.error(404)
-            self.response.headers['Content-Type'] = 'text/html'
-            self.response.out.write(template.render(path, template_values))
-
+            template_values = {'error': 'Snippet with id {0} not found'.format(snippetid)}
+            self.render_to_response('404.html', **template_values)
