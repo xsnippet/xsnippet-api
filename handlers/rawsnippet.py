@@ -20,7 +20,7 @@ class RawSnippet(BaseHandler):
         snippet = Snippet.get_by_id(int(snippetid))
 
         if snippet is not None:
-            self.response.headers['Content-Type'] = 'text/plain'
+            self.response.headers['Content-Type'] = 'text/plain; charset=utf-8'
             self.response.write(snippet.content)
         else:
             self.error(404)
