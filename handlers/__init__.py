@@ -6,6 +6,7 @@ from showsnippet import ShowSnippet
 from rawsnippet import RawSnippet
 from downloadsnippet import DownloadSnippet
 from embedsnippet import EmbedSnippet
+from pngsnippet import PngSnippet
 from listsnippet import ListSnippet
 from searchsnippet import SearchSnippet
 from recentsnippet import RecentSnippet
@@ -19,6 +20,7 @@ __all__ = ('MainPage',
            'RawSnippet',
            'DownloadSnippet',
            'EmbedSnippet',
+           'PngSnippet',
            'ListSnippet',
            'SearchSnippet',
            'RecentSnippet',
