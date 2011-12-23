@@ -49,6 +49,15 @@ article, aside, dialog, figure, footer, header, hgroup, menu, nav, section {
 }
 
 /*
+ * HOLIDAY SECTION. REMOVE WHEN HOLIDAY EXPIRED.
+ */
+.holiday {
+    position: relative;
+    top: 3px;
+    margin-right: -20px;
+}
+
+/*
  * SHARED STYLE
  */
 
