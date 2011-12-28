@@ -6,9 +6,6 @@ threadsafe: true
 
 
 libraries:
-- name: PIL
-  version: latest
-
 - name: jinja2
   version: "2.6"
 

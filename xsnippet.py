@@ -22,6 +22,6 @@ application = webapp2.WSGIApplication([
     (r'/(\w+)/([a-zA-Z0-9_%-]+)/?', 'handlers.list_snippet'),
     (r'/(\w+)/([a-zA-Z0-9_%-]+)/(\d+)?', 'handlers.list_snippet'),
     (r'/sitemap.xml', 'handlers.sitemap')],
-    debug=True)
+    debug=False)
 
 application.error_handlers[404] = 'handlers.handler_404'
