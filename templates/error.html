@@ -1,0 +1,30 @@
+{% extends "base.html" %}
+
+{% block title %}Error {{ error_code }} | xsnippet{% endblock %}
+
+{% block head %}
+<script src="/static/js/terminal.js"></script>
+{% endblock %}
+
+{% block content %}
+
+<code id="terminal"><span id="cursor"><img src="/static/images/cursor.gif" alt="">&nbsp;</span></code>
+<script>
+  var msg = [
+    {cmd: "{{ error_code }}^}", response: "{{ error_code }}: command not found", br: true},
+    {cmd: "^locate {{ error_code }}}^^", response: "", br: false},
+    {cmd: "^find {{ error_code }}}^^", response: "find: {{ error_code }}: No such file or directory", br: true},
+    {cmd: "^where are you???}", response: "where: command not found", br: true},
+    {cmd: "^^}}HTTP {{ error_code }}.^} {{ error }}", response: null, br: false}
+  ];
+  $(document).ready(function() { terminal.init($("#terminal")); });
+</script>
+<noscript>
+<code id="terminal">
+  <h2>Error {{ error_code }}</h1>
+  <p>{{ error }}</p>
+</code>
+</noscript>
+
+<div class="clear"></div>
+{% endblock %}

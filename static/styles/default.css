@@ -301,6 +301,7 @@ article code#terminal {
     margin-left: 10px;
     padding: 5px;
     border-left: 2px solid #00c9f4;
+    height: 250px;
 }
 
 article table.highlighttable {
@@ -308,7 +309,7 @@ article table.highlighttable {
     background: #ffffff;
     min-height: 400px;
     overflow: auto;
-    display: block; 
+    display: block;
     border: 1px solid #cccccc;
     margin: 5px auto 0px;
     width: 812px;
