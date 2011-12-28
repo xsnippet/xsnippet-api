@@ -192,7 +192,7 @@ article a:hover {
 article header.snippetinfo {
     background: #f6f6f6;
     font-size: 12px;
-    display: block; 
+    display: block;
     padding: 5px;
     border: 1px solid #cccccc;
     margin: 0px auto 0px;
@@ -322,6 +322,8 @@ article td.linenos {
     border-right: 1px solid #cccccc;
     padding: 5px 7px 4px;
     display: block;
+    min-width: 15px;
+    text-align: right;
     min-height: 400px;
 }
 
