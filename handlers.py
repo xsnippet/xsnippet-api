@@ -351,3 +351,8 @@ def sitemap(request):
 def handler_404(request, response, exception):
     response.set_status(404)
     return render_to_response('error.html', error_code=404, error=exception.detail)
+
+
+def handler_500(request, response, exception):
+    response.set_status(500)
+    return render_to_response('error.html', error_code=500, error="Internal server error")
