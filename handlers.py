@@ -8,7 +8,7 @@ from webapp2_extras import jinja2
 
 from pygments import highlight
 from pygments.lexers import get_lexer_by_name, guess_lexer
-from pygments.formatters import HtmlFormatter
+from pygments.formatters import HtmlFormatter, ImageFormatter
 
 from model import Snippet
 
@@ -171,6 +171,34 @@ def raw_snippet(request, snippetid):
             {'Content-Type': 'text/plain; charset=utf-8'},
             snippet.content
         )
+    else:
+        return webapp2.abort(404, 'Snippet with id {0} not found'.format(snippetid))
+
+
+def png_snippet(request, snippetid):
+    '''
+        Show image (png) with highlighted code of snippet.
+
+        Processes GET and POST requests.
+
+        Snippet id is specified as url path (part between the host name and params), i.e.:
+            GET xsnippet.org/1/png will return image for snippet with id 1
+    '''
+    snippet = Snippet.get_by_id(int(snippetid))
+
+    if snippet is not None:
+        # pygments highlighting
+        languagehl = Snippet.languages[snippet.language]
+
+        if languagehl:
+            lexer = get_lexer_by_name(languagehl, stripall=True)
+        else:
+            lexer = guess_lexer(snippet.content)
+
+        formatter = ImageFormatter(font_name='Ubuntu Mono')
+        png = highlight(snippet.content, lexer, formatter)
+
+        return create_response({'Content-Type': 'image/png'}, png)
     else:
         return webapp2.abort(404, 'Snippet with id {0} not found'.format(snippetid))
 

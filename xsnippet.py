@@ -14,6 +14,7 @@ application = webapp2.WSGIApplication([
     (r'/upload', 'handlers.upload'),
     (r'/([0-9]+)', 'handlers.show_snippet'),
     (r'/([0-9]+)/raw', 'handlers.raw_snippet'),
+    (r'/([0-9]+)/png', 'handlers.png_snippet'),
     (r'/([0-9]+)/download', 'handlers.download_snippet'),
     (r'/([0-9]+)/embed', 'handlers.embed_snippet'),
     (r'/recent/?', 'handlers.recent_snippet'),
