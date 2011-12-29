@@ -75,7 +75,7 @@ class FontManager(object):
 
     def _get_gae_font_path(self, name, style):
         import os
-        FONT_URL = os.path.join(os.getcwd(), 'static', 'fonts', '{0}')
+        FONT_URL = os.path.join(os.getcwd(), 'runtime_data', 'fonts', '{0}')
 
         NORMAL = {
             'Ubuntu Mono': 'UbuntuMono-R.ttf',

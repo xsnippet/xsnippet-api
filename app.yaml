@@ -13,11 +13,6 @@ libraries:
   version: "2.6"
 
 handlers:
-- url: /static/fonts/(.*)
-  mime_type: application/x-font-ttf
-  static_files: static/fonts/\1
-  upload: static/fonts/(.*)
-
 - url: /static
   static_dir: static
 
