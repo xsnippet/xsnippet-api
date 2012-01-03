@@ -111,11 +111,12 @@ def new_snippet(request):
 
         # get the name of uploaded file from request body
         body = urllib.unquote(request.body)
-        info = re.match(r"file=FieldStorage\('file',\+'(.*)'\)", body)
-        filename, extension = os.path.splitext(info.groups(0)[0])
+        info = re.search(r"file=FieldStorage\('file',\+'(.*)'\)", body)
+        basename = os.path.basename(info.groups(0)[0])
+        filename, extension = os.path.splitext(basename)
 
         if snippet.title == 'Untitled':
-            snippet.title = filename
+            snippet.title = basename
         snippet.language = Snippet.extensions_reverse.get(extension, 'Text')
     else:
         snippet.content = request.get('content')
@@ -352,7 +353,3 @@ def handler_404(request, response, exception):
     response.set_status(404)
     return render_to_response('error.html', error_code=404, error=exception.detail)
 
-
-def handler_500(request, response, exception):
-    response.set_status(500)
-    return render_to_response('error.html', error_code=500, error="Internal server error")
