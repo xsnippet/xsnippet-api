@@ -408,6 +408,11 @@ article input#file {
     background: #ffffff;
 }
 
+article input#email {
+    position: absolute;
+    left: -2000px;
+}
+
 article div.about {
     text-align: justify;
     width: 700px;

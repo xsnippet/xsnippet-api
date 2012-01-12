@@ -87,6 +87,10 @@ def new_snippet(request):
     '''
     snippet = Snippet()
 
+    # anti-spam protection
+    if request.get('email'):
+        return webapp2.redirect('/')
+
     snippet.author = request.get('author')
     if not snippet.author:
         snippet.author = 'Anonymous'
