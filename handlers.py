@@ -115,7 +115,7 @@ def new_snippet(request):
 
         # get the name of uploaded file from request body
         body = urllib.unquote(request.body)
-        info = re.search(r"file=FieldStorage\('file',\+'(.*)'\)", body)
+        info = re.search('filename="(.+)"', body)
         basename = os.path.basename(info.groups(0)[0])
         filename, extension = os.path.splitext(basename)
 
