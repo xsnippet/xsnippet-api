@@ -76,7 +76,7 @@ article, aside, dialog, figure, footer, header, hgroup, menu, nav, section {
  * COMMON SECTION
  */
 
-header, article, footer {
+header#header, article, footer {
     width: 940px;
     margin: 0 auto;
     padding: 5px 15px;
@@ -86,21 +86,21 @@ header, article, footer {
  * HEADER SECTION
  */
 
-header {
+header#header {
     height: 30px;
 }
 
-header a {
+header#header a {
     text-decoration: none;
     color: #dfdfdf;
 }
 
-header a:hover {
+header#header a:hover {
     color: #efefef;
     text-shadow: #ddd 0px 0px 2px;
 }
 
-header img {
+header#header img {
     float: left;
     width: 30px;
     height: 30px;
@@ -110,7 +110,7 @@ header img {
 
 /* #00c9f4 -- cool for shadows. note for future. */
 
-header h1 {
+header#header h1 {
     float: left;
     margin-top: 1px;
     letter-spacing: 2px;
@@ -118,35 +118,35 @@ header h1 {
     text-shadow: 0px 1px 2px #111;
 }
 
-header #searchform {
+header#header #searchform {
     float: left;
     margin-top: 3px;
     margin-left: 50px;
 }
 
-header #searchform #search {
+header#header #searchform #search {
     background: #1a1a1a;
     padding: 2px 3px;
     border: 1px solid #202020;
     color: #888;
-    width: 440px;
+    width: 400px;
     font-size: 13px;
     letter-spacing: 0.1em;
     border-radius: 2px;
 }
 
-header #searchform #search:hover {
+header#header #searchform #search:hover {
     border: 1px solid #333;
 }
 
-header ul.navigation {
+header#header ul.navigation {
     float: right;
     list-style: none;
     display: block;
     padding-top: 3px;
 }
 
-header ul.navigation a {
+header#header ul.navigation a {
     display: block;
     height: 24px;
     line-height: 24px;
@@ -154,20 +154,13 @@ header ul.navigation a {
     font-size: 13px;
 }
 
-header ul.navigation li {
+header#header ul.navigation li {
     float: left;
     border-right: 1px solid #444;
 }
 
-header ul.navigation li:first-child {
+header#header ul.navigation li:first-child {
     border-left: 1px solid #444;
-}
-
-
-header ul.navigation li.gplusone {
-    padding-left: 10px;
-    padding-top: 2px;
-    width: 70px;
 }
 
 
@@ -181,15 +174,17 @@ article {
 
 article a {
     color: #800000;
+    text-decoration: none;
 }
 
 article a:hover {
     color: #B00000;
+    text-decoration: underline;
 }
 
 /* showsnippet subsection */
 
-article header.snippetinfo {
+article > header.snippetinfo {
     background: #f6f6f6;
     font-size: 12px;
     display: block;
@@ -200,7 +195,7 @@ article header.snippetinfo {
     height: 35px;
 }
 
-article header.snippetinfo h2 {
+article > header.snippetinfo h2 {
     font-size: 16px;
     font-weight: normal;
     color: #444;
@@ -210,57 +205,57 @@ article header.snippetinfo h2 {
     font-family: georgia, serif;
 }
 
-article header.snippetinfo h2 a.title {
+article > header.snippetinfo h2 a.title {
     color: #444;
 }
 
-article header.snippetinfo h2 a {
+article > header.snippetinfo h2 a {
     color: #264;
 }
 
-article header.snippetinfo .author {
+article > header.snippetinfo .author {
     margin-right: 10px;
     font-size: 11px;
     float: left;
 }
 
-article header.snippetinfo .separator {
+article > header.snippetinfo .separator {
     float: left;
 }
 
-article header.snippetinfo .tags {
+article > header.snippetinfo .tags {
     list-style: none;
     float: left;
     font-size: 11px;
 }
 
-article header.snippetinfo .tags li {
+article > header.snippetinfo .tags li {
     float: left;
     margin-left: 10px;
 }
 
-article header.snippetinfo .tags li a {
+article > header.snippetinfo .tags li a {
     color: #000080;
 }
 
-article header.snippetinfo .tags li a:hover {
+article > header.snippetinfo .tags li a:hover {
     color: #0000B0;
 }
 
-article header.snippetinfo ul.actions {
+article > header.snippetinfo ul.actions {
     list-style: none;
     float: right;
     margin-top: -9px;
 }
 
-article header.snippetinfo ul.actions li {
+article > header.snippetinfo ul.actions li {
     float: left;
     padding: 0px 10px;
     border-left: none;
     border-right: 1px solid #ccc;
 }
 
-article header.snippetinfo ul.actions li:last-child {
+article > header.snippetinfo ul.actions li:last-child {
     border-right: none;
 }
 
@@ -373,7 +368,7 @@ article input#submit {
     color: #eeeeee;
     width: 100px;
 
-    background: #2e76cf; 
+    background: #2e76cf;
     background-image: -moz-linear-gradient(100% 100% 90deg, #2e76cf, #52a8e8) !important; 
     background-image: -webkit-gradient(linear, 0% 0%, 0% 100%, from(#52a8e8), to(#2e76cf)) !important; 
 }
@@ -413,13 +408,13 @@ article input#email {
     left: -2000px;
 }
 
-article div.about {
+article div.page {
     text-align: justify;
     width: 700px;
     margin: 0px auto;
 }
 
-article div.about h4 {
+article div.page h4 {
     font-size: 14px;
     margin-top: 30px;
     display: block;
@@ -438,19 +433,70 @@ article p {
     margin: 10px 0px;
 }
 
-article p a, article ul.authors a {
-    text-decoration: none;
-}
-
-article p a:hover, article ul.authors a:hover {
-    border-bottom: 1px dashed #800;
-}
-
-article ul.authors {
+article .page ul {
     color: #333;
     font-size: 14px;
     list-style: square;
-    margin-left: 25px;
+    margin-left: 35px;
+}
+
+article .page ol {
+    color: #333;
+    font-size: 14px;
+    margin-left: 35px;
+}
+
+article .page ol li {
+    padding: 3px;
+}
+
+article .page .app {
+    margin-top: 20px;
+    margin-left: 3px;
+    padding-left: 20px;
+    border-left: 4px solid #8ac;
+}
+
+article .page .app blockquote {
+    font-size: 0.7em;
+    color: #008;
+    border-left: 1px dashed #008;
+    padding-left: 10px;
+    margin: 10px 1px;
+}
+
+article .page .app code.block {
+    padding: 10px 0px;
+    display: block;
+    margin-left: 15px;
+}
+
+article .page .app header {
+}
+
+article .page .app footer {
+    width: 700px;
+    margin-top: 15px;
+    font-size: 0.7em;
+    border-top: 1px dotted #ccc;
+}
+
+article .page .app footer .sourcelink,
+article .page .app footer .downloadlink {
+    float: right;
+    margin-left: 15px;
+}
+
+article .page .left {
+    float: left;
+}
+
+article .page .app img {
+    height: 300px;
+}
+
+article .page .app-list li {
+    padding: 3px;
 }
 
 article div.logo {
@@ -469,19 +515,19 @@ article div.error {
  * FOOTER SECTION
  */
 
-footer {
+body > footer {
     text-align: center;
     margin-top: 30px;
     border-top: 1px solid #cccccc;
     font: 11px/18px Verdana;
 }
 
-footer a {
+body > footer a {
     color: #800000;
     text-decoration: none;
 }
 
-footer a:hover {
+body > footer a:hover {
     color: #B00000;
     text-decoration: underline;
 }

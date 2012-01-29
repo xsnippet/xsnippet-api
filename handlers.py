@@ -64,6 +64,11 @@ def upload(request):
     return render_to_response('upload.html')
 
 
+def tools(request):
+    '''Render tools page template.'''
+    return render_to_response('tools.html')
+
+
 def new_snippet(request):
     '''
         Create a new snippet entry

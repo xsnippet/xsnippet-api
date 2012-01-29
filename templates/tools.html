@@ -1,0 +1,111 @@
+{% extends "base.html" %}
+
+{% block title %}Tools | xsnippet{% endblock %}
+
+{% block content %}
+<div class="page">
+  <h2>Tools</h2>
+
+  <p>
+    This page contain different tools, add-ons, extensions and applications created for
+    <a href="http://www.xsnippet.org">xsnippet.org</a>
+  </p>
+
+  <ul class="app-list">
+      <li><a href="#explorer-xsnippet">explorer-xsnippet</a>
+      <li><a href="#nautilus-xsnippet">nautilus-xsnippet</a>
+      <li><a href="#vim-xsnippet">vim-xsnippet</a>
+  </ul>
+
+  <section id="explorer-xsnippet" class="app">
+    <header>
+      <h4>explorer-xsnippet</h4>
+    </header>
+
+    <p>
+    <!-- <img src="/static/tools/explorer-xsnippet.png" class="left"> -->
+      This is an extension for Windows, which allows to send files to xsnippet service
+      via context menu (see `Send to` item). A link to the snippet is copied to the clipboard.
+
+    <p>
+      For installation download and run setup file.
+
+    <footer>
+      Author: <a href="http://www.kalnitsky.org/">Igor Kalnitsky</a>
+
+      <a class="downloadlink" href="http://github.com/downloads/bloodeclipse/explorer-xsnippet/explorer-xsnippet-0.1.exe">download</a>
+      <a class="sourcelink" href="http://github.com/bloodeclipse/explorer-xsnippet">source</a>
+    </footer>
+  </section>
+
+
+  <section id="nautilus-xsnippet" class="app">
+    <header>
+      <h4>nautilus-xsnippet</h4>
+    </header>
+
+    <p>
+      This is an extension for Nautilus file manager, which allows to send
+      files to xsnippet service via context menu. A link to the snippet is copied
+      to the clipboard and displays by notification.
+    </p>
+
+    <p>
+    </p>
+
+    <p>There are two installation ways:</p>
+    <ol>
+      <li>Using 'pip' utility:<br>
+            <code class="block">$ sudo pip install nautilus-xsnippet</code>
+
+      <li>Download and uncompress tarball. For installation use a setup.py script:<br>
+            <code class="block">$ sudo ./setup.py install</code><br>
+    </ol>
+
+    <p>Restart Nautilus for applying extension:<br>
+            <code class="block">$ nautilus -q</code></p>
+
+    <blockquote>Note: Version 0.2 and above works only with Nautilus 3.</blockquote>
+
+    <footer>
+      Author: <a href="http://www.kalnitsky.org/">Igor Kalnitsky</a>
+
+      <a class="downloadlink" href="http://pypi.python.org/packages/source/n/nautilus-xsnippet/nautilus-xsnippet-0.2.0.tar.gz">download</a>
+      <a class="sourcelink" href="http://github.com/bloodeclipse/nautilus-xsnippet">source</a>
+    </footer>
+  </section>
+
+
+  <section id="vim-xsnippet" class="app">
+    <header>
+      <h4>vim-xsnippet</h4>
+    </header>
+
+    <p>
+      vim-xsnippet is a simple Vim plugin which enables one to post
+      code snippets to the xsnippet.org pastebin service directly 
+      from Vim.
+    </p>
+
+    <p>Requirements:</p>
+    <ul>
+      <li>Python 2.x
+      <li>Vim 7.x built with '+python' option
+    </ul>
+
+    <p>Installation:</p>
+    <ul>
+      <li>Copy all files to your <code>$VIMRUNTIME</code> dir (usually ~/.vim).
+    </ul>
+    <blockquote>Note: if you use pathogen, copy all files to some dir in your bundles path.</blockquote>
+
+    <footer>
+      Author: <a href="http://www.amd4ever.org.ua/">Roman Podolyaka</a>
+
+      <a class="downloadlink" href="https://github.com/bloodeclipse/vim-xsnippet/tarball/master">download</a>
+      <a class="sourcelink" href="https://github.com/bloodeclipse/vim-xsnippet">source</a>
+    </footer>
+  </section>
+
+</div>
+{% endblock %}
