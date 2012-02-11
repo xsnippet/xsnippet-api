@@ -8,4 +8,8 @@ Disallow: */embed
 Disallow: */download
 Allow: /
 
-Sitemap: http://www.xsnippet.tk/sitemap.xml
+User-agent: Yandex
+Disallow:
+Host: www.xsnippet.org
+
+Sitemap: http://www.xsnippet.org/sitemap.xml
