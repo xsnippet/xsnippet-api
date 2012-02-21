@@ -32,4 +32,9 @@
 
   </header>
   {% endfor %}
+
+  {% for page in pages %}
+      <a href="{{ url }}{{ page }}">{{ page }}</a>
+  {% endfor %}
+
 {% endblock %}

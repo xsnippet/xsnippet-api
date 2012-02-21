@@ -21,8 +21,9 @@ application = webapp2.WSGIApplication([
     (r'/recent/?', 'handlers.recent_snippet'),
     (r'/search', 'handlers.search_snippet'),
     (r'/recent/?(\d+)?', 'handlers.recent_snippet'),
-    (r'/(\w+)/(.+)/?', 'handlers.list_snippet'),
-    (r'/(\w+)/(.+)/(\d+)?', 'handlers.list_snippet'),
+    (r'/(\w+)/([^/]+)/?', 'handlers.list_snippet'),
+    (r'/(\w+)/([^/]+)/(\d+)?', 'handlers.list_snippet'),
+    (r'/(\w+)/([^/]+)/(\d+)/(\d+)?', 'handlers.list_snippet'),
     (r'/sitemap.xml', 'handlers.sitemap')],
     debug=False)
 

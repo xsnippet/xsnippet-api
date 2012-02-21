@@ -10,13 +10,16 @@ from pygments import highlight
 from pygments.lexers import get_lexer_by_name, guess_lexer
 from pygments.formatters import HtmlFormatter, ImageFormatter
 
+from pagination import Paginator
+
 from model import Snippet
 
 #
 # Settings
 #
 
-FETCH_LIMIT = 20
+FETCH_LIMIT = 100
+FETCH_PER_PAGE = 10
 
 
 #
@@ -329,7 +332,7 @@ def recent_snippet(request, limit=FETCH_LIMIT):
     return render_to_response('list.html', snippets=snippets)
 
 
-def list_snippet(request, key, value, limit=FETCH_LIMIT):
+def list_snippet(request, key, value, page=1, limit=FETCH_LIMIT):
 
     limit = int(limit)
     if limit > FETCH_LIMIT:
@@ -341,7 +344,16 @@ def list_snippet(request, key, value, limit=FETCH_LIMIT):
     query.filter("{0} =".format(key), value)
     query.order("-date")
     snippets = query.fetch(int(limit))
-    return render_to_response('list.html', snippets=snippets)
+
+    try:
+        p = Paginator(snippets, FETCH_PER_PAGE)
+        elems, pages = p[int(page)]
+    except (ValueError, AssertionError):
+        return webapp2.abort(404, "Invalid page number: {0}")
+
+    return render_to_response('list.html', snippets=elems,
+                                           pages=pages,
+                                           url=u"/{0}/{1}/".format(key, value))
 
 
 def sitemap(request):
