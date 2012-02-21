@@ -133,10 +133,24 @@ header#header #searchform #search {
     font-size: 13px;
     letter-spacing: 0.1em;
     border-radius: 2px;
+    display: block;
+    float: left;
+    height: 18px;
 }
 
 header#header #searchform #search:hover {
     border: 1px solid #333;
+}
+
+header#header #searchform #search_help {
+    float: left;
+    display: block;
+    cursor: pointer;
+    width: 20px;
+    height: 20px;
+    margin-left: -22px;
+    margin-top: 3px;
+    opacity: 0.6;
 }
 
 header#header ul.navigation {
