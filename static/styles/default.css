@@ -169,7 +169,7 @@ header#header ul.navigation li:first-child {
  */
 
 article {
-    padding-top: 30px;
+    padding-top: 20px;
 }
 
 article a {
@@ -326,6 +326,17 @@ article td.code {
     width: 100%;
     padding: 4px;
     vertical-align: top;
+}
+
+article > .pagination {
+    margin: 20px auto 0px;
+    text-align: center;
+}
+
+article > .pagination a {
+    padding: 3px 5px;
+    border: 1px solid #ccc;
+    font-size: 0.8em;
 }
 
 /* form subsection */
@@ -519,7 +530,7 @@ article div.error {
 
 body > footer {
     text-align: center;
-    margin-top: 30px;
+    margin-top: 20px;
     border-top: 1px solid #cccccc;
     font: 11px/18px Verdana;
 }
