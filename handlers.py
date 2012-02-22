@@ -313,12 +313,6 @@ def recent_snippet(request, page=1, limit=FETCH_LIMIT):
     '''
         Return the list of recently posted snippets.
 
-        The number of snippets to show is specified as url path, i.e. :
-            GET xsnippet.org/recent/15
-        will return a list of 15 posted last snippets. But the number of
-        snippets can't exceed the FETCH_LIMIT (currently 20, but it is
-        a subject to change)
-
         Processes GET and POST requests.
     '''
     limit = int(limit)
