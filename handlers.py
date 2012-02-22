@@ -361,7 +361,11 @@ def list_snippet(request, key, value, page=1, limit=FETCH_LIMIT):
         p = Paginator(snippets, FETCH_PER_PAGE)
         elems, pages = p[int(page)]
     except (ValueError, AssertionError):
-        return webapp2.abort(404, "Invalid page number: {0}".format(page))
+        if snippets:
+            return webapp2.abort(404, "Invalid page number: {0}".format(page))
+        else:
+            elems = []
+            pages = []
 
     return render_to_response('list.html', snippets=elems,
                                            pages=pages,
