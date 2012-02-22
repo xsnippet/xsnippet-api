@@ -146,10 +146,10 @@ header#header #searchform #search_help {
     float: left;
     display: block;
     cursor: pointer;
-    width: 20px;
-    height: 20px;
-    margin-left: -22px;
-    margin-top: 3px;
+    width: 16px;
+    height: 16px;
+    margin-left: -20px;
+    margin-top: 5px;
     opacity: 0.6;
 }
 
