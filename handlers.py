@@ -274,7 +274,7 @@ def embed_snippet(request, snippetid):
         return webapp2.abort(404, 'Snippet with id {0} not found'.format(snippetid))
 
 
-def search_snippet(request, limit=FETCH_LIMIT):
+def search_snippet(request, querystr='', page=1, limit=FETCH_LIMIT):
     '''
         Return the list of snippets that meet the given requirements (author, language, etc)
 
@@ -297,7 +297,11 @@ def search_snippet(request, limit=FETCH_LIMIT):
     if limit > FETCH_LIMIT:
         limit = FETCH_LIMIT
 
-    querystr = request.get('search')
+    if request.get('search'):
+        querystr = urllib.unquote(request.get('search'))
+    else:
+        querystr = urllib.unquote(querystr).decode('utf-8')
+
     pattern = ur'(author|language|tags|title):([^,]+),?'
     conditions = re.findall(pattern, querystr)
 
@@ -306,7 +310,20 @@ def search_snippet(request, limit=FETCH_LIMIT):
         query.filter('{0} ='.format(key), value)
     query.order('-date')
     snippets = query.fetch(limit)
-    return render_to_response('list.html', snippets=snippets)
+
+    try:
+        p = Paginator(snippets, FETCH_PER_PAGE)
+        elems, pages = p[int(page)]
+    except (ValueError, AssertionError):
+        if snippets:
+            return webapp2.abort(404, "Invalid page number: {0}".format(page))
+        else:
+            elems = []
+            pages = []
+
+    return render_to_response('list.html', snippets=elems,
+                                           pages=pages,
+                                           url=u"/search/{0}/".format(querystr))
 
 
 def recent_snippet(request, page=1, limit=FETCH_LIMIT):
