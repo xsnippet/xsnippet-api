@@ -309,7 +309,7 @@ def search_snippet(request, limit=FETCH_LIMIT):
     return render_to_response('list.html', snippets=snippets)
 
 
-def recent_snippet(request, limit=FETCH_LIMIT):
+def recent_snippet(request, page=1, limit=FETCH_LIMIT):
     '''
         Return the list of recently posted snippets.
 
@@ -329,7 +329,19 @@ def recent_snippet(request, limit=FETCH_LIMIT):
     query.order("-date")
     snippets = query.fetch(limit)
 
-    return render_to_response('list.html', snippets=snippets)
+    try:
+        p = Paginator(snippets, FETCH_PER_PAGE)
+        elems, pages = p[int(page)]
+    except (ValueError, AssertionError):
+        if snippets:
+            return webapp2.abort(404, "Invalid page number: {0}")
+        else:
+            elems = []
+            pages = []
+
+    return render_to_response('list.html', snippets=elems,
+                                           pages=pages,
+                                           url=u"/recent/")
 
 
 def list_snippet(request, key, value, page=1, limit=FETCH_LIMIT):
