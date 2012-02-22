@@ -1,0 +1,27 @@
+{% extends "base.html" %}
+
+{% block title %}Donate | xsnippet{% endblock %}
+
+{% block content %}
+<div class="page">
+  <h2>Donate</h2>
+
+  <p>The <a href="http://www.xsnippet.org">xsnippet.org</a> is a non-profit organization
+  which aims to provide the best pastebin-like service on the Web. It is (and always
+  going to be) free of charge. But we do have to pay annual fees for using of the
+  <strong>xsnippet.org</strong> domain and Google App Engine cloud-platform resources.
+  So if you find the xsnippet service useful, you can always make a small
+  donation which definitely will help us to keep it working.</p>
+
+  <br>
+
+<form action="https://www.paypal.com/cgi-bin/webscr" method="post">
+<input type="hidden" name="cmd" value="_s-xclick">
+<input type="hidden" name="encrypted" value="-----BEGIN PKCS7-----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-----END PKCS7-----
+">
+<input type="image" src="https://www.paypalobjects.com/en_US/i/btn/btn_donate_SM.gif" border="0" name="submit" alt="PayPal - The safer, easier way to pay online!">
+<img alt="" border="0" src="https://www.paypalobjects.com/en_US/i/scr/pixel.gif" width="1" height="1">
+</form>
+
+</div>
+{% endblock %}
