@@ -129,14 +129,24 @@ header#header #searchform #search {
     padding: 2px 3px;
     border: 1px solid #202020;
     color: #888;
-    width: 400px;
+    width: 500px;
     font-size: 13px;
     letter-spacing: 0.1em;
     border-radius: 2px;
+    display: block;
+    float: left;
+    height: 18px;
 }
 
-header#header #searchform #search:hover {
-    border: 1px solid #333;
+header#header #searchform #search_help {
+    float: left;
+    display: block;
+    cursor: pointer;
+    width: 16px;
+    height: 16px;
+    margin-left: -20px;
+    margin-top: 5px;
+    opacity: 0.6;
 }
 
 header#header ul.navigation {
@@ -434,6 +444,7 @@ article p {
     color: #333;
     font-size: 14px;
     margin: 10px 0px;
+    line-height: 20px;
 }
 
 article .page ul {
@@ -448,6 +459,10 @@ article .page > ul {
     border-left: 4px solid #880000;
 }
 
+article .page > ul.authors {
+    border: none;
+}
+
 article .page ol {
     color: #333;
     font-size: 14px;
@@ -456,6 +471,10 @@ article .page ol {
 
 article .page ol li {
     padding: 3px;
+}
+
+article .page > table .donate_title {
+    width: 150px;
 }
 
 article .page .app {
@@ -482,7 +501,7 @@ article .page .app code.block {
     padding: 10px 0px;
     display: block;
     margin-left: 15px;
-    font-size: 1.3em;
+    font-size: 1em;
 }
 
 article .page .app header {
@@ -529,21 +548,45 @@ article div.error {
  */
 
 body > footer {
-    text-align: center;
-    margin-top: 20px;
+    margin-top: 30px;
     border-top: 1px solid #cccccc;
     font: 11px/18px Verdana;
+    color: #444;
+    margin-bottom: 30px;
 }
 
 body > footer a {
-    color: #800000;
     text-decoration: none;
 }
 
 body > footer a:hover {
-    color: #B00000;
     text-decoration: underline;
 }
+
+body > footer .copyright {
+    float: left;
+    text-align: center;
+}
+
+body > footer .copyright a {
+    color: #a21717;
+}
+
+body > footer .navigation {
+    float: right;
+}
+
+body > footer .navigation li {
+    float: left;
+    list-style: none;
+    margin-left: 20px;
+}
+
+body > footer .navigation li a {
+    color: #4282c4;
+}
+
+
 
 .submit {
     width: 100px;

@@ -57,19 +57,9 @@ def index(request):
     return render_to_response('new.html')
 
 
-def about(request):
-    '''Render about page template.'''
-    return render_to_response('about.html')
-
-
-def upload(request):
-    '''Render upload page template.'''
-    return render_to_response('upload.html')
-
-
-def tools(request):
-    '''Render tools page template.'''
-    return render_to_response('tools.html')
+def page(request, pagename):
+    '''Render page template.'''
+    return render_to_response('{}.html'.format(pagename))
 
 
 def new_snippet(request):

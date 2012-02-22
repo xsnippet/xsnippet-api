@@ -26,21 +26,20 @@
       <h1><a href="/">xsnippet</a></h1>
 
       <form id="searchform" action="/search" method="POST">
-        <input id="search" type="text" name="search" placeholder="search..."
-        title="<span class='title'>Search syntax examples</span>
+        <input id="search" type="text" name="search" placeholder="search...">
+        <img id="search_help" src="/static/images/search.png" alt="help"
+            title="<span class='title'>Search syntax examples</span>
 
-               <code>author:ikalnitsky</code>
-               <code>author:Roman Podolyaka, tags:mpi</code>
-               <code>title:primes, language:python</code>
-              ">
+                   <code>author:ikalnitsky</code>
+                   <code>author:Roman Podolyaka, tags:mpi</code>
+                   <code>title:primes, language:python</code>
+                  ">
       </form>
 
       <ul class="navigation">
         <li> <a href="/">new</a>
         <li> <a href="/upload">upload</a>
         <li> <a href="/recent">recent</a>
-        <li> <a href="/tools">tools</a>
-        <li> <a href="/about">about</a>
       </ul>
     </header>
     </div>
@@ -51,13 +50,20 @@
     </article>
 
     <footer>
-      &copy; 2012 <a href="http://www.kalnitsky.org">Igor Kalnitsky</a>
-      &amp; <a href="http://www.amd4ever.org.ua">Roman Podolyaka</a> 
-      <br> All Rights Reserved
+      <div class="copyright">
+        &copy; 2012 <a href="http://www.kalnitsky.org">Igor Kalnitsky</a>
+        &amp; <a href="http://www.amd4ever.org.ua">Roman Podolyaka</a> 
+      </div>
+
+      <ul class="navigation">
+        <li> <a href="/tools">tools</a>
+        <li> <a href="/donate">donate</a>
+        <li> <a href="/about">about</a>
+      </div>
     </footer>
 
     <script>
-      $('#search').tooltip({
+      $('#search_help').tooltip({
           position: 'bottom center',
           offset: [2, 70],
           effect: 'fade',
@@ -65,7 +71,7 @@
           fadeInSpeed: 250
       });
     </script>
-    
+
   <!-- Google.Analytics counter -->
   <script type="text/javascript">
     var _gaq = _gaq || [];
@@ -93,6 +99,6 @@
   <script src="//mc.yandex.ru/metrika/watch.js" type="text/javascript" defer="defer"></script>
   <noscript><div><img src="//mc.yandex.ru/watch/12585106" style="position:absolute; left:-9999px;" alt="" /></div></noscript>
   <!-- /Yandex.Metrika counter -->
-    
+
   </body>
 </html>
