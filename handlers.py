@@ -98,7 +98,7 @@ def new_snippet(request):
         snippet.title = 'Untitled'
 
     snippet.language = request.get('language')
-    if not snippet.language:
+    if not snippet.language or not snippet.language in Snippet.languages:
         snippet.language = 'Text'
 
     tags = request.get('tags')
@@ -144,7 +144,7 @@ def show_snippet(request, snippetid):
 
     if snippet is not None:
         # pygments highlighting
-        languagehl = Snippet.languages[snippet.language]
+        languagehl = Snippet.languages.get(snippet.language, 'text')
 
         if languagehl:
             lexer = get_lexer_by_name(languagehl, stripall=True)
