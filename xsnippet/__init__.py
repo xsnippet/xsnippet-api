@@ -15,3 +15,14 @@ def create_app(conf):
     xsnippet.db.models.db.init_app(app)
 
     return app
+
+
+if __name__ == "__main__":
+    app = create_app('xsnippet.settings')
+    app.debug = True
+
+    # TODO: use alembic for this
+    with app.app_context():
+        xsnippet.db.models.db.create_all()
+
+    app.run()
