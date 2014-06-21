@@ -10,7 +10,7 @@ def create_app(conf):
     app.config.from_object(conf)
     app.config.from_envvar('XSNIPPET_SETTINGS', silent=True)
 
-    app.register_blueprint(xsnippet.views.v1.api)
+    app.register_blueprint(xsnippet.views.v1.api, url_prefix='/api/v1')
 
     xsnippet.db.models.db.init_app(app)
 
