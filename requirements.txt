@@ -1,7 +1,0 @@
-# web
-Flask
-
-# db
-Flask-SQLAlchemy
-alembic
-sqlalchemy
