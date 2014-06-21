@@ -1,3 +1,16 @@
+# coding: utf-8
+"""
+    xsnippet.db.models
+    ~~~~~~~~~~~~~~~~~~
+
+    The module provides a database related settings:
+
+    * SQLAlchemy configuration;
+    * ORM classes
+
+    :copyright: (c) 2014, XSnippet Team
+    :license: BSD, see LICENSE for details
+"""
 import datetime
 
 import sqlalchemy as sa
@@ -66,6 +79,7 @@ class Tag(Model):
                            sa.Integer,
                            sa.ForeignKey('snippets.id'),
                            nullable=False)
+
 
 class Snippet(Model):
     __table_args__ = (

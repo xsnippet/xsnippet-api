@@ -1,3 +1,13 @@
+# coding: utf-8
+"""
+    xsnippet.views.v1
+    ~~~~~~~~~~~~~~~~~
+
+    The module implements API handlers of v1.
+
+    :copyright: (c) 2014, XSnippet Team
+    :license: BSD, see LICENSE for details
+"""
 from flask import abort
 from flask import Blueprint
 from flask.views import MethodView

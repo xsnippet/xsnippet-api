@@ -1,3 +1,14 @@
+# coding: utf-8
+"""
+    xsnippet
+    ~~~~~~~~
+
+    XSnippet is a simple Web-service for sharing code snippets on the Internet.
+    It's written in Python using Flask, SQLAlchemy and PostgreSQL.
+
+    :copyright: (c) 2014, XSnippet Team
+    :license: BSD, see LICENSE for details
+"""
 from flask import Flask
 
 import xsnippet.db.models
@@ -19,7 +30,6 @@ def create_app(conf):
 
 if __name__ == "__main__":
     app = create_app('xsnippet.settings')
-    app.debug = True
 
     # TODO: use alembic for this
     with app.app_context():

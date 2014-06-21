@@ -1,0 +1,18 @@
+language: python
+
+branches:
+  only:
+    - master
+
+env:
+  - TOXENV=pypy
+  - TOXENV=py27
+  - TOXENV=py33
+  - TOXENV=py34
+  - TOXENV=flake8
+
+install:
+  - pip install tox
+
+script:
+  - tox
