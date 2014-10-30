@@ -12,7 +12,7 @@
 from flask import Flask
 
 import xsnippet.db.models
-import xsnippet.views.v1
+import xsnippet.views.v2
 
 
 def create_app(conf):
@@ -21,7 +21,7 @@ def create_app(conf):
     app.config.from_object(conf)
     app.config.from_envvar('XSNIPPET_SETTINGS', silent=True)
 
-    app.register_blueprint(xsnippet.views.v1.api, url_prefix='/api/v1')
+    app.register_blueprint(xsnippet.views.v2.api, url_prefix='/api/v2')
 
     xsnippet.db.models.db.init_app(app)
 

@@ -1,9 +1,9 @@
 # coding: utf-8
 """
-    xsnippet.views.v1
+    xsnippet.views.v2
     ~~~~~~~~~~~~~~~~~
 
-    The module implements API handlers of v1.
+    The module implements API handlers of v2.
 
     :copyright: (c) 2014, XSnippet Team
     :license: BSD, see LICENSE for details
@@ -13,7 +13,7 @@ from flask import Blueprint
 from flask.views import MethodView
 
 
-api = Blueprint('v1', __name__)
+api = Blueprint('v2', __name__)
 
 
 class SnippetAPI(MethodView):
