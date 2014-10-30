@@ -81,6 +81,27 @@ class Tag(Model):
                            nullable=False)
 
 
+class Changeset(Model):
+    """Represents history of a snippet versions.
+
+    History is basically a linked list of changesets. Each changesets has a
+    pointer to its parent. The base version parent is NULL. The snippet entry
+    always points to the latest changeset (at the same time, a user may request
+    a particular version of a snippet to be returned).
+
+    """
+
+    parent_id = sa.Column('parent_id',
+                          sa.Integer,
+                          sa.ForeignKey('changesets.id'),
+                          nullable=True)  # NULL for base version
+    contents = sa.Column('contents',
+                         sa.Text(),
+                         nullable=False)
+
+    parent = orm.relationship('Changeset')
+
+
 class Snippet(Model):
     __table_args__ = (
         sa.Index('ix_snippets_author', 'author_id',
@@ -184,12 +205,14 @@ class Snippet(Model):
                                       "bat",
                                       "powershell",
                                       ]), index=True)
-
-    contents = sa.Column('contents', sa.Text(), nullable=False)
     author_id = sa.Column('author_id',
                           sa.Integer,
                           sa.ForeignKey('authors.id'),
                           nullable=True)
+    changeset_id = sa.Column('changeset_id',
+                             sa.Integer,
+                             sa.ForeignKey('changesets.id'),
+                             nullable=False)  # require at least one version
 
     author = orm.relationship(Author,
                               backref=orm.backref('snippets', lazy='dynamic'),
@@ -198,3 +221,7 @@ class Snippet(Model):
                             backref=orm.backref('snippets', lazy='dynamic'),
                             secondary=snippets_tags,
                             lazy='joined')
+    # the latest changeset
+    changeset = orm.relationship(Changeset,
+                                 backref=orm.backref('snippet', lazy='joined'),
+                                 lazy='joined')
