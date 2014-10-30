@@ -11,6 +11,9 @@ setuptools.setup(
         'flask-sqlalchemy',
         'sqlalchemy',
     ],
+    tests_require=[
+        'pytest',
+    ],
     author='The XSnippet Team',
     author_email='xsnippet@xsnippet.org',
     description='XSnippet pastebin service',
