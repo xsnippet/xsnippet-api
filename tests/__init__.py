@@ -1,13 +1,21 @@
 import unittest
 
 import xsnippet
-import xsnippet.settings
+
+
+class TestConfig:
+    """App configuration used in tests."""
+
+    DEBUG = True
+    SQLALCHEMY_DATABASE_URI = 'sqlite:///:memory:'
+    SQLALCHEMY_ECHO = True
 
 
 class BaseTestCase(unittest.TestCase):
+
     def setUp(self):
         # create a new app instance per test
-        self.app = xsnippet.create_app(xsnippet.settings)
+        self.app = xsnippet.create_app(TestConfig)
         self.client = self.app.test_client()
 
         # create db schema (we use a new sqlite in-memory schema per test)
