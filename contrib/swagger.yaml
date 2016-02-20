@@ -1,0 +1,453 @@
+swagger: '2.0'
+info:
+  title: XSnippet API
+  description: REST API of XSnippet, a simple web-service for sharing code snippets
+  version: "4.0.0"
+
+host: api.xsnippet.org
+
+schemes:
+  - http
+  - https
+
+consumes:
+  - application/json
+
+produces:
+  - application/json
+
+paths:
+  /snippets:
+    get:
+      summary: Retrieve information about code snippets.
+      description: |
+        The Snippets endpoint returns information about stored code snippets. The
+        listed snippets are sorted by the date-time of creation in the ascending order.
+
+        By default, only `limit` latest snippets are returned. Paginated queries
+        should be used in order to get more snippets.
+      parameters:
+        - name: syntax
+          in: query
+          type: string
+          enum: &ALLOWED_SYNTAXES
+            - actionscript
+            - ada
+            - apacheconf
+            - applescript
+            - asymptote
+            - bash
+            - bat
+            - boo
+            - brainfuck
+            - bro
+            - c
+            - clojure
+            - cmake
+            - coffeescript
+            - common-lisp
+            - coq
+            - cpp
+            - csharp
+            - css
+            - cython
+            - d
+            - dart
+            - delphi
+            - diff
+            - django
+            - dylan
+            - elixir
+            - erb
+            - erlang
+            - factor
+            - fancy
+            - felix
+            - fortran
+            - fsharp
+            - gas
+            - gherkin
+            - glsl
+            - gnuplot
+            - go
+            - groovy
+            - haskell
+            - html
+            - html+php
+            - ini
+            - io
+            - java
+            - javascript
+            - lighttpd
+            - llvm
+            - lua
+            - makefile
+            - matlab
+            - minid
+            - modelica
+            - modula2
+            - moonscript
+            - mupad
+            - nasm
+            - nemerle
+            - newlisp
+            - nginx
+            - nimrod
+            - objectivec
+            - ocaml
+            - octave
+            - opa
+            - perl
+            - postscript
+            - powershell
+            - prolog
+            - pycon
+            - python
+            - python3
+            - rbcon
+            - rebol
+            - restructuredtext
+            - ruby
+            - scala
+            - scheme
+            - scilab
+            - smalltalk
+            - smarty
+            - splus
+            - sql
+            - systemverilog
+            - tcl
+            - tex
+            - text
+            - vala
+            - vb.net
+            - verilog
+            - vhdl
+            - vim
+            - xml
+            - yaml
+          required: false
+          description: Only return snippets of the given syntax.
+        - name: author
+          in: query
+          type: integer
+          minimum: 0
+          required: false
+          description: Only return snippets by the given author.
+        - name: tag
+          in: query
+          type: string
+          pattern: '(\w+)(,\w+)*'
+          required: false
+          description: Only return snippets that have the given tag(s) assigned.
+        - name: marker
+          in: query
+          type: integer
+          minimum: -1
+          default: -1
+          format: int64
+          required: false
+          description: |
+            The id of the last seen snippet. Used for pagination. Will return
+            `limit` number of snippets after this one.
+        - name: limit
+          in: query
+          type: integer
+          format: int32
+          minimum: 1
+          maximum: 1000
+          default: 20
+          required: false
+          description: |
+            The maximum number of snippets to be returned by this query.
+      responses:
+        200:
+          description: An array of code snippets
+          schema:
+            type: array
+            items:
+              $ref: '#/definitions/Snippet'
+        400:
+          schema:
+            $ref: '#/definitions/Error'
+          description: |
+            Bad request.
+    post:
+      summary: Create a new code snippet.
+      description: |
+        The Snippets endpoint creates a new code snippet.
+      parameters:
+        - name: snippet
+          in: body
+          schema:
+            $ref: '#/definitions/Snippet'
+      responses:
+        201:
+          schema:
+            $ref: '#/definitions/Snippet'
+          description: Created. A new Snippet has been successfully created.
+        400:
+          schema:
+            $ref: '#/definitions/Error'
+          description: Bad request.
+        401:
+          schema:
+            $ref: '#/definitions/Error'
+          description: |
+            Unauthorized. Returned when a user tries to create a non-anonymous
+            snippet without authorizing first.
+        403:
+          schema:
+            $ref: '#/definitions/Error'
+          description: |
+            Forbidden. Returned when an authorized user tries to create a snippet
+            on behalf of another user.
+
+  /snippets/{id}:
+    get:
+      summary: Retrieve information about the specific code snippet.
+      description: |
+        The Snippet endpoint returns information about the code snippet uniquely
+        identified by the given id value.
+      parameters:
+        - name: id
+          type: integer
+          minimum: 1
+          format: int64
+          required: true
+          in: path
+          description: Unique identifier representing the specific code snippet.
+      responses:
+        200:
+          description: A Snippet object
+          schema:
+            $ref: '#/definitions/Snippet'
+        400:
+          schema:
+            $ref: '#/definitions/Error'
+          description: |
+            Bad request.
+        401:
+          schema:
+            $ref: '#/definitions/Error'
+          description: |
+            Unauthorized. User tries to retrieve a private snippet without
+            authorizing first.
+        403:
+          schema:
+            $ref: '#/definitions/Error'
+          description: |
+            Forbidden. User tries to retrieve a private snippet by another author.
+        404:
+          schema:
+            $ref: '#/definitions/Error'
+          description: Snippet not found.
+    patch:
+      summary: Update an existing code snippet.
+      description: |
+          Update an existing code snippet, possibly creating a new changeset.
+      parameters:
+        - name: id
+          type: integer
+          minimum: 1
+          format: int64
+          required: true
+          in: path
+          description: Unique identifier representing the specific code snippet.
+        - name: snippet
+          in: body
+          schema:
+            $ref: '#/definitions/Snippet'
+          required: true
+          description: |
+              A snippet object, which will be used for update. Can have all or
+              only some of the fields set. Only set fields will be used for
+              update. If new ``content`` is provided, a new changeset of the
+              snippet will be created and set as the current one.
+      responses:
+        200:
+          description: |
+            The snippet has been successfully updated. The latest state of the
+            snippet is returned.
+          schema:
+            $ref: '#/definitions/Snippet'
+        400:
+          schema:
+            $ref: '#/definitions/Error'
+          description: |
+            Bad request.
+        401:
+          schema:
+            $ref: '#/definitions/Error'
+          description: |
+            Unauthorized. User tries to update a snippet without authorizing first.
+        403:
+          schema:
+            $ref: '#/definitions/Error'
+          description: |
+            Forbidden. User tries to update a snippet by another author or anonymous.
+        404:
+          schema:
+            $ref: '#/definitions/Error'
+          description: |
+            Not found. Snippet with the given ID value does not exist.
+    delete:
+      summary: Delete the specific code snippet given an id value.
+      description: Delete the specific code snippet given an id value.
+      parameters:
+        - name: id
+          type: integer
+          minimum: 1
+          format: int64
+          required: true
+          in: path
+          description: Unique identifier representing the specific code snippet.
+      responses:
+        200:
+          description: The snippet has been successfully deleted.
+        401:
+          description: |
+            Unauthorized. Only authorized authors are allowed to delete code snippets.
+          schema:
+            $ref: '#/definitions/Error'
+        403:
+          description: |
+            Forbidden. Authors are only allowed to delete snippets they own.
+          schema:
+            $ref: '#/definitions/Error'
+        404:
+          description: The snippet not found.
+          schema:
+            $ref: '#/definitions/Error'
+
+  /snippets/{id}/changesets:
+    get:
+      summary: Retrieve all changesets of the snippet.
+      description: Retrieve all changesets of the snippet.
+      parameters:
+        - name: id
+          type: integer
+          minimum: 1
+          format: int64
+          required: true
+          in: path
+          description: Unique identifier representing the specific code snippet.
+      responses:
+        200:
+          schema:
+            type: array
+            items:
+              $ref: '#/definitions/Changeset'
+          description: A list of the snippet changesets.
+        400:
+          schema:
+            $ref: '#/definitions/Error'
+          description: Bad request.
+        401:
+          description: |
+            Unauthorized. Only authorized authors are allowed to retrieve changesets of private snippets.
+          schema:
+            $ref: '#/definitions/Error'
+        403:
+          description: |
+            Forbidden. Authors are only allowed to retrieve changesets of private snippets they own.
+          schema:
+            $ref: '#/definitions/Error'
+        404:
+          description: The snippet not found.
+          schema:
+            $ref: '#/definitions/Error'
+
+  /snippets/{id}/changesets/{revision}:
+    get:
+      summary: Retrieve the specified revision of the snippet.
+      description: Retrieve the specified revision of the snippet.
+      parameters:
+        - name: id
+          type: integer
+          minimum: 1
+          format: int64
+          required: true
+          in: path
+          description: Unique identifier representing the specific code snippet.
+        - name: revision
+          type: integer
+          minimum: -1
+          format: int64
+          required: true
+          in: path
+          description: Changeset index.
+      responses:
+        200:
+          schema:
+            $ref: '#/definitions/Changeset'
+          description: The snippet changeset.
+        400:
+          schema:
+            $ref: '#/definitions/Error'
+          description: Bad request.
+
+definitions:
+  Syntax:
+    type: string
+    enum: *ALLOWED_SYNTAXES
+
+  Changeset:
+    type: object
+    properties:
+      content:
+        type: string
+        minLength: 1
+        description: Multiline string representing the snippet body.
+
+  Snippet:
+    type: object
+    properties:
+      id:
+        type: integer
+        minimum: 1
+        description: Unique identifier representing the specific code snippet.
+      author_id:
+        type: integer
+        minimum: 1
+        description: |
+          Unique identifier representing a specific snippets author. `null`
+          value denotes a snippet posted by anonymous.
+      syntax:
+        $ref: '#/definitions/Syntax'
+      tags:
+        type: array
+        items:
+          type: string
+        description: List of string tags assigned to the snippet.
+      revision:
+        type: integer
+        minimum: 0
+        description: |
+          Current (latest) revision of the snippet.
+      changeset:
+        $ref: '#/definitions/Changeset'
+      title:
+        type: string
+        description: Title of the snippet.
+      is_public:
+        type: boolean
+        description: |
+          If `true`, snippet is visible for all users, otherwise it's
+          considered to be private and visible only to the author.
+      created_at:
+        type: string
+        format: date-time
+        description: Date-time value when the snippet was created.
+      updated_at:
+        type: string
+        format: date-time
+        description: Date-time value when the snippet was updated last time.
+
+  Error:
+    type: object
+    properties:
+      code:
+        type: integer
+      message:
+        type: string
