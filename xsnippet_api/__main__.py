@@ -13,11 +13,11 @@ import sys
 
 from aiohttp import web
 
-from xsnippet_api.application import get_application
+from xsnippet_api.application import create_app
 
 
 def main(args=sys.argv[1:]):
-    web.run_app(get_application())
+    web.run_app(create_app())
 
 
 # let's make this module and git_pr package to be executable, so anyone
