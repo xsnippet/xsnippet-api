@@ -8,3 +8,5 @@ prune docs/_build
 recursive-exclude * __pycache__
 recursive-exclude * *.py[co]
 recursive-exclude * .DS_Store
+
+recursive-include xsnippet_api *.conf

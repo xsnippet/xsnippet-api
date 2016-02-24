@@ -12,12 +12,15 @@
 from aiohttp import web
 
 
-def create_app(loop=None):
+def create_app(conf, loop=None):
     """Create and return a web application instance.
 
     The whole point of that function is to provide a way to create
     an application instance using some external context such as
     settings or event loop to run in.
+
+    :param conf: a settings to be used to create an application instance
+    :type conf: :class:`dict`
 
     :param loop: an event loop to run in
     :type loop: :class:`asyncio.BaseEventLoop` or None
@@ -26,4 +29,8 @@ def create_app(loop=None):
     :rtype: :class:`aiohttp.web.Application`
     """
     app = web.Application(loop=loop)
+
+    # attach settings to the application instance in order to make them
+    # accessible at any point of execution (e.g. request handling)
+    app['conf'] = conf
     return app
