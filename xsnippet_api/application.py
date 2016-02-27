@@ -11,6 +11,8 @@
 
 from aiohttp import web
 
+from . import database
+
 
 def create_app(conf, loop=None):
     """Create and return a web application instance.
@@ -33,4 +35,6 @@ def create_app(conf, loop=None):
     # attach settings to the application instance in order to make them
     # accessible at any point of execution (e.g. request handling)
     app['conf'] = conf
+    app['db'] = database.create_connection(conf, loop=loop)
+
     return app
