@@ -41,6 +41,7 @@ setup(
     install_requires=[
         'aiohttp >= 0.21.2',
         'motor >= 0.5',
+        'werkzeug >= 0.11.4',
     ],
 
     tests_require=[

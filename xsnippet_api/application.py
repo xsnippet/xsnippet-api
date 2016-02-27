@@ -12,6 +12,7 @@
 from aiohttp import web
 
 from . import database
+from . import resources
 
 
 def create_app(conf, loop=None):
@@ -31,6 +32,9 @@ def create_app(conf, loop=None):
     :rtype: :class:`aiohttp.web.Application`
     """
     app = web.Application(loop=loop)
+
+    app.router.add_route(
+        '*', '/snippets', resources.Snippets, name='snippets')
 
     # attach settings to the application instance in order to make them
     # accessible at any point of execution (e.g. request handling)

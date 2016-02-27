@@ -32,7 +32,7 @@ def get_conf(paths, envvar=None):
     conf = configparser.ConfigParser()
     conf.read(paths)
 
-    if envvar in os.environ:
+    if envvar is not None and envvar in os.environ:
         conf.read(os.environ[envvar])
 
     return conf
