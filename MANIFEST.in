@@ -1,6 +1,7 @@
 include README.rst LICENSE AUTHORS CHANGES
 include tox.ini
 
+recursive-include contrib *
 recursive-include docs *
 recursive-include tests *
 prune docs/_build
