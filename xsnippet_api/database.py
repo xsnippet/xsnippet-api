@@ -24,7 +24,8 @@ def create_connection(conf):
     :rtype: :class:`motor.motor_asyncio.AsyncIOMotorDatabase`
     """
 
-    mongo = AsyncIOMotorClient(conf['database']['connection'])
+    mongo = AsyncIOMotorClient(conf['database']['connection'],
+                               max_pool_size=conf['database']['pool-size'])
 
     # get_default_database returns a database from the connection string
     db = mongo.get_default_database()
