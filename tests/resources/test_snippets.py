@@ -46,7 +46,7 @@ class TestSnippets(metaclass=AIOTestMeta):
     async def test_get_no_snippets(self):
         app = create_app(self.conf)
 
-        await app['db'].snippets.drop()
+        await app['db'].snippets.remove()
 
         async with AIOTestApp(app) as testapp:
             resp = await testapp.get('/snippets')
@@ -57,7 +57,7 @@ class TestSnippets(metaclass=AIOTestMeta):
     async def test_get_snippets(self):
         app = create_app(self.conf)
 
-        await app['db'].snippets.drop()
+        await app['db'].snippets.remove()
         await app['db'].snippets.insert(self.snippets)
 
         async with AIOTestApp(app) as testapp:
@@ -69,7 +69,7 @@ class TestSnippets(metaclass=AIOTestMeta):
     async def test_post_snippet(self):
         app = create_app(self.conf)
 
-        await app['db'].snippets.drop()
+        await app['db'].snippets.remove()
 
         async with AIOTestApp(app) as testapp:
             snippet = copy.deepcopy(self.snippets[0])
@@ -91,3 +91,13 @@ class TestSnippets(metaclass=AIOTestMeta):
             )
 
             assert snippet_resp == snippet_db
+
+    async def test_data_model_indexes_exist(self):
+        app = create_app(self.conf)
+
+        res = await app['db'].snippets.index_information()
+
+        assert res['author_idx']['key'] == [('author_id', 1)]
+        assert res['tags_idx']['key'] == [('tags', 1)]
+        assert res['updated_idx']['key'] == [('updated_at', -1)]
+        assert res['created_idx']['key'] == [('created_at', -1)]
