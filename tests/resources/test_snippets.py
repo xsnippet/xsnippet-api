@@ -19,9 +19,6 @@ from tests import AIOTestMeta, AIOTestApp
 
 class TestSnippets(metaclass=AIOTestMeta):
 
-    conf = get_conf(
-        pkg_resources.resource_filename('xsnippet_api', 'default.conf'))
-
     snippets = [
         {
             '_id': 1,
@@ -43,35 +40,34 @@ class TestSnippets(metaclass=AIOTestMeta):
         },
     ]
 
+    def setup(self):
+        conf = get_conf(
+            pkg_resources.resource_filename('xsnippet_api', 'default.conf')
+        )
+
+        self.app = create_app(conf)
+
+    async def teardown(self):
+        await self.app['db'].snippets.remove()
+
     async def test_get_no_snippets(self):
-        app = create_app(self.conf)
-
-        await app['db'].snippets.remove()
-
-        async with AIOTestApp(app) as testapp:
+        async with AIOTestApp(self.app) as testapp:
             resp = await testapp.get('/snippets')
 
             assert resp.status == 200
             assert await resp.json() == []
 
     async def test_get_snippets(self):
-        app = create_app(self.conf)
+        await self.app['db'].snippets.insert(self.snippets)
 
-        await app['db'].snippets.remove()
-        await app['db'].snippets.insert(self.snippets)
-
-        async with AIOTestApp(app) as testapp:
+        async with AIOTestApp(self.app) as testapp:
             resp = await testapp.get('/snippets')
 
             assert resp.status == 200
             assert await resp.json() == self.snippets
 
     async def test_post_snippet(self):
-        app = create_app(self.conf)
-
-        await app['db'].snippets.remove()
-
-        async with AIOTestApp(app) as testapp:
+        async with AIOTestApp(self.app) as testapp:
             snippet = copy.deepcopy(self.snippets[0])
             del snippet['_id']
 
@@ -86,16 +82,14 @@ class TestSnippets(metaclass=AIOTestMeta):
 
             # ensure that posted snippet is in database
             snippet_resp = await resp.json()
-            snippet_db = await app['db'].snippets.find_one(
+            snippet_db = await self.app['db'].snippets.find_one(
                 {'_id': snippet_resp['_id']}
             )
 
             assert snippet_resp == snippet_db
 
     async def test_data_model_indexes_exist(self):
-        app = create_app(self.conf)
-
-        res = await app['db'].snippets.index_information()
+        res = await self.app['db'].snippets.index_information()
 
         assert res['author_idx']['key'] == [('author_id', 1)]
         assert res['tags_idx']['key'] == [('tags', 1)]
