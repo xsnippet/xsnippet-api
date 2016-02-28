@@ -9,6 +9,8 @@
     :license: MIT, see LICENSE for details
 """
 
+import asyncio
+
 from motor.motor_asyncio import AsyncIOMotorClient
 from pymongo.son_manipulator import SONManipulator
 
@@ -25,6 +27,12 @@ def create_connection(conf, loop=None):
     :return: a database connection
     :rtype: :class:`motor.motor_asyncio.AsyncIOMotorDatabase`
     """
+
+    # NOTE(malor): motor won't use the default event loop if None is passed.
+    # Use a workaround here, until it's fixed in upstream.
+    if loop is None:
+        loop = asyncio.get_event_loop()
+
     mongo = AsyncIOMotorClient(conf['database']['connection'], io_loop=loop)
 
     # get_default_database returns a database from the connection string
