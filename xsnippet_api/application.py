@@ -11,6 +11,9 @@
 
 from aiohttp import web
 
+from . import database
+from . import resources
+
 
 def create_app(conf, loop=None):
     """Create and return a web application instance.
@@ -30,7 +33,12 @@ def create_app(conf, loop=None):
     """
     app = web.Application(loop=loop)
 
+    app.router.add_route(
+        '*', '/snippets', resources.Snippets, name='snippets')
+
     # attach settings to the application instance in order to make them
     # accessible at any point of execution (e.g. request handling)
     app['conf'] = conf
+    app['db'] = database.create_connection(conf, loop=loop)
+
     return app
