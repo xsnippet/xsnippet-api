@@ -13,6 +13,7 @@ import asyncio
 
 from motor.motor_asyncio import AsyncIOMotorClient
 from pymongo.son_manipulator import SONManipulator
+import pymongo
 
 
 def create_connection(conf, loop=None):
@@ -43,6 +44,21 @@ def create_connection(conf, loop=None):
     # database we need to pass explicitly desired ID. This SON manipulator
     # is doing this implicitly for us on application level.
     db.add_son_manipulator(_AutoincrementId())
+
+    # ensure necessary indexes exist. background=True allows operations
+    # read/write operations on collections while indexes are being built
+    db.snippets.create_index('author_id',
+                             name='author_idx',
+                             background=True)
+    db.snippets.create_index('tags',
+                             name='tags_idx',
+                             background=True),
+    db.snippets.create_index([('created_at', pymongo.DESCENDING)],
+                             name='created_idx',
+                             background=True)
+    db.snippets.create_index([('updated_at', pymongo.DESCENDING)],
+                             name='updated_idx',
+                             background=True)
 
     return db
 
