@@ -1,0 +1,8 @@
+[run]
+branch = true
+source =
+    xsnippet_api/
+
+; Motor uses greenlet under the hood, and that makes coverage crazy, so
+; it wrongly reports missed statements.
+concurrency = greenlet
