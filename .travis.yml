@@ -6,7 +6,9 @@ services:
   - mongodb
 
 install:
-  - pip install tox coveralls
+  # greenlet is needed to submit concurrency=greenlet based coverage
+  # to coveralls.io service
+  - pip install tox coveralls greenlet
 
 script:
   - tox
