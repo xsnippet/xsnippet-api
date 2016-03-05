@@ -8,9 +8,10 @@
     :license: MIT, see LICENSE for details
 """
 
-from .snippets import Snippets
+from .snippets import Snippet, Snippets
 
 
 __all__ = [
+    'Snippet',
     'Snippets',
 ]

@@ -9,7 +9,24 @@
     :license: MIT, see LICENSE for details
 """
 
+import aiohttp.web as web
+
 from .resource import Resource
+
+
+class Snippet(Resource):
+
+    async def get(self):
+        try:
+            _id = int(self.request.match_info['id'])
+        except (ValueError, TypeError):
+            raise web.HTTPBadRequest()
+
+        snippet = await self.db.snippets.find_one({'_id': _id})
+        if snippet is None:
+            raise web.HTTPNotFound()
+
+        return self.make_response(snippet)
 
 
 class Snippets(Resource):
