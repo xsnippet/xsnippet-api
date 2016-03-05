@@ -32,6 +32,8 @@ def create_app(conf):
 
     app.router.add_route(
         '*', '/snippets', resources.Snippets, name='snippets')
+    app.router.add_route(
+        '*', '/snippets/{id}', resources.Snippet, name='snippet')
 
     # attach settings to the application instance in order to make them
     # accessible at any point of execution (e.g. request handling)

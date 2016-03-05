@@ -95,3 +95,56 @@ class TestSnippets(metaclass=AIOTestMeta):
         assert res['tags_idx']['key'] == [('tags', 1)]
         assert res['updated_idx']['key'] == [('updated_at', -1)]
         assert res['created_idx']['key'] == [('created_at', -1)]
+
+    async def test_get_snippet(self):
+        async with AIOTestApp(self.app) as testapp:
+            snippet = copy.deepcopy(self.snippets[0])
+            del snippet['_id']
+
+            resp = await testapp.post(
+                '/snippets',
+                data=json.dumps(snippet),
+                headers={
+                    'Content-Type': 'application/json',
+                }
+            )
+            created = await resp.json()
+
+            resp = await testapp.get(
+                '/snippets/' + str(created['_id']),
+                headers={
+                    'Accept': 'application/json',
+                }
+            )
+            assert resp.status == 200
+            assert (resp.headers['Content-Type'] ==
+                    'application/json; charset=utf-8')
+
+            retrieved = await resp.json()
+            assert retrieved == created
+
+    async def test_get_snippet_not_found(self):
+        async with AIOTestApp(self.app) as testapp:
+            resp = await testapp.get(
+                '/snippets/0123456789',
+                headers={
+                    'Accept': 'application/json',
+                }
+            )
+            text = await resp.text()
+
+            assert resp.status == 404
+            assert 'Not Found' in text
+
+    async def test_get_snippet_bad_request(self):
+        async with AIOTestApp(self.app) as testapp:
+            resp = await testapp.get(
+                '/snippets/deadbeef',
+                headers={
+                    'Accept': 'application/json',
+                }
+            )
+            text = await resp.text()
+
+            assert resp.status == 400
+            assert 'Bad Request' in text
