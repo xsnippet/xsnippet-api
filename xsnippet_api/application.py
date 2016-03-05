@@ -15,23 +15,20 @@ from . import database
 from . import resources
 
 
-def create_app(conf, loop=None):
+def create_app(conf):
     """Create and return a web application instance.
 
     The whole point of that function is to provide a way to create
-    an application instance using some external context such as
-    settings or event loop to run in.
+    a full-featured application instance with database sesstion,
+    routes and so on.
 
     :param conf: a settings to be used to create an application instance
     :type conf: :class:`dict`
 
-    :param loop: an event loop to run in
-    :type loop: :class:`asyncio.BaseEventLoop` or None
-
     :return: an application instance
     :rtype: :class:`aiohttp.web.Application`
     """
-    app = web.Application(loop=loop)
+    app = web.Application()
 
     app.router.add_route(
         '*', '/snippets', resources.Snippets, name='snippets')
@@ -39,6 +36,6 @@ def create_app(conf, loop=None):
     # attach settings to the application instance in order to make them
     # accessible at any point of execution (e.g. request handling)
     app['conf'] = conf
-    app['db'] = database.create_connection(conf, loop=loop)
+    app['db'] = database.create_connection(conf)
 
     return app
