@@ -1,4 +1,5 @@
-sudo: false
+dist: trusty
+sudo: required
 language: python
 
 matrix:
@@ -10,13 +11,20 @@ matrix:
     - env: TOXENV=openapi
 
 services:
+  - docker
   - mongodb
+
+before_install:
+  - docker build -t xsnippet_api -f contrib/docker/Dockerfile .
+  - docker run -d --net=host xsnippet_api
 
 install:
   - pip install tox coveralls
 
 script:
   - tox
+  # TODO: replace the sanity check below with proper functional testing
+  - curl http://127.0.0.1:8000/snippets
 
 after_success:
   - coveralls
