@@ -19,32 +19,30 @@ from tests import AIOTestMeta, AIOTestApp
 
 class TestSnippets(metaclass=AIOTestMeta):
 
-    snippets = [
-        {
-            '_id': 1,
-            'title': 'snippet #1',
-            'changeset': {
-                'content': 'def foo(): pass',
-            },
-            'syntax': 'python',
-            'tags': ['tag_a', 'tag_b'],
-        },
-        {
-            '_id': 2,
-            'title': 'snippet #2',
-            'changeset': {
-                'content': 'int do_something() {}',
-            },
-            'syntax': 'cpp',
-            'tags': ['tag_c'],
-        },
-    ]
-
     def setup(self):
-        conf = get_conf(
-            pkg_resources.resource_filename('xsnippet_api', 'default.conf')
-        )
+        self.snippets = [
+            {
+                'id': 1,
+                'title': 'snippet #1',
+                'changeset': {
+                    'content': 'def foo(): pass',
+                },
+                'syntax': 'python',
+                'tags': ['tag_a', 'tag_b'],
+            },
+            {
+                'id': 2,
+                'title': 'snippet #2',
+                'changeset': {
+                    'content': 'int do_something() {}',
+                },
+                'syntax': 'cpp',
+                'tags': ['tag_c'],
+            },
+        ]
 
+        conf = get_conf(
+            pkg_resources.resource_filename('xsnippet_api', 'default.conf'))
         self.app = create_app(conf)
 
     async def teardown(self):
@@ -68,8 +66,8 @@ class TestSnippets(metaclass=AIOTestMeta):
 
     async def test_post_snippet(self):
         async with AIOTestApp(self.app) as testapp:
-            snippet = copy.deepcopy(self.snippets[0])
-            del snippet['_id']
+            snippet = self.snippets[0]
+            del snippet['id']
 
             resp = await testapp.post(
                 '/snippets',
@@ -83,7 +81,7 @@ class TestSnippets(metaclass=AIOTestMeta):
             # ensure that posted snippet is in database
             snippet_resp = await resp.json()
             snippet_db = await self.app['db'].snippets.find_one(
-                {'_id': snippet_resp['_id']}
+                {'_id': snippet_resp['id']}
             )
 
             assert snippet_resp == snippet_db
@@ -99,7 +97,6 @@ class TestSnippets(metaclass=AIOTestMeta):
     async def test_get_snippet(self):
         async with AIOTestApp(self.app) as testapp:
             snippet = copy.deepcopy(self.snippets[0])
-            del snippet['_id']
 
             resp = await testapp.post(
                 '/snippets',
@@ -111,7 +108,7 @@ class TestSnippets(metaclass=AIOTestMeta):
             created = await resp.json()
 
             resp = await testapp.get(
-                '/snippets/' + str(created['_id']),
+                '/snippets/' + str(created['id']),
                 headers={
                     'Accept': 'application/json',
                 }

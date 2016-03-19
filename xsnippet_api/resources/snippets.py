@@ -39,6 +39,6 @@ class Snippets(Resource):
         snippet = await self.read_request()
 
         snippet_id = await self.db.snippets.insert(snippet)
-        snippet['_id'] = snippet_id
+        snippet['id'] = snippet_id
 
         return self.make_response(snippet, status=201)
