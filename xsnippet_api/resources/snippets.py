@@ -26,6 +26,17 @@ class Snippet(Resource):
         snippet = await services.Snippet(self.db).get_one(_id)
         return self.make_response(snippet)
 
+    async def delete(self):
+        try:
+            _id = int(self.request.match_info['id'])
+        except (ValueError, TypeError):
+            raise web.HTTPBadRequest()
+
+        # TODO: only allow authorized users to delete their snippets
+
+        await services.Snippet(self.db).delete(_id)
+        return self.make_response('', status=204)  # No Content
+
 
 class Snippets(Resource):
 

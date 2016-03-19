@@ -173,3 +173,40 @@ class TestSnippets(metaclass=AIOTestMeta):
 
             assert resp.status == 400
             assert 'Bad Request' in text
+
+    async def test_delete_snippet(self):
+        created = self.snippets[0]
+        await self.app['db'].snippets.insert(created)
+
+        async with AIOTestApp(self.app) as testapp:
+            resp = await testapp.delete(
+                '/snippets/' + str(created['id']),
+                headers={
+                    'Accept': 'application/json',
+                })
+
+            assert resp.status == 204
+
+    async def test_delete_snippet_not_found(self):
+        async with AIOTestApp(self.app) as testapp:
+            resp = await testapp.delete(
+                '/snippets/' + str(123456789),
+                headers={
+                    'Accept': 'application/json',
+                })
+            text = await resp.text()
+
+            assert resp.status == 404
+            assert 'Not Found' in text
+
+    async def test_delete_snippet_bad_request(self):
+        async with AIOTestApp(self.app) as testapp:
+            resp = await testapp.delete(
+                '/snippets/deadbeef',
+                headers={
+                    'Accept': 'application/json',
+                })
+            text = await resp.text()
+
+            assert resp.status == 400
+            assert 'Bad Request' in text

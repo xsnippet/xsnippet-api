@@ -125,3 +125,19 @@ class TestSnippet(metaclass=AIOTestMeta):
         }
 
         assert created == created_db
+
+    async def test_delete(self):
+        _id = self.snippets[0]['id']
+
+        before = await self.db.snippets.find({}).to_list(None)
+        assert len(before) == 2
+
+        rv = await self.service.delete(_id)
+        assert rv is None
+
+        after = await self.db.snippets.find({}).to_list(None)
+        assert len(after) == 1
+
+    async def test_delete_not_found(self):
+        with pytest.raises(web.HTTPNotFound):
+            await self.service.delete(123456789)

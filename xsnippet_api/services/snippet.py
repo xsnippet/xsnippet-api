@@ -44,6 +44,12 @@ class Snippet:
 
         return snippet
 
+    async def delete(self, id):
+        result = await self.db.snippets.remove({'_id': id})
+        if not result['n']:
+            # TODO: raise business domain exception instead
+            raise web.HTTPNotFound()
+
     def _normalize(self, snippet):
         rv = dict({
             'title': None,
