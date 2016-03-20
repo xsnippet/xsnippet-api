@@ -10,6 +10,8 @@
 
 import copy
 import json
+import datetime
+import operator
 import pkg_resources
 
 from xsnippet_api.application import create_app
@@ -19,40 +21,61 @@ from tests import AIOTestMeta, AIOTestApp
 
 class TestSnippets(metaclass=AIOTestMeta):
 
-    snippets = [
-        {
-            '_id': 1,
-            'title': 'snippet #1',
-            'changeset': {
-                'content': 'def foo(): pass',
-            },
-            'syntax': 'python',
-            'tags': ['tag_a', 'tag_b'],
-        },
-        {
-            '_id': 2,
-            'title': 'snippet #2',
-            'changeset': {
-                'content': 'int do_something() {}',
-            },
-            'syntax': 'cpp',
-            'tags': ['tag_c'],
-        },
-    ]
-
     def setup(self):
-        conf = get_conf(
-            pkg_resources.resource_filename('xsnippet_api', 'default.conf')
-        )
+        now = datetime.datetime.utcnow().replace(microsecond=0)
+        self.snippets = [
+            {
+                'id': 1,
+                'title': 'snippet #1',
+                'content': 'def foo(): pass',
+                'syntax': 'python',
+                'tags': ['tag_a', 'tag_b'],
+                'author_id': None,
+                'is_public': True,
+                'created_at': now,
+                'updated_at': now,
+            },
+            {
+                'id': 2,
+                'title': 'snippet #2',
+                'content': 'int do_something() {}',
+                'syntax': 'cpp',
+                'tags': ['tag_c'],
+                'author_id': None,
+                'is_public': True,
+                'created_at': now + datetime.timedelta(100),
+                'updated_at': now + datetime.timedelta(100),
+            },
+        ]
 
+        conf = get_conf(
+            pkg_resources.resource_filename('xsnippet_api', 'default.conf'))
         self.app = create_app(conf)
 
     async def teardown(self):
         await self.app['db'].snippets.remove()
 
+    def _compare_snippets(self, snippet_db, snippet_api):
+        # compare datetimes
+        assert (
+            snippet_api.pop('created_at') ==
+            snippet_db.pop('created_at').isoformat()
+        )
+        assert (
+            snippet_api.pop('updated_at') ==
+            snippet_db.pop('updated_at').isoformat()
+        )
+
+        # compare rest of snippet
+        assert snippet_api == snippet_db
+
     async def test_get_no_snippets(self):
         async with AIOTestApp(self.app) as testapp:
-            resp = await testapp.get('/snippets')
+            resp = await testapp.get(
+                '/snippets',
+                headers={
+                    'Accept': 'application/json',
+                })
 
             assert resp.status == 200
             assert await resp.json() == []
@@ -61,32 +84,43 @@ class TestSnippets(metaclass=AIOTestMeta):
         await self.app['db'].snippets.insert(self.snippets)
 
         async with AIOTestApp(self.app) as testapp:
-            resp = await testapp.get('/snippets')
-
+            resp = await testapp.get(
+                '/snippets',
+                headers={
+                    'Accept': 'application/json',
+                })
             assert resp.status == 200
-            assert await resp.json() == self.snippets
+
+            # snippets must be returned in descending order (newer first)
+            expected = sorted(
+                self.snippets,
+                key=operator.itemgetter('created_at'),
+                reverse=True)
+
+            for snippet_db, snippet_api in zip(expected, await resp.json()):
+                self._compare_snippets(snippet_db, snippet_api)
 
     async def test_post_snippet(self):
         async with AIOTestApp(self.app) as testapp:
-            snippet = copy.deepcopy(self.snippets[0])
-            del snippet['_id']
+            snippet = self.snippets[0]
+            for key in ('id', 'created_at', 'updated_at'):
+                del snippet[key]
 
             resp = await testapp.post(
                 '/snippets',
                 data=json.dumps(snippet),
                 headers={
+                    'Accept': 'application/json',
                     'Content-Type': 'application/json',
-                }
-            )
+                })
             assert resp.status == 201
 
-            # ensure that posted snippet is in database
             snippet_resp = await resp.json()
             snippet_db = await self.app['db'].snippets.find_one(
-                {'_id': snippet_resp['_id']}
+                {'_id': snippet_resp['id']}
             )
 
-            assert snippet_resp == snippet_db
+            self._compare_snippets(snippet_db, snippet_resp)
 
     async def test_data_model_indexes_exist(self):
         res = await self.app['db'].snippets.index_information()
@@ -97,31 +131,22 @@ class TestSnippets(metaclass=AIOTestMeta):
         assert res['created_idx']['key'] == [('created_at', -1)]
 
     async def test_get_snippet(self):
+        awaited = copy.deepcopy(self.snippets[0])
+
+        await self.app['db'].snippets.insert(self.snippets)
+
         async with AIOTestApp(self.app) as testapp:
-            snippet = copy.deepcopy(self.snippets[0])
-            del snippet['_id']
-
-            resp = await testapp.post(
-                '/snippets',
-                data=json.dumps(snippet),
-                headers={
-                    'Content-Type': 'application/json',
-                }
-            )
-            created = await resp.json()
-
             resp = await testapp.get(
-                '/snippets/' + str(created['_id']),
+                '/snippets/' + str(awaited['id']),
                 headers={
                     'Accept': 'application/json',
-                }
-            )
+                })
+
             assert resp.status == 200
             assert (resp.headers['Content-Type'] ==
                     'application/json; charset=utf-8')
 
-            retrieved = await resp.json()
-            assert retrieved == created
+            self._compare_snippets(awaited, await resp.json())
 
     async def test_get_snippet_not_found(self):
         async with AIOTestApp(self.app) as testapp:

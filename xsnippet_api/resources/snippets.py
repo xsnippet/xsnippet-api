@@ -12,6 +12,7 @@
 import aiohttp.web as web
 
 from .resource import Resource
+from .. import services
 
 
 class Snippet(Resource):
@@ -22,23 +23,17 @@ class Snippet(Resource):
         except (ValueError, TypeError):
             raise web.HTTPBadRequest()
 
-        snippet = await self.db.snippets.find_one({'_id': _id})
-        if snippet is None:
-            raise web.HTTPNotFound()
-
+        snippet = await services.Snippet(self.db).get_one(_id)
         return self.make_response(snippet)
 
 
 class Snippets(Resource):
 
     async def get(self):
-        snippets = await self.db.snippets.find().to_list(length=20)
-        return self.make_response(snippets)
+        snippets = await services.Snippet(self.db).get(limit=20)
+        return self.make_response(snippets, status=200)
 
     async def post(self):
         snippet = await self.read_request()
-
-        snippet_id = await self.db.snippets.insert(snippet)
-        snippet['_id'] = snippet_id
-
+        snippet = await services.Snippet(self.db).create(snippet)
         return self.make_response(snippet, status=201)

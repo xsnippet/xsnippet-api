@@ -11,10 +11,27 @@
 """
 
 import json
+import datetime
 import fnmatch
+import functools
 
 from aiohttp import web, hdrs
 from werkzeug import http
+
+
+class _JSONEncoder(json.JSONEncoder):
+    """Advanced JSON encoder for extra data types.
+
+    Extra support of the following data types:
+
+      - :class:`datetime.datetime` -- encoded into ISO-8601 formatted string
+      - :class:`datetime.date` -- encoded into ISO-8601 formatted string
+    """
+
+    def default(self, instance):
+        if isinstance(instance, (datetime.datetime, datetime.date)):
+            return instance.isoformat()
+        return super().default(instance)
 
 
 class Resource(web.View):
@@ -28,7 +45,7 @@ class Resource(web.View):
     """
 
     _encoders = {
-        'application/json': json.dumps,
+        'application/json': functools.partial(json.dumps, cls=_JSONEncoder),
     }
 
     _decoders = {

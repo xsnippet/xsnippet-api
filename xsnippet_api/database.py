@@ -9,8 +9,9 @@
     :license: MIT, see LICENSE for details
 """
 
+import copy
+
 from motor.motor_asyncio import AsyncIOMotorClient
-from pymongo.son_manipulator import SONManipulator
 import pymongo
 
 
@@ -30,11 +31,15 @@ def create_connection(conf):
     # get_default_database returns a database from the connection string
     db = mongo.get_default_database()
 
-    # By historical reasons snippet's ID is integer, but MongoDB's native
-    # one is not. In order to fix that each time we insert records to
-    # database we need to pass explicitly desired ID. This SON manipulator
-    # is doing this implicitly for us on application level.
-    db.add_son_manipulator(_AutoincrementId())
+    # ID incrementer is used to auto increment record ID if nothing
+    # is explicitly passed.
+    #
+    # ID processor is used for auto converting domain IDs to and from
+    # database ones (i.e. 'id' -> '_id' and vice versa).
+    #
+    # SON manipulators are applied in reversed order.
+    db.add_son_manipulator(_IdIncrementer())
+    db.add_son_manipulator(_IdProcessor())
 
     # ensure necessary indexes exist. background=True allows operations
     # read/write operations on collections while indexes are being built
@@ -54,9 +59,41 @@ def create_connection(conf):
     return db
 
 
-class _AutoincrementId(SONManipulator):
+class _IdProcessor(pymongo.son_manipulator.SONManipulator):
+    """SON manipulator that converts ID column to and from DB notation.
+
+    Encode procedure: rename ``id`` into ``_id`` if any.
+    Decode procedure: rename ``_id`` into ``id`` if any.
+    """
 
     def transform_incoming(self, son, collection):
+        # we want to make a shallow copy in order to prevent modification
+        # of passed documents (no implicit injection of '_id')
+        son = copy.copy(son)
+
+        if son and 'id' in son:
+            son['_id'] = son.pop('id')
+        return son
+
+    def transform_outgoing(self, son, collection):
+        if son and '_id' in son:
+            son['id'] = son.pop('_id')
+        return son
+
+
+class _IdIncrementer(pymongo.son_manipulator.SONManipulator):
+    """SON manipulator that implements autoincrement behaviour for ID.
+
+    If no ``_id`` is specified in SON, then a new one is picked using
+    autoincrement approach. That last used ID is stored in a special
+    MongoDB collection that's called ``_autoincrement_ids``.
+    """
+
+    def transform_incoming(self, son, collection):
+        # we want to make a shallow copy in order to prevent modification
+        # of passed documents (no implicit injection of '_id')
+        son = copy.copy(son)
+
         if son and '_id' not in son:
             son['_id'] = self._get_next_id(collection)
         return son
@@ -66,6 +103,5 @@ class _AutoincrementId(SONManipulator):
             query={'_id': collection.name},
             update={'$inc': {'next': 1}},
             upsert=True,
-            new=True
-        )
+            new=True)
         return result['next']
