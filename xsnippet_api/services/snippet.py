@@ -27,13 +27,27 @@ class Snippet:
         snippet['id'] = snippet_id
         return snippet
 
-    async def get(self, *, limit=100):
-        snippets = await self.db.snippets.find()\
-            .sort('created_at', pymongo.DESCENDING)\
-            .limit(limit)\
-            .to_list(None)
+    async def get(self, *, limit=100, marker=None):
+        if marker:
+            specimen = await self.db.snippets.find_one({'_id': marker})
+            if not specimen:
+                # TODO: raise business domain exception instead
+                raise web.HTTPNotFound()
 
-        return snippets
+            query = self.db.snippets.find({
+                '$and': [
+                    {'_id': {'$lt': specimen['id']}},
+                    {'created_at': {'$lte': specimen['created_at']}},
+                ]
+            })
+        else:
+            query = self.db.snippets.find()
+
+        query = query.sort([
+            ('_id', pymongo.DESCENDING),
+            ('created_at', pymongo.DESCENDING)
+        ])
+        return await query.limit(limit).to_list(None)
 
     async def get_one(self, id):
         snippet = await self.db.snippets.find_one({'_id': id})

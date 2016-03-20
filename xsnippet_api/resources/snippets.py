@@ -41,7 +41,15 @@ class Snippet(Resource):
 class Snippets(Resource):
 
     async def get(self):
-        snippets = await services.Snippet(self.db).get(limit=20)
+        try:
+            # TODO: get value from conf
+            marker = int(self.request.GET.get('marker', 0))
+            limit = min(int(self.request.GET.get('limit', 20)), 20)
+        except (ValueError, TypeError):
+            raise web.HTTPBadRequest()
+
+        snippets = await services.Snippet(self.db).get(limit=limit,
+                                                       marker=marker)
         return self.make_response(snippets, status=200)
 
     async def post(self):

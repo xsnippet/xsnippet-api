@@ -40,8 +40,8 @@ class TestSnippet(metaclass=AIOTestMeta):
                 'tags': ['tag_a', 'tag_b'],
                 'author_id': None,
                 'is_public': True,
-                'created_at': now,
-                'updated_at': now,
+                'created_at': now - datetime.timedelta(100),
+                'updated_at': now - datetime.timedelta(100),
             },
             {
                 'id': 2,
@@ -51,8 +51,8 @@ class TestSnippet(metaclass=AIOTestMeta):
                 'tags': ['tag_c'],
                 'author_id': None,
                 'is_public': True,
-                'created_at': now + datetime.timedelta(100),
-                'updated_at': now + datetime.timedelta(100),
+                'created_at': now,
+                'updated_at': now,
             },
         ]
 
@@ -95,6 +95,26 @@ class TestSnippet(metaclass=AIOTestMeta):
 
         assert len(returned_snippets) == 1
         assert returned_snippets == [snippet]
+
+    async def test_get_pagination(self):
+        snippet = {
+            'title': 'my snippet',
+            'content': '...',
+            'syntax': 'python',
+        }
+        created = await self.service.create(snippet)
+
+        one = await self.service.get(limit=1)
+        assert len(one) == 1
+        assert one == [created]
+
+        two = await self.service.get(marker=one[0]['id'])
+        assert len(two) == 2
+        assert two == list(reversed(self.snippets))
+
+    async def test_get_pagination_not_found(self):
+        with pytest.raises(web.HTTPNotFound):
+            await self.service.get(limit=10, marker=123456789)
 
     async def test_create(self):
         snippet = {
