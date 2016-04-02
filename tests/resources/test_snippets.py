@@ -32,8 +32,8 @@ class TestSnippets(metaclass=AIOTestMeta):
                 'tags': ['tag_a', 'tag_b'],
                 'author_id': None,
                 'is_public': True,
-                'created_at': now,
-                'updated_at': now,
+                'created_at': now - datetime.timedelta(100),
+                'updated_at': now - datetime.timedelta(100),
             },
             {
                 'id': 2,
@@ -43,8 +43,8 @@ class TestSnippets(metaclass=AIOTestMeta):
                 'tags': ['tag_c'],
                 'author_id': None,
                 'is_public': True,
-                'created_at': now + datetime.timedelta(100),
-                'updated_at': now + datetime.timedelta(100),
+                'created_at': now,
+                'updated_at': now,
             },
         ]
 
@@ -99,6 +99,82 @@ class TestSnippets(metaclass=AIOTestMeta):
 
             for snippet_db, snippet_api in zip(expected, await resp.json()):
                 self._compare_snippets(snippet_db, snippet_api)
+
+    async def test_get_snippets_pagination(self):
+        now = datetime.datetime.utcnow().replace(microsecond=0)
+        snippet = {
+            'id': 3,
+            'title': 'snippet #3',
+            'content': '(println "Hello, World!")',
+            'syntax': 'clojure',
+            'tags': ['tag_b'],
+            'author_id': None,
+            'is_public': True,
+            'created_at': now,
+            'updated_at': now,
+        }
+        await self.app['db'].snippets.insert(self.snippets + [snippet])
+
+        async with AIOTestApp(self.app) as testapp:
+            # ask for one latest snippet
+            resp = await testapp.get(
+                '/snippets?limit=1',
+                headers={
+                    'Accept': 'application/json',
+                })
+            assert resp.status == 200
+
+            snippet_api = await resp.json()
+            assert len(snippet_api) == 1
+            self._compare_snippets(snippet, snippet_api[0])
+
+            # ask for (up to) 10 snippets created before the last seen one
+            marker = snippet_api[0]['id']
+            resp = await testapp.get(
+                '/snippets?limit=10&marker=%d' % marker,
+                headers={
+                    'Accept': 'application/json',
+                })
+            assert resp.status == 200
+
+            # snippets must be returned in descending order (newer first)
+            expected = sorted(
+                self.snippets,
+                key=operator.itemgetter('created_at'),
+                reverse=True)
+
+            for snippet_db, snippet_api in zip(expected, await resp.json()):
+                self._compare_snippets(snippet_db, snippet_api)
+
+    async def test_get_snippets_pagination_not_found(self):
+        async with AIOTestApp(self.app) as testapp:
+            resp = await testapp.get(
+                '/snippets?limit=10&marker=1234567890',
+                headers={
+                    'Accept': 'application/json',
+                })
+            assert resp.status == 404
+            assert "Not Found" in await resp.text()
+
+    async def test_get_snippets_pagination_bad_request_limit(self):
+        async with AIOTestApp(self.app) as testapp:
+            resp = await testapp.get(
+                '/snippets?limit=deadbeef',
+                headers={
+                    'Accept': 'application/json',
+                })
+            assert resp.status == 400
+            assert "Bad Request" in await resp.text()
+
+    async def test_get_snippets_pagination_bad_request_marker(self):
+        async with AIOTestApp(self.app) as testapp:
+            resp = await testapp.get(
+                '/snippets?marker=deadbeef',
+                headers={
+                    'Accept': 'application/json',
+                })
+            assert resp.status == 400
+            assert "Bad Request" in await resp.text()
 
     async def test_post_snippet(self):
         async with AIOTestApp(self.app) as testapp:
