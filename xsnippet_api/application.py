@@ -9,10 +9,9 @@
     :license: MIT, see LICENSE for details
 """
 
-from aiohttp import web
+from aiohttp import web, web_urldispatcher
 
-from . import database
-from . import resources
+from . import database, resources, router
 
 
 def create_app(conf):
@@ -28,12 +27,15 @@ def create_app(conf):
     :return: an application instance
     :rtype: :class:`aiohttp.web.Application`
     """
-    app = web.Application()
+    router_v1 = web_urldispatcher.UrlDispatcher()
+    router_v1.add_route('*', '/snippets', resources.Snippets)
+    router_v1.add_route('*', '/snippets/{id}', resources.Snippet)
 
-    app.router.add_route(
-        '*', '/snippets', resources.Snippets, name='snippets')
-    app.router.add_route(
-        '*', '/snippets/{id}', resources.Snippet, name='snippet')
+    app = web.Application(router=router.VersionRouter(
+        {
+            '1': router_v1,
+        }
+    ))
 
     # attach settings to the application instance in order to make them
     # accessible at any point of execution (e.g. request handling)
