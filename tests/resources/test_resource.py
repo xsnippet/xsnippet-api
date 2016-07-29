@@ -11,30 +11,33 @@
 import json
 import pkg_resources
 
-from xsnippet_api.application import create_app
-from xsnippet_api.conf import get_conf
+from aiohttp import web
+
+from xsnippet_api import conf, database
 from xsnippet_api.resources import resource
 from tests import AIOTestMeta, AIOTestApp
 
 
+class _TestResource(resource.Resource):
+
+    async def get(self):
+        return self.make_response({'who': 'batman'}, status=299)
+
+    async def post(self):
+        data = await self.read_request()
+        return self.make_response(data, status=298)
+
+
 class TestResource(metaclass=AIOTestMeta):
 
-    class MyResource(resource.Resource):
-
-        async def get(self):
-            return self.make_response({'who': 'batman'}, status=299)
-
-        async def post(self):
-            data = await self.read_request()
-            return self.make_response(data, status=298)
+    conf = conf.get_conf(
+        pkg_resources.resource_filename('xsnippet_api', 'default.conf'))
 
     def setup(self):
-        conf = get_conf(
-            pkg_resources.resource_filename('xsnippet_api', 'default.conf')
-        )
+        self.app = web.Application()
+        self.app['db'] = database.create_connection(self.conf)
 
-        self.app = create_app(conf)
-        self.app.router.add_route('*', '/test', self.MyResource)
+        self.app.router.add_route('*', '/test', _TestResource)
 
     async def test_get_json(self):
         async with AIOTestApp(self.app) as testapp:
@@ -51,9 +54,9 @@ class TestResource(metaclass=AIOTestMeta):
                 'Accept': 'application/mytype',
             })
 
-            # NOTE: do not check response content, since it's not clear
-            # whether should we respond with JSON or plain/text due to
-            # the fact requested format is not supported.
+            # NOTE: Do not check response context, since it's not clear
+            # whether should we respond with JSON or plain/text or something
+            # else due to the fact that requested format is not supported.
             assert resp.status == 406
             resp.close()
 
@@ -82,8 +85,6 @@ class TestResource(metaclass=AIOTestMeta):
                 }
             )
 
-            # TODO: check response message, it should be formatted with
-            # 'acceptable' media type or plain/text otherwise
             assert resp.status == 415
             resp.close()
 
@@ -98,8 +99,8 @@ class TestResource(metaclass=AIOTestMeta):
                 }
             )
 
-            # NOTE: do not check response content, since it's not clear
-            # whether should we respond with JSON or plain/text due to
-            # the fact requested format is not supported.
+            # NOTE: Do not check response context, since it's not clear
+            # whether should we respond with JSON or plain/text or something
+            # else due to the fact that requested format is not supported.
             assert resp.status == 406
             resp.close()
