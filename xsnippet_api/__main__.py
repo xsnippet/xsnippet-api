@@ -29,7 +29,7 @@ def main(args=sys.argv[1:]):
         port=conf['server']['port'])
 
 
-# let's make this module and git_pr package to be executable, so anyone
-# can run it  without entry_points' console script
+# let's make this module and xsnippet_api package to be executable, so
+# anyone can run it  without entry_points' console script
 if __name__ == '__main__':
     main()
