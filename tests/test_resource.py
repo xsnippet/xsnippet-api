@@ -1,6 +1,6 @@
 """
-    tests.resources.test_resource
-    -----------------------------
+    tests.test_resource
+    -------------------
 
     Tests base Resource class.
 
@@ -13,8 +13,7 @@ import pkg_resources
 
 from aiohttp import web
 
-from xsnippet_api import conf, database
-from xsnippet_api.resources import resource
+from xsnippet_api import conf, database, resource
 from tests import AIOTestMeta, AIOTestApp
 
 
