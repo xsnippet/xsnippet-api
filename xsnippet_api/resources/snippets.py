@@ -11,11 +11,10 @@
 
 import aiohttp.web as web
 
-from .resource import Resource
-from .. import services
+from .. import resource, services
 
 
-class Snippet(Resource):
+class Snippet(resource.Resource):
 
     async def get(self):
         try:
@@ -38,7 +37,7 @@ class Snippet(Resource):
         return self.make_response('', status=204)  # No Content
 
 
-class Snippets(Resource):
+class Snippets(resource.Resource):
 
     async def get(self):
         try:
