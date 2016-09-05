@@ -12,8 +12,10 @@
 import aiohttp.web as web
 
 from .. import resource, services
+from ..application import endpoint
 
 
+@endpoint('/snippets/{id}', '1.0')
 class Snippet(resource.Resource):
 
     async def get(self):
@@ -37,6 +39,7 @@ class Snippet(resource.Resource):
         return self.make_response('', status=204)  # No Content
 
 
+@endpoint('/snippets', '1.0')
 class Snippets(resource.Resource):
 
     async def get(self):

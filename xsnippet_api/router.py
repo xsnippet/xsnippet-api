@@ -10,8 +10,9 @@
     :license: MIT, see LICENSE for details
 """
 
+import pkg_resources
+
 from aiohttp import abc, web
-from pkg_resources import packaging
 
 
 def _get_latest_version(versions, stable=True):
@@ -36,7 +37,7 @@ def _get_latest_version(versions, stable=True):
     # anyone would use complex API versions (with alpha/beta notation),
     # it still better to implement things correctly and return original
     # representation. That's why we save version pairs here.
-    versions = ((v, packaging.version.parse(v)) for v in versions)
+    versions = ((v, pkg_resources.parse_version(v)) for v in versions)
 
     # Both PEP-440 and SemVer define so called "pre-release" version such
     # as alpha or beta. Most of the time, we aren't interested in them
