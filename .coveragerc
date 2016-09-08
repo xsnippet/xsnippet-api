@@ -5,4 +5,6 @@ source =
 
 ; Motor uses greenlet under the hood, and that makes coverage crazy, so
 ; it wrongly reports missed statements.
+;
+; http://coverage.readthedocs.io/en/coverage-4.1/config.html?highlight=greenlet#run
 concurrency = greenlet
