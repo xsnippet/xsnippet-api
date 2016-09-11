@@ -8,11 +8,14 @@
     :license: MIT, see LICENSE for details
 """
 
+import re
 import copy
 import json
 import datetime
 import operator
+
 import pkg_resources
+import pytest
 
 from xsnippet_api.application import create_app
 from xsnippet_api.conf import get_conf
@@ -180,7 +183,7 @@ class TestSnippets(metaclass=AIOTestMeta):
     async def test_post_snippet(self):
         async with AIOTestApp(self.app) as testapp:
             snippet = self.snippets[0]
-            for key in ('id', 'created_at', 'updated_at'):
+            for key in ('id', 'author_id', 'created_at', 'updated_at'):
                 del snippet[key]
 
             resp = await testapp.post(
@@ -198,6 +201,89 @@ class TestSnippets(metaclass=AIOTestMeta):
             )
 
             self._compare_snippets(snippet_db, snippet_resp)
+
+    @pytest.mark.parametrize('name, value', [
+        ('title', 42),                          # must be string
+        ('content', 42),                        # must be string
+        ('tags', ['a tag with whitespaces']),   # tag must not contain spaces
+        ('is_public', 'yes'),                   # must be bool
+        ('author_id', 42),                      # readonly
+        ('created_at', '2016-09-11T19:07:43'),  # readonly
+        ('updated_at', '2016-09-11T19:07:43'),  # readonly
+        ('non-existent-key', 'must not be accepted'),
+    ])
+    async def test_post_snippet_malformed_snippet(self, name, value):
+        async with AIOTestApp(self.app) as testapp:
+            snippet = self.snippets[0]
+            for key in ('id', 'author_id', 'created_at', 'updated_at'):
+                del snippet[key]
+            snippet[name] = value
+
+            resp = await testapp.post(
+                '/snippets',
+                data=json.dumps(snippet),
+                headers={
+                    'Accept': 'application/json',
+                    'Content-Type': 'application/json',
+                })
+            assert resp.status == 400
+
+            error_resp = await resp.json()
+            assert re.match(
+                'Cannot create a new snippet, passed data are incorrect. '
+                'Found issues: `%s` - .*' % name,
+                error_resp['message'])
+
+    async def test_post_snippet_syntax_enum_allowed(self):
+        async with AIOTestApp(self.app) as testapp:
+            self.app['conf']['snippet']['syntaxes'] = 'python\nclojure'
+
+            snippet = self.snippets[0]
+            for key in ('id', 'author_id', 'created_at', 'updated_at'):
+                del snippet[key]
+
+            snippet['syntax'] = 'python'
+
+            resp = await testapp.post(
+                '/snippets',
+                data=json.dumps(snippet),
+                headers={
+                    'Accept': 'application/json',
+                    'Content-Type': 'application/json',
+                })
+            assert resp.status == 201
+
+            snippet_resp = await resp.json()
+            snippet_db = await self.app['db'].snippets.find_one(
+                {'_id': snippet_resp['id']}
+            )
+
+            self._compare_snippets(snippet_db, snippet_resp)
+
+    async def test_post_snippet_syntax_enum_not_allowed(self):
+        async with AIOTestApp(self.app) as testapp:
+            self.app['conf']['snippet']['syntaxes'] = 'python\nclojure'
+
+            snippet = self.snippets[0]
+            for key in ('id', 'author_id', 'created_at', 'updated_at'):
+                del snippet[key]
+
+            snippet['syntax'] = 'go'
+
+            resp = await testapp.post(
+                '/snippets',
+                data=json.dumps(snippet),
+                headers={
+                    'Accept': 'application/json',
+                    'Content-Type': 'application/json',
+                })
+            assert resp.status == 400
+
+            error_resp = await resp.json()
+            assert re.match(
+                'Cannot create a new snippet, passed data are incorrect. '
+                'Found issues: `syntax` - invalid value.',
+                error_resp['message'])
 
     async def test_data_model_indexes_exist(self):
         res = await self.app['db'].snippets.index_information()

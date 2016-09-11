@@ -29,7 +29,15 @@ def get_conf(paths, envvar=None):
     :return: a configuration instance
     :rtype: :class:`configparser.ConfigParser`
     """
-    conf = configparser.ConfigParser()
+    # Due to limitations of INI standard, there's no way to have an option
+    # which value is a list. Fortunately, since Python 3.5 we can provide
+    # so called converters: an additional functions to convert desired
+    # option to consumable format.
+    converters = {
+        'list': lambda v: list(filter(None, str.splitlines(v)))
+    }
+
+    conf = configparser.ConfigParser(converters=converters)
     conf.read(paths)
 
     if envvar is not None and envvar in os.environ:
