@@ -9,9 +9,9 @@
 """
 
 import json
-import pkg_resources
 
-from aiohttp import web
+import aiohttp.web as web
+import pkg_resources
 
 from xsnippet_api import conf, database, resource
 from tests import AIOTestMeta, AIOTestApp
