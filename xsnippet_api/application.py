@@ -10,11 +10,12 @@
 """
 
 import collections
+import functools
 
 import pkg_resources
 from aiohttp import web, web_urldispatcher
 
-from . import database, router
+from . import database, router, middlewares
 
 
 def _inject_vary_header(request, response):
@@ -58,7 +59,9 @@ def create_app(conf):
     # we need to import all the resources in order to evaluate @endpoint
     # decorator, so they can be collected and passed to VersionRouter
     from . import resources  # noqa
-    app = web.Application(router=router.VersionRouter(endpoint.collect()))
+    app = web.Application(router=router.VersionRouter(endpoint.collect()),
+                          middlewares=[functools.partial(middlewares.auth,
+                                                         conf['auth'])])
 
     # attach settings to the application instance in order to make them
     # accessible at any point of execution (e.g. request handling)

@@ -34,6 +34,7 @@ setup(
     install_requires=[
         'aiohttp >= 0.21.2',
         'motor >= 0.5',
+        'python-jose >= 1.3.2',
         'werkzeug >= 0.11.4',
     ],
     tests_require=[
