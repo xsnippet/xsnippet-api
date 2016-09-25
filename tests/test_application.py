@@ -19,6 +19,7 @@ class TestApplication(metaclass=AIOTestMeta):
 
     conf = conf.get_conf(
         pkg_resources.resource_filename('xsnippet_api', 'default.conf'))
+    conf['auth'] = {'secret': 'SWORDFISH'}
 
     def setup(self):
         self.app = application.create_app(self.conf)

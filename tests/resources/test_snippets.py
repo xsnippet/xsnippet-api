@@ -50,6 +50,7 @@ class TestSnippets(metaclass=AIOTestMeta):
 
         conf = get_conf(
             pkg_resources.resource_filename('xsnippet_api', 'default.conf'))
+        conf['auth'] = {'secret': 'SWORDFISH'}
         self.app = create_app(conf)
 
     async def teardown(self):
