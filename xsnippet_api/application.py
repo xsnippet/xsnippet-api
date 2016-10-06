@@ -24,7 +24,7 @@ def _inject_vary_header(request, response):
     Depends on whether request has varies HTTP headers or not, we may or may
     not inject a ``Vary`` HTTP header into response. Since XSnippet API
     implements content negotiation and API versioning, we've got to pass at
-    least ``Accept`` and ``X-Api-Version`` HTTP headers.
+    least ``Accept`` and ``Api-Version`` HTTP headers.
 
     :param request: an http request instance
     :type request: :class:`~aiohttp.web.Request`
@@ -35,7 +35,7 @@ def _inject_vary_header(request, response):
     known = set([
         'Accept',
         'Accept-Encoding',
-        'X-Api-Version',
+        'Api-Version',
     ])
     found = [header for header in known if header in request.headers]
 

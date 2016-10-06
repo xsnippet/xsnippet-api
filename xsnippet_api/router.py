@@ -57,7 +57,7 @@ class VersionRouter(abc.AbstractRouter):
 
     Despite there are various approaches to pass API version, this router
     implements the one with a separate HTTP header. In other words it tries
-    to read ``X-Api-Version`` header and use its value as API version to
+    to read ``Api-Version`` header and use its value as API version to
     forward request further.
 
     If nothing is passed, the latest stable version is used. If wrong version
@@ -71,7 +71,7 @@ class VersionRouter(abc.AbstractRouter):
         self._latest = _get_latest_version(self._routers.keys())
 
     async def resolve(self, request):
-        version = request.headers.get('X-Api-Version')
+        version = request.headers.get('Api-Version')
 
         if version is None:
             version = self._latest

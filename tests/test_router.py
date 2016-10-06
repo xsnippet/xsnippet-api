@@ -43,7 +43,7 @@ class TestVersionRouter(metaclass=AIOTestMeta):
     async def test_version_1(self):
         async with AIOTestApp(self.app) as testapp:
             resp = await testapp.get('/test', headers={
-                'X-Api-Version': '1',
+                'Api-Version': '1',
             })
 
             assert resp.status == 200
@@ -52,7 +52,7 @@ class TestVersionRouter(metaclass=AIOTestMeta):
     async def test_version_2(self):
         async with AIOTestApp(self.app) as testapp:
             resp = await testapp.get('/test', headers={
-                'X-Api-Version': '2',
+                'Api-Version': '2',
             })
 
             assert resp.status == 200
@@ -68,7 +68,7 @@ class TestVersionRouter(metaclass=AIOTestMeta):
     async def test_version_is_incorrect(self):
         async with AIOTestApp(self.app) as testapp:
             resp = await testapp.get('/test', headers={
-                'X-Api-Version': '42',
+                'Api-Version': '42',
             })
 
             assert resp.status == 412
