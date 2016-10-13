@@ -1,6 +1,6 @@
 """
     xsnippet_api.middlewares.auth
-    -------------------------------
+    -----------------------------
 
     The module implements auth middleware that performs authentication
     of user requests.

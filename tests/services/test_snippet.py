@@ -9,15 +9,15 @@
 """
 
 import datetime
-import pkg_resources
 import operator
 
+import pkg_resources
 import pytest
-import aiohttp.web as web
 
 from xsnippet_api.database import create_connection
 from xsnippet_api.conf import get_conf
 from xsnippet_api.services import Snippet
+from xsnippet_api import exceptions
 
 from tests import AIOTestMeta
 
@@ -72,8 +72,10 @@ class TestSnippet(metaclass=AIOTestMeta):
         assert snippet == self.snippets[0]
 
     async def test_get_one_not_found(self):
-        with pytest.raises(web.HTTPNotFound):
+        with pytest.raises(exceptions.SnippetNotFound) as excinfo:
             await self.service.get_one('whatever')
+
+        excinfo.match(r'Sorry, cannot find the requested snippet.')
 
     async def test_get(self):
         returned_snippets = await self.service.get()
@@ -113,8 +115,11 @@ class TestSnippet(metaclass=AIOTestMeta):
         assert two == list(reversed(self.snippets))
 
     async def test_get_pagination_not_found(self):
-        with pytest.raises(web.HTTPNotFound):
+        with pytest.raises(exceptions.SnippetNotFound) as excinfo:
             await self.service.get(limit=10, marker=123456789)
+
+        excinfo.match(r'Sorry, cannot complete the request since `marker` '
+                      r'points to a nonexistent snippet.')
 
     async def test_create(self):
         snippet = {
@@ -159,5 +164,7 @@ class TestSnippet(metaclass=AIOTestMeta):
         assert len(after) == 1
 
     async def test_delete_not_found(self):
-        with pytest.raises(web.HTTPNotFound):
+        with pytest.raises(exceptions.SnippetNotFound) as excinfo:
             await self.service.delete(123456789)
+
+        excinfo.match(r'Sorry, cannot find the requested snippet.')

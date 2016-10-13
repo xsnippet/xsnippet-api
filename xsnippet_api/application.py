@@ -59,9 +59,11 @@ def create_app(conf):
     # we need to import all the resources in order to evaluate @endpoint
     # decorator, so they can be collected and passed to VersionRouter
     from . import resources  # noqa
-    app = web.Application(router=router.VersionRouter(endpoint.collect()),
-                          middlewares=[functools.partial(middlewares.auth,
-                                                         conf['auth'])])
+    app = web.Application(
+        router=router.VersionRouter(endpoint.collect()),
+        middlewares=[
+            functools.partial(middlewares.auth, conf['auth']),
+        ])
 
     # attach settings to the application instance in order to make them
     # accessible at any point of execution (e.g. request handling)

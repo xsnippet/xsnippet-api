@@ -158,7 +158,10 @@ class TestSnippets(metaclass=AIOTestMeta):
                     'Accept': 'application/json',
                 })
             assert resp.status == 404
-            assert "Not Found" in await resp.text()
+            assert await resp.json() == {
+                'message': 'Sorry, cannot complete the request since `marker` '
+                           'points to a nonexistent snippet.',
+            }
 
     async def test_get_snippets_pagination_bad_request_limit(self):
         async with AIOTestApp(self.app) as testapp:
@@ -345,12 +348,11 @@ class TestSnippets(metaclass=AIOTestMeta):
                 '/snippets/0123456789',
                 headers={
                     'Accept': 'application/json',
-                }
-            )
-            text = await resp.text()
-
+                })
             assert resp.status == 404
-            assert 'Not Found' in text
+            assert await resp.json() == {
+                'message': 'Sorry, cannot find the requested snippet.',
+            }
 
     async def test_get_snippet_bad_request(self):
         async with AIOTestApp(self.app) as testapp:
@@ -385,10 +387,10 @@ class TestSnippets(metaclass=AIOTestMeta):
                 headers={
                     'Accept': 'application/json',
                 })
-            text = await resp.text()
-
             assert resp.status == 404
-            assert 'Not Found' in text
+            assert await resp.json() == {
+                'message': 'Sorry, cannot find the requested snippet.',
+            }
 
     async def test_delete_snippet_bad_request(self):
         async with AIOTestApp(self.app) as testapp:

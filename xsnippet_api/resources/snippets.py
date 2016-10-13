@@ -11,7 +11,7 @@
 
 import cerberus
 
-from .. import resource, services
+from .. import exceptions, resource, services
 from ..application import endpoint
 
 
@@ -62,8 +62,12 @@ class Snippet(resource.Resource):
             error = '%s.' % _cerberus_errors_to_str(v.errors)
             return self.make_response({'message': error}, status=400)
 
-        snippet_id = int(self.request.match_info['id'])
-        return self.make_response(await service_fn(snippet_id), status)
+        try:
+            rv = await service_fn(int(self.request.match_info['id']))
+        except exceptions.SnippetNotFound as exc:
+            return self.make_response({'message': str(exc)}, status=404)
+
+        return self.make_response(rv, status)
 
 
 @endpoint('/snippets', '1.0')
@@ -88,12 +92,15 @@ class Snippets(resource.Resource):
             error = '%s.' % _cerberus_errors_to_str(v.errors)
             return self.make_response({'message': error}, status=400)
 
-        snippets = await services.Snippet(self.db).get(
-            # It's safe to have type cast here since those query parameters
-            # are guaranteed to be integer, thanks to validation above.
-            limit=int(self.request.GET.get('limit', 0)),
-            marker=int(self.request.GET.get('marker', 0)),
-        )
+        try:
+            snippets = await services.Snippet(self.db).get(
+                # It's safe to have type cast here since those query parameters
+                # are guaranteed to be integer, thanks to validation above.
+                limit=int(self.request.GET.get('limit', 0)),
+                marker=int(self.request.GET.get('marker', 0)),
+            )
+        except exceptions.SnippetNotFound as exc:
+            return self.make_response({'message': str(exc)}, status=404)
 
         return self.make_response(snippets, status=200)
 
@@ -112,12 +119,11 @@ class Snippets(resource.Resource):
             error = None
 
         if error:
-            return self.make_response({
-                'message': (
-                    'Cannot create a new snippet, passed data are incorrect. '
-                    'Found issues: %s.' % error
-                )
-            }, status=400)
+            return self.make_response(
+                {
+                    'message': 'Cannot create a new snippet, passed data are '
+                               'incorrect. Found issues: %s.' % error
+                }, status=400)
 
         snippet = await services.Snippet(self.db).create(snippet)
         return self.make_response(snippet, status=201)

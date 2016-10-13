@@ -12,8 +12,9 @@
 
 import datetime
 
-import aiohttp.web as web
 import pymongo
+
+from .. import exceptions
 
 
 class Snippet:
@@ -31,8 +32,9 @@ class Snippet:
         if marker:
             specimen = await self.db.snippets.find_one({'_id': marker})
             if not specimen:
-                # TODO: raise business domain exception instead
-                raise web.HTTPNotFound()
+                raise exceptions.SnippetNotFound(
+                    'Sorry, cannot complete the request since `marker` '
+                    'points to a nonexistent snippet.')
 
             query = self.db.snippets.find({
                 '$and': [
@@ -53,16 +55,16 @@ class Snippet:
         snippet = await self.db.snippets.find_one({'_id': id})
 
         if snippet is None:
-            # TODO: raise business domain exception instead
-            raise web.HTTPNotFound()
+            raise exceptions.SnippetNotFound(
+                'Sorry, cannot find the requested snippet.')
 
         return snippet
 
     async def delete(self, id):
         result = await self.db.snippets.remove({'_id': id})
         if not result['n']:
-            # TODO: raise business domain exception instead
-            raise web.HTTPNotFound()
+            raise exceptions.SnippetNotFound(
+                'Sorry, cannot find the requested snippet.')
 
     def _normalize(self, snippet):
         rv = dict({

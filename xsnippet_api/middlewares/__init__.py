@@ -1,6 +1,6 @@
 """
     xsnippet_api.middlewares
-    ----------------------
+    ------------------------
 
     The package contains various helper middlewares used by the application.
 
