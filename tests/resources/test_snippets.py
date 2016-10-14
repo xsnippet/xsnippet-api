@@ -168,7 +168,21 @@ class TestSnippets(metaclass=AIOTestMeta):
                     'Accept': 'application/json',
                 })
             assert resp.status == 400
-            assert "Bad Request" in await resp.text()
+            assert await resp.json() == {
+                'message': '`limit` - must be of integer type.',
+            }
+
+    async def test_get_snippets_pagination_bad_request_limit_negative(self):
+        async with AIOTestApp(self.app) as testapp:
+            resp = await testapp.get(
+                '/snippets?limit=-1',
+                headers={
+                    'Accept': 'application/json',
+                })
+            assert resp.status == 400
+            assert await resp.json() == {
+                'message': '`limit` - min value is 1.',
+            }
 
     async def test_get_snippets_pagination_bad_request_marker(self):
         async with AIOTestApp(self.app) as testapp:
@@ -178,7 +192,21 @@ class TestSnippets(metaclass=AIOTestMeta):
                     'Accept': 'application/json',
                 })
             assert resp.status == 400
-            assert "Bad Request" in await resp.text()
+            assert await resp.json() == {
+                'message': '`marker` - must be of integer type.',
+            }
+
+    async def test_get_snippets_pagination_bad_request_unknown_param(self):
+        async with AIOTestApp(self.app) as testapp:
+            resp = await testapp.get(
+                '/snippets?deadbeef=1',
+                headers={
+                    'Accept': 'application/json',
+                })
+            assert resp.status == 400
+            assert await resp.json() == {
+                'message': '`deadbeef` - unknown field.',
+            }
 
     async def test_post_snippet(self):
         async with AIOTestApp(self.app) as testapp:

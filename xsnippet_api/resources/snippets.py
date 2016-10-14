@@ -37,6 +37,13 @@ def _cerberus_errors_to_str(errors):
     return ', '.join(parts)
 
 
+def _try_int(value, base=10):
+    try:
+        return int(value, base)
+    except:
+        return value
+
+
 @endpoint('/snippets/{id}', '1.0')
 class Snippet(resource.Resource):
 
@@ -65,15 +72,31 @@ class Snippet(resource.Resource):
 class Snippets(resource.Resource):
 
     async def get(self):
-        try:
-            # TODO: get value from conf
-            marker = int(self.request.GET.get('marker', 0))
-            limit = min(int(self.request.GET.get('limit', 20)), 20)
-        except (ValueError, TypeError):
-            raise web.HTTPBadRequest()
+        v = cerberus.Validator({
+            'limit': {
+                'type': 'integer',
+                'min': 1,
+                'max': 20,
+                'coerce': _try_int,
+            },
+            'marker': {
+                'type': 'integer',
+                'min': 1,
+                'coerce': _try_int,
+            },
+        })
 
-        snippets = await services.Snippet(self.db).get(limit=limit,
-                                                       marker=marker)
+        if not v.validate(dict(self.request.GET)):
+            error = '%s.' % _cerberus_errors_to_str(v.errors)
+            return self.make_response({'message': error}, status=400)
+
+        snippets = await services.Snippet(self.db).get(
+            # It's safe to have type cast here since those query parameters
+            # are guaranteed to be integer, thanks to validation above.
+            limit=int(self.request.GET.get('limit', 0)),
+            marker=int(self.request.GET.get('marker', 0)),
+        )
+
         return self.make_response(snippets, status=200)
 
     async def post(self):
