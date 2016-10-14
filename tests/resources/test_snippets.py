@@ -360,10 +360,10 @@ class TestSnippets(metaclass=AIOTestMeta):
                     'Accept': 'application/json',
                 }
             )
-            text = await resp.text()
-
             assert resp.status == 400
-            assert 'Bad Request' in text
+            assert await resp.json() == {
+                'message': '`id` - must be of integer type.'
+            }
 
     async def test_delete_snippet(self):
         created = self.snippets[0]
@@ -397,7 +397,7 @@ class TestSnippets(metaclass=AIOTestMeta):
                 headers={
                     'Accept': 'application/json',
                 })
-            text = await resp.text()
-
             assert resp.status == 400
-            assert 'Bad Request' in text
+            assert await resp.json() == {
+                'message': '`id` - must be of integer type.'
+            }

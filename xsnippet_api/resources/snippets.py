@@ -9,7 +9,6 @@
     :license: MIT, see LICENSE for details
 """
 
-import aiohttp.web as web
 import cerberus
 
 from .. import resource, services
@@ -48,24 +47,23 @@ def _try_int(value, base=10):
 class Snippet(resource.Resource):
 
     async def get(self):
-        try:
-            _id = int(self.request.match_info['id'])
-        except (ValueError, TypeError):
-            raise web.HTTPBadRequest()
-
-        snippet = await services.Snippet(self.db).get_one(_id)
-        return self.make_response(snippet)
+        return await self._run(services.Snippet(self.db).get_one, 200)
 
     async def delete(self):
-        try:
-            _id = int(self.request.match_info['id'])
-        except (ValueError, TypeError):
-            raise web.HTTPBadRequest()
+        # TODO: only authorized owners can remove their snippets
+        return await self._run(services.Snippet(self.db).delete, 204)
 
-        # TODO: only allow authorized users to delete their snippets
+    async def _run(self, service_fn, status):
+        v = cerberus.Validator({
+            'id': {'type': 'integer', 'min': 1, 'coerce': _try_int},
+        })
 
-        await services.Snippet(self.db).delete(_id)
-        return self.make_response('', status=204)  # No Content
+        if not v.validate(dict(self.request.match_info)):
+            error = '%s.' % _cerberus_errors_to_str(v.errors)
+            return self.make_response({'message': error}, status=400)
+
+        snippet_id = int(self.request.match_info['id'])
+        return self.make_response(await service_fn(snippet_id), status)
 
 
 @endpoint('/snippets', '1.0')
