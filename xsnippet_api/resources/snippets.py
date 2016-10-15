@@ -11,6 +11,7 @@
 
 import cerberus
 
+from .misc import cerberus_errors_to_str, try_int
 from .. import exceptions, resource, services
 from ..application import endpoint
 
@@ -28,21 +29,6 @@ _schema = {
 }
 
 
-def _cerberus_errors_to_str(errors):
-    parts = []
-    for name, reasons in errors.items():
-        for reason in reasons:
-            parts.append('`%s` - %s' % (name, reason))
-    return ', '.join(parts)
-
-
-def _try_int(value, base=10):
-    try:
-        return int(value, base)
-    except:
-        return value
-
-
 @endpoint('/snippets/{id}', '1.0')
 class Snippet(resource.Resource):
 
@@ -55,11 +41,11 @@ class Snippet(resource.Resource):
 
     async def _run(self, service_fn, status):
         v = cerberus.Validator({
-            'id': {'type': 'integer', 'min': 1, 'coerce': _try_int},
+            'id': {'type': 'integer', 'min': 1, 'coerce': try_int},
         })
 
         if not v.validate(dict(self.request.match_info)):
-            error = '%s.' % _cerberus_errors_to_str(v.errors)
+            error = '%s.' % cerberus_errors_to_str(v.errors)
             return self.make_response({'message': error}, status=400)
 
         try:
@@ -79,17 +65,17 @@ class Snippets(resource.Resource):
                 'type': 'integer',
                 'min': 1,
                 'max': 20,
-                'coerce': _try_int,
+                'coerce': try_int,
             },
             'marker': {
                 'type': 'integer',
                 'min': 1,
-                'coerce': _try_int,
+                'coerce': try_int,
             },
         })
 
         if not v.validate(dict(self.request.GET)):
-            error = '%s.' % _cerberus_errors_to_str(v.errors)
+            error = '%s.' % cerberus_errors_to_str(v.errors)
             return self.make_response({'message': error}, status=400)
 
         try:
@@ -112,7 +98,7 @@ class Snippets(resource.Resource):
         v = cerberus.Validator(_schema)
 
         if not v.validate(snippet):
-            error = _cerberus_errors_to_str(v.errors)
+            error = cerberus_errors_to_str(v.errors)
         elif syntaxes and snippet.get('syntax') not in syntaxes:
             error = '`syntax` - invalid value'
         else:
