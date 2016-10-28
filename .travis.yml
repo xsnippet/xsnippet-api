@@ -6,8 +6,7 @@ services:
   - mongodb
 
 install:
-  # see 'concurrency=greenlet' option in .coveragerc for reason behind greenlet
-  - pip install tox coveralls greenlet
+  - pip install tox coveralls
 
 script:
   - tox

@@ -34,7 +34,7 @@ setup(
     install_requires=[
         'aiohttp >= 0.21.2',
         'cerberus >= 0.9.2',
-        'motor >= 0.5',
+        'motor >= 0.7',
         'python-jose >= 1.3.2',
         'werkzeug >= 0.11.4',
     ],
