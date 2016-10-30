@@ -24,13 +24,37 @@ class Snippet:
 
     async def create(self, snippet):
         snippet = self._normalize(snippet)
+
+        now = datetime.datetime.utcnow().replace(microsecond=0)
+        snippet['created_at'] = now
+        snippet['updated_at'] = now
+
         snippet_id = await self.db.snippets.insert(snippet)
         snippet['id'] = snippet_id
         return snippet
 
+    async def update(self, snippet):
+        now = datetime.datetime.utcnow().replace(microsecond=0)
+        snippet['updated_at'] = now
+
+        result = await self.db.snippets.update(
+            {'_id': snippet['id']},
+            {'$set': snippet},
+        )
+
+        if not result['n']:
+            raise exceptions.SnippetNotFound(
+                'Sorry, cannot find the requested snippet.')
+
+        return await self.get_one(snippet['id'])
+
+    async def replace(self, snippet):
+        return await self.update(self._normalize(snippet))
+
     async def get(self, *, limit=100, marker=None):
         if marker:
             specimen = await self.db.snippets.find_one({'_id': marker})
+
             if not specimen:
                 raise exceptions.SnippetNotFound(
                     'Sorry, cannot complete the request since `marker` '
@@ -62,9 +86,12 @@ class Snippet:
 
     async def delete(self, id):
         result = await self.db.snippets.remove({'_id': id})
+
         if not result['n']:
             raise exceptions.SnippetNotFound(
                 'Sorry, cannot find the requested snippet.')
+
+        return None
 
     def _normalize(self, snippet):
         rv = dict({
@@ -74,8 +101,4 @@ class Snippet:
             'is_public': True,
             'tags': [],
         }, **snippet)
-
-        rv['created_at'] = datetime.datetime.utcnow().replace(microsecond=0)
-        rv['updated_at'] = rv['created_at']
-
         return rv

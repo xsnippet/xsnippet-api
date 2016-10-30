@@ -16,44 +16,101 @@ from .. import exceptions, resource, services
 from ..application import endpoint
 
 
-_schema = {
-    'id': {'type': 'integer', 'readonly': True},
-    'title': {'type': 'string'},
-    'content': {'type': 'string', 'required': True},
-    'syntax': {'type': 'string'},
-    'tags': {'type': 'list', 'schema': {'type': 'string', 'regex': '[\w_-]+'}},
-    'is_public': {'type': 'boolean'},
-    'author_id': {'type': 'integer', 'readonly': True},
-    'created_at': {'type': 'datetime', 'readonly': True},
-    'updated_at': {'type': 'datetime', 'readonly': True},
-}
+class InvalidId(Exception):
+    pass
+
+
+def _get_id(resource):
+    v = cerberus.Validator({
+        'id': {'type': 'integer', 'min': 1, 'coerce': try_int},
+    })
+
+    if not v.validate(dict(resource.request.match_info)):
+        raise InvalidId('%s.' % cerberus_errors_to_str(v.errors))
+
+    return int(resource.request.match_info['id'])
+
+
+async def _write(resource, service_fn, *, status):
+    v = cerberus.Validator({
+        'id': {'type': 'integer', 'readonly': True},
+        'title': {'type': 'string'},
+        'content': {'type': 'string', 'required': True},
+        'syntax': {'type': 'string'},
+        'tags': {'type': 'list',
+                 'schema': {'type': 'string', 'regex': '[\w_-]+'}},
+        'is_public': {'type': 'boolean'},
+        'author_id': {'type': 'integer', 'readonly': True},
+        'created_at': {'type': 'datetime', 'readonly': True},
+        'updated_at': {'type': 'datetime', 'readonly': True},
+    })
+
+    snippet = await resource.read_request()
+    conf = resource.request.app['conf']
+    syntaxes = conf.getlist('snippet', 'syntaxes', fallback=None)
+
+    # If 'snippet:syntaxes' option is not empty, we need to ensure that
+    # only specified syntaxes are allowed.
+    if syntaxes:
+        v.schema['syntax']['allowed'] = syntaxes
+
+    # In case of PATCH required attributes must become optional, since
+    # the operation updates the entity partially and we assume all
+    # constraints are satisfied in the database.
+    is_patch = resource.request.method.lower() == 'patch'
+
+    if not v.validate(snippet, update=is_patch):
+        error = cerberus_errors_to_str(v.errors)
+        return resource.make_response({'message': '%s.' % error}, status=400)
+
+    try:
+        written = await service_fn(snippet)
+
+    except InvalidId as exc:
+        return resource.make_response({'message': str(exc)}, status=400)
+    except exceptions.SnippetNotFound as exc:
+        return resource.make_response({'message': str(exc)}, status=404)
+
+    return resource.make_response(written, status=status)
+
+
+async def _read(resource, service_fn, *, status):
+    try:
+        read = await service_fn(_get_id(resource))
+
+    except InvalidId as exc:
+        return resource.make_response({'message': str(exc)}, status=400)
+    except exceptions.SnippetNotFound as exc:
+        return resource.make_response({'message': str(exc)}, status=404)
+
+    return resource.make_response(read, status=status)
 
 
 @endpoint('/snippets/{id}', '1.0')
 class Snippet(resource.Resource):
 
     async def get(self):
-        return await self._run(services.Snippet(self.db).get_one, 200)
+        return await _read(self, services.Snippet(self.db).get_one, status=200)
 
     async def delete(self):
         # TODO: only authorized owners can remove their snippets
-        return await self._run(services.Snippet(self.db).delete, 204)
+        return await _read(self, services.Snippet(self.db).delete, status=204)
 
-    async def _run(self, service_fn, status):
-        v = cerberus.Validator({
-            'id': {'type': 'integer', 'min': 1, 'coerce': try_int},
-        })
+    async def put(self):
+        async def service_fn(snippet):
+            snippet['id'] = _get_id(self)
+            return await services.Snippet(self.db).replace(snippet)
 
-        if not v.validate(dict(self.request.match_info)):
-            error = '%s.' % cerberus_errors_to_str(v.errors)
-            return self.make_response({'message': error}, status=400)
+        # TODO: only authorized owners can update their snippets
+        return await _write(self, service_fn, status=200)
 
-        try:
-            rv = await service_fn(int(self.request.match_info['id']))
-        except exceptions.SnippetNotFound as exc:
-            return self.make_response({'message': str(exc)}, status=404)
+    async def patch(self):
+        async def service_fn(snippet):
+            snippet['id'] = _get_id(self)
+            return await services.Snippet(self.db).update(snippet)
 
-        return self.make_response(rv, status)
+        # TODO: only authorized owners can update their snippets
+        return await _write(self, service_fn, status=200)
 
 
 @endpoint('/snippets', '1.0')
@@ -91,25 +148,4 @@ class Snippets(resource.Resource):
         return self.make_response(snippets, status=200)
 
     async def post(self):
-        snippet = await self.read_request()
-
-        conf = self.request.app['conf']
-        syntaxes = conf.getlist('snippet', 'syntaxes', fallback=None)
-        v = cerberus.Validator(_schema)
-
-        if not v.validate(snippet):
-            error = cerberus_errors_to_str(v.errors)
-        elif syntaxes and snippet.get('syntax') not in syntaxes:
-            error = '`syntax` - invalid value'
-        else:
-            error = None
-
-        if error:
-            return self.make_response(
-                {
-                    'message': 'Cannot create a new snippet, passed data are '
-                               'incorrect. Found issues: %s.' % error
-                }, status=400)
-
-        snippet = await services.Snippet(self.db).create(snippet)
-        return self.make_response(snippet, status=201)
+        return await _write(self, services.Snippet(self.db).create, status=201)

@@ -130,17 +130,15 @@ class TestSnippet(metaclass=AIOTestMeta):
 
         created = await self.service.create(snippet)
         created_db = await self.db.snippets.find_one(
-            {'_id': created.pop('id')}
+            {'_id': created['id']}
         )
 
-        created.pop('created_at')
-        created.pop('updated_at')
+        for popcolumn in ('created_at', 'updated_at'):
+            created.pop(popcolumn)
+            created_db.pop(popcolumn)
 
-        created_db.pop('id')
-        created_db.pop('created_at')
-        created_db.pop('updated_at')
-
-        assert created == {
+        assert created == created_db == {
+            'id': created['id'],
             'title': 'my snippet',
             'content': '...',
             'syntax': 'python',
@@ -148,8 +146,6 @@ class TestSnippet(metaclass=AIOTestMeta):
             'tags': [],
             'author_id': None,
         }
-
-        assert created == created_db
 
     async def test_delete(self):
         _id = self.snippets[0]['id']
@@ -166,5 +162,67 @@ class TestSnippet(metaclass=AIOTestMeta):
     async def test_delete_not_found(self):
         with pytest.raises(exceptions.SnippetNotFound) as excinfo:
             await self.service.delete(123456789)
+
+        excinfo.match(r'Sorry, cannot find the requested snippet.')
+
+    async def test_update(self):
+        snippet = {
+            'id': self.snippets[0]['id'],
+            'title': 'brand new snippet',
+        }
+
+        updated = await self.service.update(snippet)
+        updated_db = await self.db.snippets.find_one({'_id': snippet['id']})
+
+        for popcolumn in ('created_at', 'updated_at'):
+            updated.pop(popcolumn)
+            updated_db.pop(popcolumn)
+
+        assert updated == updated_db == {
+            'id': snippet['id'],
+            'title': snippet['title'],
+            'content': self.snippets[0]['content'],
+            'syntax':  self.snippets[0]['syntax'],
+            'is_public': self.snippets[0]['is_public'],
+            'tags': self.snippets[0]['tags'],
+            'author_id': self.snippets[0]['author_id'],
+        }
+
+    async def test_update_not_found(self):
+        with pytest.raises(exceptions.SnippetNotFound) as excinfo:
+            await self.service.update({'id': 123456789})
+
+        excinfo.match(r'Sorry, cannot find the requested snippet.')
+
+    async def test_replace(self):
+        snippet = {
+            'id': self.snippets[0]['id'],
+            'title': 'brand new snippet',
+            'content': 'brand new snippet',
+        }
+
+        replaced = await self.service.replace(snippet)
+        replaced_db = await self.db.snippets.find_one({'_id': snippet['id']})
+
+        for popcolumn in ('created_at', 'updated_at'):
+            replaced.pop(popcolumn)
+            replaced_db.pop(popcolumn)
+
+        assert replaced == replaced_db == {
+            # those are changed
+            'id': snippet['id'],
+            'title': snippet['title'],
+            'content': snippet['content'],
+
+            # those are reset due to normalization
+            'syntax': 'text',
+            'is_public': True,
+            'tags': [],
+            'author_id': None,
+        }
+
+    async def test_replace_not_found(self):
+        with pytest.raises(exceptions.SnippetNotFound) as excinfo:
+            await self.service.replace({'id': 123456789})
 
         excinfo.match(r'Sorry, cannot find the requested snippet.')
