@@ -12,7 +12,7 @@
 
 import pkg_resources
 
-from aiohttp import abc, web
+from aiohttp import abc, web, web_urldispatcher
 
 
 def _get_latest_version(versions, stable=True):
@@ -77,6 +77,8 @@ class VersionRouter(abc.AbstractRouter):
             version = self._latest
 
         if version not in self._routers:
-            raise web.HTTPPreconditionFailed()
+            return web_urldispatcher.MatchInfoError(
+                web.HTTPPreconditionFailed()
+            )
 
         return await self._routers[version].resolve(request)

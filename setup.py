@@ -32,7 +32,7 @@ setup(
         'pytest-runner',
     ],
     install_requires=[
-        'aiohttp >= 0.21.2, < 1.1',
+        'aiohttp >= 1.1',
         'cerberus >= 0.9.2',
         'motor >= 0.7, < 1.0',
         'python-jose >= 1.3.2',

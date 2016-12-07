@@ -56,22 +56,30 @@ def create_app(conf):
     :return: an application instance
     :rtype: :class:`aiohttp.web.Application`
     """
-    # we need to import all the resources in order to evaluate @endpoint
-    # decorator, so they can be collected and passed to VersionRouter
+    # We need to import all the resources in order to evaluate @endpoint
+    # decorator, so they can be collected and passed to VersionRouter.
     from . import resources  # noqa
     app = web.Application(
-        router=router.VersionRouter(endpoint.collect()),
         middlewares=[
             functools.partial(middlewares.auth, conf['auth']),
         ])
 
-    # attach settings to the application instance in order to make them
-    # accessible at any point of execution (e.g. request handling)
+    # Since aiohttp 1.1, UrlDispatcher has one mandatory attribute -
+    # application instance, that's used internally only in subapps
+    # feature. Unfortunately, there's no legal way to pass application
+    # when router is created or vice versa. Either way we need to
+    # access internal variable in order to do so.
+    #
+    # See https://github.com/KeepSafe/aiohttp/issues/1373 for details.
+    app._router = router.VersionRouter(endpoint.collect(app))
+
+    # Attach settings to the application instance in order to make them
+    # accessible at any point of execution (e.g. request handling).
     app['conf'] = conf
     app['db'] = database.create_connection(conf)
 
-    # we need to respond with Vary header time to time in order to avoid
-    # issues with cache on client side
+    # We need to respond with Vary header time to time in order to avoid
+    # issues with cache on client side.
     app.on_response_prepare.append(_inject_vary_header)
 
     return app
@@ -109,18 +117,18 @@ class endpoint:
         return resource
 
     @classmethod
-    def collect(cls):
-        rv = collections.defaultdict(web_urldispatcher.UrlDispatcher)
+    def collect(cls, app):
+        rv = {}
 
         # Create routers for each discovered API version. The main reason why
         # we need that so early is to register resources in all needed routers
         # according to supported version range.
         for item in cls._registry:
-            rv[item.version]
+            rv[item.version] = web_urldispatcher.UrlDispatcher(app)
 
         for item in cls._registry:
-            # if there's no end_version then a resource is still working, and
-            # latest discovered version should be considered as end_version
+            # If there's no end_version then a resource is still working, and
+            # latest discovered version should be considered as end_version.
             end_version = item.end_version or sorted(
                 rv.keys(),
                 key=pkg_resources.parse_version

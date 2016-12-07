@@ -27,7 +27,7 @@ class TestApplication(metaclass=AIOTestMeta):
     @pytest.mark.parametrize('name, value', [
         ('Accept', 'application/json'),
         ('Accept-Encoding', 'gzip'),
-        ('Api-Version', '1'),
+        ('Api-Version', '1.0'),
     ])
     async def test_http_vary_header(self, name, value):
         async with AIOTestApp(self.app) as testapp:
