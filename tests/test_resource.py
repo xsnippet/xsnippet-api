@@ -56,8 +56,8 @@ class TestResource(metaclass=AIOTestMeta):
             # NOTE: Do not check response context, since it's not clear
             # whether should we respond with JSON or plain/text or something
             # else due to the fact that requested format is not supported.
-            assert resp.status == 406
-            resp.close()
+            async with resp:
+                assert resp.status == 406
 
     async def test_post_json(self):
         async with AIOTestApp(self.app) as testapp:
@@ -84,8 +84,8 @@ class TestResource(metaclass=AIOTestMeta):
                 }
             )
 
-            assert resp.status == 415
-            resp.close()
+            async with resp:
+                assert resp.status == 415
 
     async def test_post_json_expect_unsupported_media_type(self):
         async with AIOTestApp(self.app) as testapp:
@@ -101,5 +101,5 @@ class TestResource(metaclass=AIOTestMeta):
             # NOTE: Do not check response context, since it's not clear
             # whether should we respond with JSON or plain/text or something
             # else due to the fact that requested format is not supported.
-            assert resp.status == 406
-            resp.close()
+            async with resp:
+                assert resp.status == 406

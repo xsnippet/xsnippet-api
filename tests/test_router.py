@@ -80,8 +80,8 @@ class TestVersionRouter(metaclass=AIOTestMeta):
                 'Api-Version': '42',
             })
 
-            assert resp.status == 406
-            resp.close()
+            async with resp:
+                assert resp.status == 406
 
 
 class TestGetLatestVersion:

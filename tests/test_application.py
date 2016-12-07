@@ -40,4 +40,4 @@ class TestApplication(metaclass=AIOTestMeta):
             ])
 
             assert name in parts
-            resp.close()
+            await resp.release()

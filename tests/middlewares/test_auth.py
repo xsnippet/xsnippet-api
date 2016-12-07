@@ -60,8 +60,8 @@ class TestAuthMiddleware(metaclass=AIOTestMeta):
                 'Authorization': 'bearer ' + token
             })
 
-            assert resp.status == 200
-            resp.close()
+            async with resp:
+                assert resp.status == 200
 
     async def test_authentication_token_not_passed(self):
         async def handler(request):
@@ -72,8 +72,8 @@ class TestAuthMiddleware(metaclass=AIOTestMeta):
         async with AIOTestApp(self.app) as testapp:
             resp = await testapp.get('/test_auth')
 
-            assert resp.status == 200
-            resp.close()
+            async with resp:
+                assert resp.status == 200
 
     async def test_unauthorized_is_raised_for_invalid_type(self):
         token = jwt.encode({'user': 'john'}, 'SWORDFISH')

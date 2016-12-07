@@ -76,12 +76,13 @@ def inloop(fn=None, *, setup=None, teardown=None):
                         else:
                             teardown(self)
 
-                # running a given coroutine may produce another ones to free
-                # resources (e.g. close sockets) when it's done, so we need
-                # to run the event loop one more time to execute them
-                tmp_loop.stop()
-                tmp_loop.run_forever()
-                tmp_loop.close()
+                if not tmp_loop.is_closed():
+                    # running coroutines may produce another ones to free
+                    # resources, so we need to stop accepting new ones
+                    # and run the loop until everything is done.
+                    tmp_loop.call_soon(tmp_loop.stop)
+                    tmp_loop.run_forever()
+                    tmp_loop.close()
 
             finally:
                 asyncio.set_event_loop(def_loop)
@@ -176,11 +177,15 @@ class AIOTestApp(object):
     _ADDRESS = ('127.0.0.1', 0)
 
     def __init__(self, app):
+        self._app = app
         self._loop = app.loop
-        self._handler = app.make_handler()
+        self._handler = None
         self._server = None
 
     async def __aenter__(self):
+        await self._app.startup()
+        self._handler = self._app.make_handler()
+
         if self._server is None:
             self._server = await self._loop.create_server(
                 self._handler,
@@ -189,11 +194,16 @@ class AIOTestApp(object):
         return self
 
     async def __aexit__(self, exc_type, exc, tb):
-        # we've got to wait until client connections are properly closed
-        await self._handler.finish_connections()
-
         self._server.close()
+        await self._server.wait_closed()
+
+        # we've got to wait until client connections are properly closed
+        await self._app.shutdown()
+        await self._handler.finish_connections()
+        await self._app.cleanup()
+
         self._server = None
+        self._handler = None
 
     async def _http(self, method, url, **kwargs):
         with aiohttp.ClientSession(loop=self._loop) as session:
