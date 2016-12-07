@@ -80,7 +80,7 @@ class TestVersionRouter(metaclass=AIOTestMeta):
                 'Api-Version': '42',
             })
 
-            assert resp.status == 412
+            assert resp.status == 406
             resp.close()
 
 

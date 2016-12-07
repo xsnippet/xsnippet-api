@@ -77,8 +77,6 @@ class VersionRouter(abc.AbstractRouter):
             version = self._latest
 
         if version not in self._routers:
-            return web_urldispatcher.MatchInfoError(
-                web.HTTPPreconditionFailed()
-            )
+            return web_urldispatcher.MatchInfoError(web.HTTPNotAcceptable())
 
         return await self._routers[version].resolve(request)
