@@ -24,9 +24,7 @@ def create_connection(conf):
     :return: a database connection
     :rtype: :class:`motor.motor_asyncio.AsyncIOMotorDatabase`
     """
-
-    mongo = AsyncIOMotorClient(conf['database']['connection'],
-                               max_pool_size=conf['database']['pool-size'])
+    mongo = AsyncIOMotorClient(conf['database']['connection'])
 
     # get_default_database returns a database from the connection string
     db = mongo.get_default_database()
@@ -99,7 +97,7 @@ class _IdIncrementer(pymongo.son_manipulator.SONManipulator):
         return son
 
     def _get_next_id(self, collection):
-        result = collection.database._autoincrement_ids.find_and_modify(
+        result = collection.database['_autoincrement_ids'].find_and_modify(
             query={'_id': collection.name},
             update={'$inc': {'next': 1}},
             upsert=True,
