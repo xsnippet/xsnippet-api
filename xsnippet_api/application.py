@@ -13,7 +13,7 @@ import collections
 import functools
 
 import pkg_resources
-from aiohttp import web, web_urldispatcher
+import aiohttp.web
 
 from . import database, router, middlewares
 
@@ -59,18 +59,18 @@ def create_app(conf):
     # We need to import all the resources in order to evaluate @endpoint
     # decorator, so they can be collected and passed to VersionRouter.
     from . import resources  # noqa
-    app = web.Application(
+    app = aiohttp.web.Application(
         middlewares=[
             functools.partial(middlewares.auth, conf['auth']),
         ])
 
     # Since aiohttp 1.1, UrlDispatcher has one mandatory attribute -
     # application instance, that's used internally only in subapps
-    # feature. Unfortunately, there's no legal way to pass application
-    # when router is created or vice versa. Either way we need to
-    # access internal variable in order to do so.
-    #
-    # See https://github.com/KeepSafe/aiohttp/issues/1373 for details.
+    # feature. Since aiohttp 1.2, application instance should be passed
+    # via post_init() method, however, this method must be called
+    # before registering any resources. That means we are forced
+    # to create router when application is created in order to
+    # do API auto discovering.
     app._router = router.VersionRouter(endpoint.collect(app))
 
     # Attach settings to the application instance in order to make them
@@ -91,7 +91,7 @@ class endpoint:
     Usage example:
 
         @endpoint('/myresources/{id}', '1.0')
-        class MyResource(web.View):
+        class MyResource(aiohttp.web.View):
             def get(self):
                 pass
 
@@ -124,7 +124,8 @@ class endpoint:
         # we need that so early is to register resources in all needed routers
         # according to supported version range.
         for item in cls._registry:
-            rv[item.version] = web_urldispatcher.UrlDispatcher(app)
+            rv[item.version] = aiohttp.web.UrlDispatcher()
+            rv[item.version].post_init(app)
 
         for item in cls._registry:
             # If there's no end_version then a resource is still working, and

@@ -10,7 +10,7 @@
 
 import pytest
 
-from aiohttp import web, web_urldispatcher
+from aiohttp import web
 from xsnippet_api import router
 
 from tests import AIOTestMeta, AIOTestApp
@@ -29,10 +29,12 @@ class TestVersionRouter(metaclass=AIOTestMeta):
     def setup(self):
         self.app = web.Application()
 
-        router_v1 = web_urldispatcher.UrlDispatcher(self.app)
+        router_v1 = web.UrlDispatcher()
+        router_v1.post_init(self.app)
         router_v1.add_route('*', '/test', self._TestResource1)
 
-        router_v2 = web_urldispatcher.UrlDispatcher(self.app)
+        router_v2 = web.UrlDispatcher()
+        router_v2.post_init(self.app)
         router_v2.add_route('*', '/test', self._TestResource2)
 
         # Since aiohttp 1.1, UrlDispatcher has one mandatory attribute -
