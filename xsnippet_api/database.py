@@ -9,6 +9,7 @@
     :license: MIT, see LICENSE for details
 """
 
+import asyncio
 import copy
 
 from motor.motor_asyncio import AsyncIOMotorClient
@@ -39,22 +40,37 @@ def create_connection(conf):
     db.add_son_manipulator(_IdIncrementer())
     db.add_son_manipulator(_IdProcessor())
 
+    return db
+
+
+async def setup(app):
+    """Perform setup actions on application startup.
+
+    This function is expected to inject the `db` key to the application
+    instance, that must point to a properly initialized DB connection. Some
+    operations (e.g. ensuring of indexes) may be performed asynchronously.
+    """
+
+    db = create_connection(app['conf'])
+    app['db'] = db
+
     # ensure necessary indexes exist. background=True allows operations
     # read/write operations on collections while indexes are being built
-    db.snippets.create_index('author_id',
-                             name='author_idx',
-                             background=True)
-    db.snippets.create_index('tags',
-                             name='tags_idx',
-                             background=True),
-    db.snippets.create_index([('created_at', pymongo.DESCENDING)],
-                             name='created_idx',
-                             background=True)
-    db.snippets.create_index([('updated_at', pymongo.DESCENDING)],
-                             name='updated_idx',
-                             background=True)
-
-    return db
+    futures = [
+        db.snippets.create_index('author_id',
+                                 name='author_idx',
+                                 background=True),
+        db.snippets.create_index('tags',
+                                 name='tags_idx',
+                                 background=True),
+        db.snippets.create_index([('created_at', pymongo.DESCENDING)],
+                                 name='created_idx',
+                                 background=True),
+        db.snippets.create_index([('updated_at', pymongo.DESCENDING)],
+                                 name='updated_idx',
+                                 background=True)
+    ]
+    return await asyncio.gather(*futures)
 
 
 class _IdProcessor(pymongo.son_manipulator.SONManipulator):
