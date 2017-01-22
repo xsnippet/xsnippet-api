@@ -85,9 +85,9 @@ class TestSnippets(metaclass=AIOTestMeta):
             assert await resp.json() == []
 
     async def test_get_snippets(self):
-        await self.app['db'].snippets.insert(self.snippets)
-
         async with AIOTestApp(self.app) as testapp:
+            await self.app['db'].snippets.insert(self.snippets)
+
             resp = await testapp.get(
                 '/snippets',
                 headers={
@@ -117,9 +117,10 @@ class TestSnippets(metaclass=AIOTestMeta):
             'created_at': now,
             'updated_at': now,
         }
-        await self.app['db'].snippets.insert(self.snippets + [snippet])
 
         async with AIOTestApp(self.app) as testapp:
+            await self.app['db'].snippets.insert(self.snippets + [snippet])
+
             # ask for one latest snippet
             resp = await testapp.get(
                 '/snippets?limit=1',
@@ -317,19 +318,20 @@ class TestSnippets(metaclass=AIOTestMeta):
                 error_resp['message'])
 
     async def test_data_model_indexes_exist(self):
-        res = await self.app['db'].snippets.index_information()
+        async with AIOTestApp(self.app):
+            res = await self.app['db'].snippets.index_information()
 
-        assert res['author_idx']['key'] == [('author_id', 1)]
-        assert res['tags_idx']['key'] == [('tags', 1)]
-        assert res['updated_idx']['key'] == [('updated_at', -1)]
-        assert res['created_idx']['key'] == [('created_at', -1)]
+            assert res['author_idx']['key'] == [('author_id', 1)]
+            assert res['tags_idx']['key'] == [('tags', 1)]
+            assert res['updated_idx']['key'] == [('updated_at', -1)]
+            assert res['created_idx']['key'] == [('created_at', -1)]
 
     async def test_get_snippet(self):
         awaited = copy.deepcopy(self.snippets[0])
 
-        await self.app['db'].snippets.insert(self.snippets)
-
         async with AIOTestApp(self.app) as testapp:
+            await self.app['db'].snippets.insert(self.snippets)
+
             resp = await testapp.get(
                 '/snippets/' + str(awaited['id']),
                 headers={
@@ -369,9 +371,9 @@ class TestSnippets(metaclass=AIOTestMeta):
 
     async def test_delete_snippet(self):
         created = self.snippets[0]
-        await self.app['db'].snippets.insert(created)
-
         async with AIOTestApp(self.app) as testapp:
+            await self.app['db'].snippets.insert(created)
+
             resp = await testapp.delete(
                 '/snippets/' + str(created['id']),
                 headers={

@@ -76,7 +76,7 @@ def create_app(conf):
     # Attach settings to the application instance in order to make them
     # accessible at any point of execution (e.g. request handling).
     app['conf'] = conf
-    app['db'] = database.create_connection(conf)
+    app.on_startup.append(database.setup)
 
     # We need to respond with Vary header time to time in order to avoid
     # issues with cache on client side.
