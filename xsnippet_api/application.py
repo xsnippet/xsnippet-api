@@ -61,8 +61,9 @@ def create_app(conf):
     from . import resources  # noqa
     app = aiohttp.web.Application(
         middlewares=[
-            functools.partial(middlewares.auth, conf['auth']),
+            functools.partial(middlewares.auth.auth, conf['auth']),
         ])
+    app.on_startup.append(middlewares.auth.setup)
 
     # Since aiohttp 1.1, UrlDispatcher has one mandatory attribute -
     # application instance, that's used internally only in subapps
