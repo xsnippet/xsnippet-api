@@ -26,7 +26,7 @@ def main(args=sys.argv[1:]):
     web.run_app(
         create_app(conf),
         host=conf['server']['host'],
-        port=conf['server']['port'])
+        port=int(conf['server']['port']))
 
 
 # let's make this module and xsnippet_api package to be executable, so
