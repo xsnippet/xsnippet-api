@@ -9,8 +9,29 @@
     :license: MIT, see LICENSE for details
 """
 
+import random
+import string
+
 import aiohttp.web as web
 import jose.jwt as jwt
+
+
+SECRET_LEN = 64
+
+
+async def setup(app):
+    """Perform middleware setup steps at application startup.
+
+    E.g. generate a temporary secret, if one was not set in conf explicitly."""
+
+    conf = app['conf']['auth']
+
+    secret = conf.get('secret', '')
+    if not secret:
+        symbols = string.ascii_letters + string.digits
+        secret = ''.join(random.choice(symbols) for _ in range(SECRET_LEN))
+
+        conf['secret'] = secret
 
 
 async def auth(conf, app, next_handler):
@@ -25,11 +46,7 @@ async def auth(conf, app, next_handler):
     On failure 401 Unauthorized error is raised.
     """
 
-    try:
-        secret = conf['secret']
-    except KeyError:
-        raise ValueError("Option 'secret' is required to be set when "
-                         "auth middleware is enabled")
+    secret = conf['secret']
 
     async def auth_handler(request):
         authorization = request.headers.get('Authorization')

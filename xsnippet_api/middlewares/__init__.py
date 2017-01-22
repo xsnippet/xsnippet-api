@@ -8,7 +8,7 @@
     :license: MIT, see LICENSE for details
 """
 
-from .auth import auth
+from . import auth
 
 
 __all__ = [

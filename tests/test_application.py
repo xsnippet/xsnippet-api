@@ -12,6 +12,7 @@ import pytest
 import pkg_resources
 
 from xsnippet_api import application, conf
+from xsnippet_api.middlewares import auth
 from tests import AIOTestMeta, AIOTestApp
 
 
@@ -41,3 +42,12 @@ class TestApplication(metaclass=AIOTestMeta):
 
             assert name in parts
             await resp.release()
+
+    async def test_auth_secret_is_generated_if_not_set(self):
+        app_conf = conf.get_conf(
+            pkg_resources.resource_filename('xsnippet_api', 'default.conf'))
+        app_conf['auth'] = {'secret': ''}
+
+        app = application.create_app(app_conf)
+        async with AIOTestApp(app):
+            assert len(app['conf']['auth']['secret']) == auth.SECRET_LEN

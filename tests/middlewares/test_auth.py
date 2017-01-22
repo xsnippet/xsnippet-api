@@ -31,7 +31,7 @@ class TestAuthMiddleware(metaclass=AIOTestMeta):
             return web.Response(text='success')
 
         self.app = web.Application(middlewares=[
-            functools.partial(middlewares.auth, self.conf['auth'])
+            functools.partial(middlewares.auth.auth, self.conf['auth'])
         ])
         self.app.router.add_get('/', handler)
 
