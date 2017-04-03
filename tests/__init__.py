@@ -178,7 +178,6 @@ class AIOTestApp(object):
 
     def __init__(self, app):
         self._app = app
-        self._loop = app.loop
         self._handler = None
         self._server = None
 
@@ -187,7 +186,7 @@ class AIOTestApp(object):
         self._handler = self._app.make_handler()
 
         if self._server is None:
-            self._server = await self._loop.create_server(
+            self._server = await self._app.loop.create_server(
                 self._handler,
                 self._ADDRESS[0],
                 self._ADDRESS[1])
@@ -206,7 +205,7 @@ class AIOTestApp(object):
         self._handler = None
 
     async def _http(self, method, url, **kwargs):
-        with aiohttp.ClientSession(loop=self._loop) as session:
+        with aiohttp.ClientSession(loop=self._app.loop) as session:
             method = getattr(session, method)
             return await method(self._resolve(url), **kwargs)
 
