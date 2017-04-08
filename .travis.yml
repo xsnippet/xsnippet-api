@@ -9,6 +9,8 @@ matrix:
     - python: 3.6
       env: TOXENV=py36
     - env: TOXENV=openapi
+    - python: 3.6
+      env: TOXENV=docs
 
 services:
   - docker
