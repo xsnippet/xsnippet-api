@@ -1,0 +1,38 @@
+version: "3.3"
+services:
+  db:
+    image: mongo:3
+    deploy:
+      replicas: 1
+      restart_policy:
+        condition: on-failure
+    volumes:
+      - db_state:/data/db
+    networks:
+      - default
+
+  api:
+    image: {{ xsnippet_image }}
+    configs:
+      - source: api_config
+        target: /etc/xsnippet-api.conf
+        mode: 0600
+    deploy:
+      replicas: 2
+      restart_policy:
+        condition: on-failure
+    depends_on:
+      - db
+    ports:
+      - "80:8000"
+    networks:
+      - default
+networks:
+  default:
+
+volumes:
+  db_state:
+
+configs:
+  api_config:
+    file: ./xsnippet-api.conf
