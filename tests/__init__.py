@@ -198,7 +198,7 @@ class AIOTestApp(object):
 
         # we've got to wait until client connections are properly closed
         await self._app.shutdown()
-        await self._handler.finish_connections()
+        await self._handler.shutdown()
         await self._app.cleanup()
 
         self._server = None
