@@ -72,6 +72,14 @@ class Snippets(resource.Resource):
                 'min': 1,
                 'coerce': try_int,
             },
+            'title': {
+                'type': 'string',
+                'empty': False,
+            },
+            'tag': {
+                'type': 'string',
+                'regex': '[\w_-]+',
+            }
         })
 
         if not v.validate(dict(self.request.GET)):
@@ -80,6 +88,8 @@ class Snippets(resource.Resource):
 
         try:
             snippets = await services.Snippet(self.db).get(
+                title=self.request.GET.get('title'),
+                tag=self.request.GET.get('tag'),
                 # It's safe to have type cast here since those query parameters
                 # are guaranteed to be integer, thanks to validation above.
                 limit=int(self.request.GET.get('limit', 0)),

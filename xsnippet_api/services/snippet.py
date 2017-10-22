@@ -11,6 +11,7 @@
 """
 
 import datetime
+import re
 
 import pymongo
 
@@ -28,7 +29,14 @@ class Snippet:
         snippet['id'] = snippet_id
         return snippet
 
-    async def get(self, *, limit=100, marker=None):
+    async def get(self, *, title=None, tag=None, limit=100, marker=None):
+        condition = {}
+
+        if title is not None:
+            condition['title'] = {'$regex': '^' + re.escape(title) + '.*'}
+        if tag is not None:
+            condition['tags'] = tag
+
         if marker:
             specimen = await self.db.snippets.find_one({'_id': marker})
             if not specimen:
@@ -36,16 +44,12 @@ class Snippet:
                     'Sorry, cannot complete the request since `marker` '
                     'points to a nonexistent snippet.')
 
-            query = self.db.snippets.find({
-                '$and': [
-                    {'_id': {'$lt': specimen['id']}},
-                    {'created_at': {'$lte': specimen['created_at']}},
-                ]
-            })
-        else:
-            query = self.db.snippets.find()
+            condition['$and'] = [
+                {'_id': {'$lt': specimen['id']}},
+                {'created_at': {'$lte': specimen['created_at']}},
+            ]
 
-        query = query.sort([
+        query = self.db.snippets.find(condition).sort([
             ('_id', pymongo.DESCENDING),
             ('created_at', pymongo.DESCENDING)
         ])

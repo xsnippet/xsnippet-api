@@ -121,6 +121,52 @@ class TestSnippet(metaclass=AIOTestMeta):
         excinfo.match(r'Sorry, cannot complete the request since `marker` '
                       r'points to a nonexistent snippet.')
 
+    async def test_get_filter_by_title(self):
+        result = await self.service.get(title='snippet #1')
+        assert result == [self.snippets[0]]
+
+        prefix_match = await self.service.get(title='snippet')
+        assert prefix_match == list(reversed(self.snippets))
+
+        regexes_are_escaped = await self.service.get(title='^snippet.*')
+        assert regexes_are_escaped == []
+
+        nonexistent = await self.service.get(title='non existing snippet')
+        assert nonexistent == []
+
+    async def test_get_filter_by_tag(self):
+        result = await self.service.get(tag='tag_c')
+        assert result == [self.snippets[1]]
+
+        with_multiple_tags = await self.service.get(tag='tag_a')
+        assert with_multiple_tags == [self.snippets[0]]
+
+        nonexistent = await self.service.get(tag='non_existing_tag')
+        assert nonexistent == []
+
+    async def test_get_filter_by_title_and_tag(self):
+        result = await self.service.get(title='snippet #2', tag='tag_c')
+        assert result == [self.snippets[1]]
+
+        nonexistent = await self.service.get(title='snippet #2', tag='tag_a')
+        assert nonexistent == []
+
+    async def test_get_filter_by_title_and_tag_with_pagination(self):
+        snippet = {
+            'title': 'snippet #1',
+            'content': '...',
+            'syntax': 'python',
+            'tags': ['tag_a']
+        }
+        created = await self.service.create(snippet)
+
+        one = await self.service.get(title='snippet #1', tag='tag_a', limit=1)
+        assert one == [created]
+
+        another = await self.service.get(title='snippet #1', tag='tag_a',
+                                         marker=one[0]['id'], limit=1)
+        assert another == [self.snippets[0]]
+
     async def test_create(self):
         snippet = {
             'title': 'my snippet',
