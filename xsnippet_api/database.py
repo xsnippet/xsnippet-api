@@ -60,6 +60,16 @@ async def setup(app):
         db.snippets.create_index('author_id',
                                  name='author_idx',
                                  background=True),
+        db.snippets.create_index('title',
+                                 name='title_idx',
+                                 # create a partial index to skip null values -
+                                 # this is supposed to make the index smaller,
+                                 # so that there is a higher chance it's kept
+                                 # in the main memory
+                                 partialFilterExpression={
+                                    'title': {'$type': 'string'}
+                                 },
+                                 background=True),
         db.snippets.create_index('tags',
                                  name='tags_idx',
                                  background=True),

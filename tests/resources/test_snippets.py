@@ -104,6 +104,150 @@ class TestSnippets(metaclass=AIOTestMeta):
             for snippet_db, snippet_api in zip(expected, await resp.json()):
                 self._compare_snippets(snippet_db, snippet_api)
 
+    async def test_get_snippets_filter_by_title(self):
+        async with AIOTestApp(self.app) as testapp:
+            await self.app['db'].snippets.insert(self.snippets)
+
+            resp = await testapp.get(
+                '/snippets?title=snippet+%231',
+                headers={
+                    'Accept': 'application/json',
+                })
+            assert resp.status == 200
+            expected = [self.snippets[0]]
+            for snippet_db, snippet_api in zip(expected, await resp.json()):
+                self._compare_snippets(snippet_db, snippet_api)
+
+            nonexistent = await testapp.get(
+                '/snippets?title=nonexistent',
+                headers={
+                    'Accept': 'application/json',
+                })
+            assert nonexistent.status == 200
+            assert list(nonexistent.json()) == []
+
+            regexes_are_escaped = await testapp.get(
+                '/snippets?title=%5Esnippet.%2A',  # title=^snippet.*
+                headers={
+                    'Accept': 'application/json',
+                })
+            assert regexes_are_escaped.status == 200
+            assert list(regexes_are_escaped.json()) == []
+
+    async def test_get_snippets_filter_by_title_bad_request(self):
+        async with AIOTestApp(self.app) as testapp:
+            await self.app['db'].snippets.insert(self.snippets)
+
+            resp = await testapp.get(
+                '/snippets?title=',
+                headers={
+                    'Accept': 'application/json',
+                })
+            assert resp.status == 400
+            assert await resp.json() == {
+                'message': '`title` - empty values not allowed.'
+            }
+
+    async def test_get_snippets_filter_by_tag(self):
+        async with AIOTestApp(self.app) as testapp:
+            await self.app['db'].snippets.insert(self.snippets)
+
+            resp = await testapp.get(
+                '/snippets?tag=tag_c',
+                headers={
+                    'Accept': 'application/json',
+                })
+            assert resp.status == 200
+            expected = [self.snippets[1]]
+            for snippet_db, snippet_api in zip(expected, await resp.json()):
+                self._compare_snippets(snippet_db, snippet_api)
+
+            nonexistent = await testapp.get(
+                '/snippets?tag=nonexistent_tag',
+                headers={
+                    'Accept': 'application/json',
+                })
+            assert nonexistent.status == 200
+            assert list(nonexistent.json()) == []
+
+    @pytest.mark.parametrize(
+        'value',
+        ['', 'test%20tag'],
+        ids=['empty', 'whitespace']
+    )
+    async def test_get_snippets_filter_by_tag_bad_request(self, value):
+        async with AIOTestApp(self.app) as testapp:
+            await self.app['db'].snippets.insert(self.snippets)
+
+            resp = await testapp.get(
+                '/snippets?tag=' + value,
+                headers={
+                    'Accept': 'application/json',
+                })
+            assert resp.status == 400
+            assert await resp.json() == {
+                'message': "`tag` - value does not match regex '[\\w_-]+'."
+            }
+
+    async def test_get_snippets_filter_by_title_and_tag(self):
+        async with AIOTestApp(self.app) as testapp:
+            await self.app['db'].snippets.insert(self.snippets)
+
+            resp = await testapp.get(
+                '/snippets?title=snippet+%231&tag=tag_a',
+                headers={
+                    'Accept': 'application/json',
+                })
+            assert resp.status == 200
+            expected = [self.snippets[0]]
+            for snippet_db, snippet_api in zip(expected, await resp.json()):
+                self._compare_snippets(snippet_db, snippet_api)
+
+            nonexistent = await testapp.get(
+                '/snippets?title=snippet+%231&tag=tag_c',
+                headers={
+                    'Accept': 'application/json',
+                })
+            assert nonexistent.status == 200
+            assert list(nonexistent.json()) == []
+
+    async def test_get_snippets_filter_by_title_and_tag_with_pagination(self):
+        now = datetime.datetime.utcnow().replace(microsecond=0)
+        snippet = {
+            'id': 3,
+            'title': 'snippet #1',
+            'content': '(println "Hello, World!")',
+            'syntax': 'clojure',
+            'tags': ['tag_a'],
+            'author_id': None,
+            'is_public': True,
+            'created_at': now,
+            'updated_at': now,
+        }
+
+        async with AIOTestApp(self.app) as testapp:
+            await self.app['db'].snippets.insert(self.snippets + [snippet])
+
+            resp = await testapp.get(
+                '/snippets?title=snippet+%231&tag=tag_a&limit=1',
+                headers={
+                    'Accept': 'application/json',
+                })
+            assert resp.status == 200
+            expected = [snippet]
+            for snippet_db, snippet_api in zip(expected, await resp.json()):
+                self._compare_snippets(snippet_db, snippet_api)
+
+            resp = await testapp.get(
+                '/snippets?title=snippet+%231&tag=tag_a&limit=1&marker=3',
+                headers={
+                    'Accept': 'application/json',
+                })
+            assert resp.status == 200
+            expected = [self.snippets[0]]
+            for snippet_db, snippet_api in zip(expected, await resp.json()):
+                self._compare_snippets(snippet_db, snippet_api)
+
     async def test_get_snippets_pagination(self):
         now = datetime.datetime.utcnow().replace(microsecond=0)
         snippet = {
@@ -322,6 +466,10 @@ class TestSnippets(metaclass=AIOTestMeta):
             res = await self.app['db'].snippets.index_information()
 
             assert res['author_idx']['key'] == [('author_id', 1)]
+            assert res['title_idx']['key'] == [('title', 1)]
+            assert res['title_idx']['partialFilterExpression'] == {
+                'title': {'$type': 'string'}
+            }
             assert res['tags_idx']['key'] == [('tags', 1)]
             assert res['updated_idx']['key'] == [('updated_at', -1)]
             assert res['created_idx']['key'] == [('created_at', -1)]

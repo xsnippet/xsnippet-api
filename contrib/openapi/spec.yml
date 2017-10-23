@@ -71,6 +71,18 @@ paths:
         Returned snippets are sorted in reversed chronological order, so
         most recent ones appear first.
       parameters:
+        - name: title
+          in: query
+          type: string
+          description: |
+            If passed, only the snippets with titles starting with the given
+            string will be returned.
+        - name: tag
+          in: query
+          type: string
+          description: |
+            If passed, only the snippets that have the given string tag will
+            be returned.
         - name: marker
           in: query
           type: integer
