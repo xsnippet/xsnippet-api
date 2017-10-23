@@ -49,5 +49,5 @@ def try_int(value, base=10):
     """
     try:
         return int(value, base)
-    except:
+    except Exception:
         return value
