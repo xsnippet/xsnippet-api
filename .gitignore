@@ -52,3 +52,6 @@ docs/_build/
 
 # Various shit from the OS itself
 .DS_Store
+
+# building of Docker images
+.docker
