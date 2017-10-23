@@ -1,0 +1,68 @@
+---
+- hosts: xsnippet
+  tasks:
+    - name: ensure Python 2 is installed
+      raw: test -e /usr/bin/python || (apt -y update && apt install -y python-minimal)
+  gather_facts: false
+
+- hosts: xsnippet
+  vars:
+    xsnippet_image: xsnippet/xsnippet-api:latest
+  tasks:
+    - name: update apt cache (if needed)
+      apt: update_cache=yes cache_valid_time=3600
+
+    - name: install essential packages
+      apt: "name={{ item }} state=latest"
+      with_items:
+        - apt-transport-https
+        - ca-certificates
+
+    - name: add Docker gpg key
+      apt_key:
+        url: https://download.docker.com/linux/ubuntu/gpg
+        state: present
+
+    - name: add Docker packages repo
+      apt_repository:
+        repo: "deb [arch=amd64] https://download.docker.com/linux/ubuntu {{ ansible_distribution_release }} stable"
+        state: present
+      register: newrepo
+
+    - name: update apt cache (if needed)
+      apt: update_cache=yes
+      when: newrepo.changed
+
+    - name: install the latest Docker
+      apt: name=docker-ce state=latest
+
+    - name: initialize Docker Swarm
+      shell: "docker swarm init --advertise-addr 127.0.0.1 || docker stack ls"
+      register: init_result
+      changed_when: "'This node is already part of a swarm' not in init_result.stderr"
+
+    - name: create xsnippet user
+      user:
+        name: xsnippet
+        createhome: yes
+
+    - name: prepare the config file
+      template:
+        src: xsnippet-api.conf.j2
+        dest: "/home/xsnippet/xsnippet-api.conf"
+        mode: 0600
+        owner: xsnippet
+        group: xsnippet
+
+    - name: prepare the Docker stack config
+      template:
+        src: docker-compose.yml.j2
+        dest: "/home/xsnippet/docker-compose.yml"
+        mode: 0600
+        owner: xsnippet
+        group: xsnippet
+
+    - name: create or update a Docker Swarm stack
+      command: "docker stack deploy -c docker-compose.yml xsnippet"
+      args:
+        chdir: "/home/xsnippet"
