@@ -11,7 +11,7 @@
 import pytest
 
 from aiohttp import web
-from xsnippet_api import router
+from xsnippet.api import router
 
 from tests import AIOTestMeta, AIOTestApp
 

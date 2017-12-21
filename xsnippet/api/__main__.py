@@ -14,8 +14,8 @@ import sys
 
 from aiohttp import web
 
-from xsnippet_api.application import create_app
-from xsnippet_api.conf import get_conf
+from xsnippet.api.application import create_app
+from xsnippet.api.conf import get_conf
 
 
 def main(args=sys.argv[1:]):

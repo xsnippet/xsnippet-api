@@ -4,8 +4,8 @@
 import os
 from setuptools import setup, find_packages
 
-from xsnippet_api import __version__ as version
-from xsnippet_api import __license__ as license
+from xsnippet.api import __version__ as version
+from xsnippet.api import __license__ as license
 
 
 here = os.path.dirname(__file__)
