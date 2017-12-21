@@ -1,5 +1,5 @@
 """
-    xsnippet_api.resources.snippets
+    xsnippet.api.resources.snippets
     -------------------------------
 
     The module implements snippets resource that provides CRUD interface

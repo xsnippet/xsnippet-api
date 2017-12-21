@@ -1,5 +1,5 @@
 """
-    xsnippet_api.conf
+    xsnippet.api.conf
     -----------------
 
     The module provides a function that gathers application settings

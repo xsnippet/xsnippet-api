@@ -1,5 +1,5 @@
 """
-    xsnippet_api.database
+    xsnippet.api.database
     ---------------------
 
     Provides a factory function that creates a database connection

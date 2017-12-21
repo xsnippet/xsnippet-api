@@ -1,5 +1,5 @@
 """
-    xsnippet_api.resources.misc
+    xsnippet.api.resources.misc
     ---------------------------
 
     Various misc stuff that is used internally by other modules of the

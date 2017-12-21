@@ -1,5 +1,5 @@
 """
-    xsnippet_api.exceptions
+    xsnippet.api.exceptions
     -----------------------
 
     The module contains a set of XSnipet's exceptions.

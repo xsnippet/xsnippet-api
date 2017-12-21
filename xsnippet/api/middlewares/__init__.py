@@ -1,5 +1,5 @@
 """
-    xsnippet_api.middlewares
+    xsnippet.api.middlewares
     ------------------------
 
     The package contains various helper middlewares used by the application.

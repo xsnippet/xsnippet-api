@@ -1,5 +1,5 @@
 """
-    xsnippet_api.router
+    xsnippet.api.router
     -------------------
 
     Provides an aiohttp router class for API versioning. In its depth

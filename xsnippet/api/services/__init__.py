@@ -1,5 +1,5 @@
 """
-    xsnippet_api.services
+    xsnippet.api.services
     ---------------------
 
     :copyright: (c) 2016 The XSnippet Team, see AUTHORS for details

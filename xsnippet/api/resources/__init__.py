@@ -1,5 +1,5 @@
 """
-    xsnippet_api.resources
+    xsnippet.api.resources
     ----------------------
 
     The package contains implementations of RESTful API resources.

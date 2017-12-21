@@ -1,5 +1,5 @@
 """
-    xsnippet_api.application
+    xsnippet.api.application
     ------------------------
 
     Provides a factory function to create an application instance,
