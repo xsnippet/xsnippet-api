@@ -14,10 +14,10 @@ import operator
 import pkg_resources
 import pytest
 
-from xsnippet_api.database import create_connection
-from xsnippet_api.conf import get_conf
-from xsnippet_api.services import Snippet
-from xsnippet_api import exceptions
+from xsnippet.api.database import create_connection
+from xsnippet.api.conf import get_conf
+from xsnippet.api.services import Snippet
+from xsnippet.api import exceptions
 
 from tests import AIOTestMeta
 
@@ -26,7 +26,7 @@ class TestSnippet(metaclass=AIOTestMeta):
 
     async def setup(self):
         conf = get_conf(
-            pkg_resources.resource_filename('xsnippet_api', 'default.conf'))
+            pkg_resources.resource_filename('xsnippet.api', 'default.conf'))
         self.db = create_connection(conf)
         self.service = Snippet(self.db)
 

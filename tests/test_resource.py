@@ -13,7 +13,7 @@ import json
 import aiohttp.web as web
 import pkg_resources
 
-from xsnippet_api import conf, database, resource
+from xsnippet.api import conf, database, resource
 from tests import AIOTestMeta, AIOTestApp
 
 
@@ -30,7 +30,7 @@ class _TestResource(resource.Resource):
 class TestResource(metaclass=AIOTestMeta):
 
     conf = conf.get_conf(
-        pkg_resources.resource_filename('xsnippet_api', 'default.conf'))
+        pkg_resources.resource_filename('xsnippet.api', 'default.conf'))
 
     def setup(self):
         self.app = web.Application()

@@ -11,15 +11,15 @@
 import pytest
 import pkg_resources
 
-from xsnippet_api import application, conf
-from xsnippet_api.middlewares import auth
+from xsnippet.api import application, conf
+from xsnippet.api.middlewares import auth
 from tests import AIOTestMeta, AIOTestApp
 
 
 class TestApplication(metaclass=AIOTestMeta):
 
     conf = conf.get_conf(
-        pkg_resources.resource_filename('xsnippet_api', 'default.conf'))
+        pkg_resources.resource_filename('xsnippet.api', 'default.conf'))
     conf['auth'] = {'secret': 'SWORDFISH'}
 
     def setup(self):
@@ -45,7 +45,7 @@ class TestApplication(metaclass=AIOTestMeta):
 
     async def test_auth_secret_is_generated_if_not_set(self):
         app_conf = conf.get_conf(
-            pkg_resources.resource_filename('xsnippet_api', 'default.conf'))
+            pkg_resources.resource_filename('xsnippet.api', 'default.conf'))
         app_conf['auth'] = {'secret': ''}
 
         app = application.create_app(app_conf)

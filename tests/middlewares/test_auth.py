@@ -14,7 +14,7 @@ import aiohttp.web as web
 import jose.jwt as jwt
 import pytest
 
-from xsnippet_api import middlewares
+from xsnippet.api import middlewares
 from tests import AIOTestMeta, AIOTestApp
 
 

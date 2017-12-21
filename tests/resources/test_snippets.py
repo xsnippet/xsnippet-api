@@ -17,8 +17,8 @@ import operator
 import pkg_resources
 import pytest
 
-from xsnippet_api.application import create_app
-from xsnippet_api.conf import get_conf
+from xsnippet.api.application import create_app
+from xsnippet.api.conf import get_conf
 from tests import AIOTestMeta, AIOTestApp
 
 
@@ -52,7 +52,7 @@ class TestSnippets(metaclass=AIOTestMeta):
         ]
 
         conf = get_conf(
-            pkg_resources.resource_filename('xsnippet_api', 'default.conf'))
+            pkg_resources.resource_filename('xsnippet.api', 'default.conf'))
         conf['auth'] = {'secret': 'SWORDFISH'}
         self.app = create_app(conf)
 
