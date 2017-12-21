@@ -13,29 +13,28 @@ import pytest
 from aiohttp import web
 from xsnippet.api import router
 
-from tests import AIOTestMeta, AIOTestApp
 
+class TestVersionRouter:
 
-class TestVersionRouter(metaclass=AIOTestMeta):
+    @pytest.fixture(scope='function')
+    async def testapp(self, test_client):
+        app = web.Application()
 
-    class _TestResource1(web.View):
-        async def get(self):
-            return web.Response(text='I am the night!')
+        class _TestResource1(web.View):
+            async def get(self):
+                return web.Response(text='I am the night!')
 
-    class _TestResource2(web.View):
-        async def get(self):
-            return web.Response(text='I am Batman!')
-
-    def setup(self):
-        self.app = web.Application()
+        class _TestResource2(web.View):
+            async def get(self):
+                return web.Response(text='I am Batman!')
 
         router_v1 = web.UrlDispatcher()
-        router_v1.post_init(self.app)
-        router_v1.add_route('*', '/test', self._TestResource1)
+        router_v1.post_init(app)
+        router_v1.add_route('*', '/test', _TestResource1)
 
         router_v2 = web.UrlDispatcher()
-        router_v2.post_init(self.app)
-        router_v2.add_route('*', '/test', self._TestResource2)
+        router_v2.post_init(app)
+        router_v2.add_route('*', '/test', _TestResource2)
 
         # Since aiohttp 1.1, UrlDispatcher has one mandatory attribute -
         # application instance, that's used internally only in subapps
@@ -44,46 +43,43 @@ class TestVersionRouter(metaclass=AIOTestMeta):
         # access internal variable in order to do so.
         #
         # See https://github.com/KeepSafe/aiohttp/issues/1373 for details.
-        self.app._router = router.VersionRouter(
+        app._router = router.VersionRouter(
             {
                 '1': router_v1,
                 '2': router_v2,
             }
         )
+        return await test_client(app)
 
-    async def test_version_1(self):
-        async with AIOTestApp(self.app) as testapp:
-            resp = await testapp.get('/test', headers={
-                'Api-Version': '1',
-            })
+    async def test_version_1(self, testapp):
+        resp = await testapp.get('/test', headers={
+            'Api-Version': '1',
+        })
 
-            assert resp.status == 200
-            assert await resp.text() == 'I am the night!'
+        assert resp.status == 200
+        assert await resp.text() == 'I am the night!'
 
-    async def test_version_2(self):
-        async with AIOTestApp(self.app) as testapp:
-            resp = await testapp.get('/test', headers={
-                'Api-Version': '2',
-            })
+    async def test_version_2(self, testapp):
+        resp = await testapp.get('/test', headers={
+            'Api-Version': '2',
+        })
 
-            assert resp.status == 200
-            assert await resp.text() == 'I am Batman!'
+        assert resp.status == 200
+        assert await resp.text() == 'I am Batman!'
 
-    async def test_version_is_not_passed(self):
-        async with AIOTestApp(self.app) as testapp:
-            resp = await testapp.get('/test')
+    async def test_version_is_not_passed(self, testapp):
+        resp = await testapp.get('/test')
 
-            assert resp.status == 200
-            assert await resp.text() == 'I am Batman!'
+        assert resp.status == 200
+        assert await resp.text() == 'I am Batman!'
 
-    async def test_version_is_incorrect(self):
-        async with AIOTestApp(self.app) as testapp:
-            resp = await testapp.get('/test', headers={
-                'Api-Version': '42',
-            })
+    async def test_version_is_incorrect(self, testapp):
+        resp = await testapp.get('/test', headers={
+            'Api-Version': '42',
+        })
 
-            async with resp:
-                assert resp.status == 406
+        async with resp:
+            assert resp.status == 406
 
 
 class TestGetLatestVersion:

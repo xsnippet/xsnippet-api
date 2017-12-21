@@ -39,7 +39,7 @@ setup(
         'pytest-runner',
     ],
     install_requires=[
-        'aiohttp >= 1.2',
+        'aiohttp >= 2.3.5',
         'cerberus >= 0.9.2',
         'motor >= 1.1',
         'python-jose >= 1.3.2',
@@ -47,6 +47,7 @@ setup(
     ],
     tests_require=[
         'pytest >= 2.8.7',
+        'pytest-aiohttp >= 0.3.0',
     ],
     entry_points={
         'console_scripts': [
