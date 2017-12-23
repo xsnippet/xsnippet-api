@@ -1,5 +1,5 @@
 """
-    xsnippet_api.__main__
+    xsnippet.api.__main__
     ---------------------
 
     The module contains application runner that starts XSnippet API
@@ -14,8 +14,8 @@ import sys
 
 from aiohttp import web
 
-from xsnippet_api.application import create_app
-from xsnippet_api.conf import get_conf
+from xsnippet.api.application import create_app
+from xsnippet.api.conf import get_conf
 
 
 def main(args=sys.argv[1:]):
@@ -29,7 +29,7 @@ def main(args=sys.argv[1:]):
         port=int(conf['server']['port']))
 
 
-# let's make this module and xsnippet_api package to be executable, so
+# let's make this module and xsnippet.api package to be executable, so
 # anyone can run it  without entry_points' console script
 if __name__ == '__main__':
     main()

@@ -1,5 +1,5 @@
 """
-    xsnippet_api.services.snippet
+    xsnippet.api.services.snippet
     -----------------------------
 
     Snippet service implements domain business logic for managing

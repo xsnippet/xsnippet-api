@@ -1,9 +1,9 @@
 """
-    xsnippet_api.resource
+    xsnippet.api.resource
     ---------------------
 
     The module provides a base class of RESTful API resources. It's not
-    exposed via :ref:`xsnippet_api.resources` package, and is intended
+    exposed via :ref:`xsnippet.api.resources` package, and is intended
     for internal usage only.
 
     :copyright: (c) 2016 The XSnippet Team, see AUTHORS for details

@@ -1,5 +1,5 @@
 """
-    xsnippet_api
+    xsnippet.api
     ------------
 
     The project implements XSnippet RESTful API, using aiohttp framework.
