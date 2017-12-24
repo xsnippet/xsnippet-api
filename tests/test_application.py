@@ -13,41 +13,39 @@ import pkg_resources
 
 from xsnippet.api import application, conf
 from xsnippet.api.middlewares import auth
-from tests import AIOTestMeta, AIOTestApp
 
 
-class TestApplication(metaclass=AIOTestMeta):
-
-    conf = conf.get_conf(
+@pytest.fixture(scope='function')
+async def testapp(test_client):
+    app_conf = conf.get_conf(
         pkg_resources.resource_filename('xsnippet.api', 'default.conf'))
-    conf['auth'] = {'secret': 'SWORDFISH'}
+    app_conf['auth'] = {'secret': 'SWORDFISH'}
+    return await test_client(application.create_app(app_conf))
 
-    def setup(self):
-        self.app = application.create_app(self.conf)
 
-    @pytest.mark.parametrize('name, value', [
-        ('Accept', 'application/json'),
-        ('Accept-Encoding', 'gzip'),
-        ('Api-Version', '1.0'),
+async def test_auth_secret_is_generated_if_not_set(test_server):
+    app_conf = conf.get_conf(
+        pkg_resources.resource_filename('xsnippet.api', 'default.conf'))
+    app_conf['auth'] = {'secret': ''}
+    app_instance = application.create_app(app_conf)
+
+    await test_server(app_instance)
+    assert len(app_instance['conf']['auth']['secret']) == auth.SECRET_LEN
+
+
+@pytest.mark.parametrize('name, value', [
+    ('Accept', 'application/json'),
+    ('Accept-Encoding', 'gzip'),
+    ('Api-Version', '1.0'),
+])
+async def test_http_vary_header(name, value, testapp):
+    resp = await testapp.get('/', headers={
+        name: value,
+    })
+
+    parts = set([
+        hdr.strip() for hdr in resp.headers['Vary'].split(',')
     ])
-    async def test_http_vary_header(self, name, value):
-        async with AIOTestApp(self.app) as testapp:
-            resp = await testapp.get('/', headers={
-                name: value,
-            })
 
-            parts = set([
-                hdr.strip() for hdr in resp.headers['Vary'].split(',')
-            ])
-
-            assert name in parts
-            await resp.release()
-
-    async def test_auth_secret_is_generated_if_not_set(self):
-        app_conf = conf.get_conf(
-            pkg_resources.resource_filename('xsnippet.api', 'default.conf'))
-        app_conf['auth'] = {'secret': ''}
-
-        app = application.create_app(app_conf)
-        async with AIOTestApp(app):
-            assert len(app['conf']['auth']['secret']) == auth.SECRET_LEN
+    assert name in parts
+    await resp.release()
