@@ -31,8 +31,6 @@ def snippets():
             'content': 'def foo(): pass',
             'syntax': 'python',
             'tags': ['tag_a', 'tag_b'],
-            'author_id': None,
-            'is_public': True,
             'created_at': now - datetime.timedelta(100),
             'updated_at': now - datetime.timedelta(100),
         },
@@ -42,8 +40,6 @@ def snippets():
             'content': 'int do_something() {}',
             'syntax': 'cpp',
             'tags': ['tag_c'],
-            'author_id': None,
-            'is_public': True,
             'created_at': now,
             'updated_at': now,
         },
@@ -235,8 +231,6 @@ async def test_get_snippets_filter_by_title_and_tag_with_pagination(
         'content': '(println "Hello, World!")',
         'syntax': 'clojure',
         'tags': ['tag_a'],
-        'author_id': None,
-        'is_public': True,
         'created_at': now,
         'updated_at': now,
     }
@@ -272,8 +266,6 @@ async def test_get_snippets_pagination(testapp, snippets, db):
         'content': '(println "Hello, World!")',
         'syntax': 'clojure',
         'tags': ['tag_b'],
-        'author_id': None,
-        'is_public': True,
         'created_at': now,
         'updated_at': now,
     }
@@ -374,7 +366,7 @@ async def test_get_snippets_pagination_bad_request_unknown_param(testapp):
 
 async def test_post_snippet(testapp, snippets, db):
     snippet = snippets[0]
-    for key in ('id', 'author_id', 'created_at', 'updated_at'):
+    for key in ('id', 'created_at', 'updated_at'):
         del snippet[key]
 
     resp = await testapp.post(
@@ -398,15 +390,13 @@ async def test_post_snippet(testapp, snippets, db):
     ('title', 42),                          # must be string
     ('content', 42),                        # must be string
     ('tags', ['a tag with whitespaces']),   # tag must not contain spaces
-    ('is_public', 'yes'),                   # must be bool
-    ('author_id', 42),                      # readonly
     ('created_at', '2016-09-11T19:07:43'),  # readonly
     ('updated_at', '2016-09-11T19:07:43'),  # readonly
     ('non-existent-key', 'must not be accepted'),
 ])
 async def test_post_snippet_malformed_snippet(name, value, testapp, snippets):
     snippet = snippets[0]
-    for key in ('id', 'author_id', 'created_at', 'updated_at'):
+    for key in ('id', 'created_at', 'updated_at'):
         del snippet[key]
     snippet[name] = value
 
@@ -431,7 +421,7 @@ async def test_post_snippet_syntax_enum_allowed(
     appinstance['conf']['snippet']['syntaxes'] = 'python\nclojure'
 
     snippet = snippets[0]
-    for key in ('id', 'author_id', 'created_at', 'updated_at'):
+    for key in ('id', 'created_at', 'updated_at'):
         del snippet[key]
 
     snippet['syntax'] = 'python'
@@ -458,7 +448,7 @@ async def test_post_snippet_syntax_enum_not_allowed(
     appinstance['conf']['snippet']['syntaxes'] = 'python\nclojure'
 
     snippet = snippets[0]
-    for key in ('id', 'author_id', 'created_at', 'updated_at'):
+    for key in ('id', 'created_at', 'updated_at'):
         del snippet[key]
 
     snippet['syntax'] = 'go'
@@ -482,7 +472,6 @@ async def test_post_snippet_syntax_enum_not_allowed(
 async def test_data_model_indexes_exist(db):
     res = await db.snippets.index_information()
 
-    assert res['author_idx']['key'] == [('author_id', 1)]
     assert res['title_idx']['key'] == [('title', 1)]
     assert res['title_idx']['partialFilterExpression'] == {
         'title': {'$type': 'string'}

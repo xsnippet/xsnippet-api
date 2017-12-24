@@ -73,9 +73,7 @@ class Snippet:
     def _normalize(self, snippet):
         rv = dict({
             'title': None,
-            'author_id': None,
             'syntax': 'text',
-            'is_public': True,
             'tags': [],
         }, **snippet)
 

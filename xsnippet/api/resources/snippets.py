@@ -22,8 +22,6 @@ _schema = {
     'content': {'type': 'string', 'required': True},
     'syntax': {'type': 'string'},
     'tags': {'type': 'list', 'schema': {'type': 'string', 'regex': '[\w_-]+'}},
-    'is_public': {'type': 'boolean'},
-    'author_id': {'type': 'integer', 'readonly': True},
     'created_at': {'type': 'datetime', 'readonly': True},
     'updated_at': {'type': 'datetime', 'readonly': True},
 }

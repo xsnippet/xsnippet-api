@@ -57,9 +57,6 @@ async def setup(app):
     # ensure necessary indexes exist. background=True allows operations
     # read/write operations on collections while indexes are being built
     futures = [
-        db.snippets.create_index('author_id',
-                                 name='author_idx',
-                                 background=True),
         db.snippets.create_index('title',
                                  name='title_idx',
                                  # create a partial index to skip null values -
