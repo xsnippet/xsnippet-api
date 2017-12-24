@@ -30,8 +30,6 @@ def snippets():
             'content': 'def foo(): pass',
             'syntax': 'python',
             'tags': ['tag_a', 'tag_b'],
-            'author_id': None,
-            'is_public': True,
             'created_at': now - datetime.timedelta(100),
             'updated_at': now - datetime.timedelta(100),
         },
@@ -41,8 +39,6 @@ def snippets():
             'content': 'int do_something() {}',
             'syntax': 'cpp',
             'tags': ['tag_c'],
-            'author_id': None,
-            'is_public': True,
             'created_at': now,
             'updated_at': now,
         },
@@ -206,9 +202,7 @@ async def test_create(testservice, db):
         'title': 'my snippet',
         'content': '...',
         'syntax': 'python',
-        'is_public': True,
         'tags': [],
-        'author_id': None,
     }
 
     assert created == created_db
