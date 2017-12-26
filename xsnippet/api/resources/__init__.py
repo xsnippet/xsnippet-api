@@ -9,9 +9,11 @@
 """
 
 from .snippets import Snippet, Snippets
+from .syntaxes import Syntaxes
 
 
 __all__ = [
     'Snippet',
     'Snippets',
+    'Syntaxes'
 ]
