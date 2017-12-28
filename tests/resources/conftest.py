@@ -10,6 +10,12 @@ def appinstance():
     conf = get_conf(
         pkg_resources.resource_filename('xsnippet.api', 'default.conf'))
     conf['auth'] = {'secret': 'SWORDFISH'}
+
+    # This flag exist to workaround permissions (which we currently lack of)
+    # and test PUT/PATCH requests to the snippet. Once permissions are
+    # implemented and the hack is removed from @checkpermissions decorator
+    # in resources/snippets.py - this hack must be thrown away.
+    conf['test'] = {'sudo': True}
     return create_app(conf)
 
 

@@ -384,10 +384,7 @@ async def test_post_snippet_malformed_snippet(name, value, testapp, snippets):
     assert resp.status == 400
 
     error_resp = await resp.json()
-    assert re.match(
-        'Cannot create a new snippet, passed data are incorrect. '
-        'Found issues: `%s` - .*' % name,
-        error_resp['message'])
+    assert re.match('`%s` - .*' % name, error_resp['message'])
 
 
 async def test_post_snippet_syntax_enum_allowed(
@@ -437,10 +434,7 @@ async def test_post_snippet_syntax_enum_not_allowed(
     assert resp.status == 400
 
     error_resp = await resp.json()
-    assert re.match(
-        'Cannot create a new snippet, passed data are incorrect. '
-        'Found issues: `syntax` - invalid value.',
-        error_resp['message'])
+    assert re.match('`syntax` - .*', error_resp['message'])
 
 
 async def test_data_model_indexes_exist(db):
@@ -532,3 +526,341 @@ async def test_delete_snippet_bad_request(testapp):
     assert await resp.json() == {
         'message': '`id` - must be of integer type.'
     }
+
+
+async def test_put_snippet(testapp, snippets, db):
+    await db.snippets.insert(snippets)
+
+    resp = await testapp.put(
+        '/snippets/' + str(snippets[0]['id']),
+        data=json.dumps({
+            'content': 'brand new snippet',
+        }),
+        headers={
+            'Accept': 'application/json',
+            'Content-Type': 'application/json',
+        })
+    assert resp.status == 200
+
+    snippet_resp = await resp.json()
+    snippet_db = await db.snippets.find_one(
+        {'_id': snippet_resp['id']}
+    )
+
+    _compare_snippets(snippet_db, snippet_resp)
+
+
+async def test_put_snippet_bad_id(testapp):
+    resp = await testapp.put(
+        '/snippets/deadbeef',
+        data=json.dumps({
+            'content': 'brand new snippet',
+        }),
+        headers={
+            'Accept': 'application/json',
+            'Content-Type': 'application/json',
+        }
+    )
+    assert resp.status == 400
+    assert await resp.json() == {
+        'message': '`id` - must be of integer type.'
+    }
+
+
+async def test_put_snippet_not_found(testapp):
+    resp = await testapp.put(
+        '/snippets/0123456789',
+        data=json.dumps({
+            'content': 'brand new snippet',
+        }),
+        headers={
+            'Accept': 'application/json',
+            'Content-Type': 'application/json',
+        }
+    )
+    assert resp.status == 404
+    assert await resp.json() == {
+        'message': 'Sorry, cannot find the requested snippet.',
+    }
+
+
+@pytest.mark.parametrize('name, val', [
+    ('title', 42),                          # must be string
+    ('content', 42),                        # must be string
+    ('tags', ['a tag with whitespaces']),   # tag must not contain spaces
+    ('created_at', '2016-09-11T19:07:43'),  # readonly
+    ('updated_at', '2016-09-11T19:07:43'),  # readonly
+    ('non-existent-key', 'must not be accepted'),
+])
+async def test_put_snippet_malformed_snippet(name, val, testapp, snippets, db):
+    await db.snippets.insert(snippets)
+
+    snippet = {'content': 'brand new snippet'}
+    snippet[name] = val
+
+    resp = await testapp.put(
+        '/snippets/' + str(snippets[0]['id']),
+        data=json.dumps(snippet),
+        headers={
+            'Accept': 'application/json',
+            'Content-Type': 'application/json',
+        })
+    assert resp.status == 400
+
+    error_resp = await resp.json()
+    assert re.match('`%s` - .*' % name, error_resp['message'])
+
+
+@pytest.mark.parametrize('name', [
+    'content',
+])
+async def test_put_snippet_required_fields(name, testapp, snippets, db):
+    await db.snippets.insert(snippets)
+
+    snippet = copy.deepcopy(snippets[0])
+    for key in ('id', 'created_at', 'updated_at'):
+        del snippet[key]
+    del snippet[name]
+
+    resp = await testapp.put(
+        '/snippets/' + str(snippets[0]['id']),
+        data=json.dumps(snippet),
+        headers={
+            'Accept': 'application/json',
+            'Content-Type': 'application/json',
+        })
+    assert resp.status == 400
+
+    error_resp = await resp.json()
+    assert re.match(
+        '`%s` - required field.' % name, error_resp['message'])
+
+
+async def test_put_snippet_syntax_enum_allowed(
+        testapp, snippets, db, appinstance):
+    appinstance['conf']['snippet']['syntaxes'] = 'python\nclojure'
+
+    await db.snippets.insert(snippets)
+
+    resp = await testapp.put(
+        '/snippets/' + str(snippets[0]['id']),
+        data=json.dumps({
+            'content': 'brand new snippet',
+            'syntax': 'python',
+        }),
+        headers={
+            'Accept': 'application/json',
+            'Content-Type': 'application/json',
+        })
+    assert resp.status == 200
+
+    snippet_resp = await resp.json()
+    snippet_db = await db.snippets.find_one(
+        {'_id': snippet_resp['id']}
+    )
+    _compare_snippets(snippet_db, snippet_resp)
+
+
+async def test_put_snippet_syntax_enum_not_allowed(
+        testapp, snippets, db, appinstance):
+    appinstance['conf']['snippet']['syntaxes'] = 'python\nclojure'
+
+    await db.snippets.insert(snippets)
+
+    resp = await testapp.put(
+        '/snippets/' + str(snippets[0]['id']),
+        data=json.dumps({
+            'content': 'brand new snippet',
+            'syntax': 'go',
+        }),
+        headers={
+            'Accept': 'application/json',
+            'Content-Type': 'application/json',
+        })
+    assert resp.status == 400
+
+    error_resp = await resp.json()
+    assert re.match(
+        '`syntax` - unallowed value go.', error_resp['message'])
+
+
+async def test_patch_snippet(testapp, snippets, db):
+    await db.snippets.insert(snippets)
+
+    resp = await testapp.patch(
+        '/snippets/' + str(snippets[0]['id']),
+        data=json.dumps({
+            'content': 'brand new snippet',
+        }),
+        headers={
+            'Accept': 'application/json',
+            'Content-Type': 'application/json',
+        })
+    assert resp.status == 200
+
+    snippet_resp = await resp.json()
+    snippet_db = await db.snippets.find_one(
+        {'_id': snippet_resp['id']}
+    )
+    _compare_snippets(snippet_db, snippet_resp)
+
+
+async def test_patch_snippet_bad_id(testapp):
+    resp = await testapp.patch(
+        '/snippets/deadbeef',
+        data=json.dumps({
+            'content': 'brand new snippet',
+        }),
+        headers={
+            'Accept': 'application/json',
+            'Content-Type': 'application/json',
+        }
+    )
+    assert resp.status == 400
+    assert await resp.json() == {
+        'message': '`id` - must be of integer type.'
+    }
+
+
+async def test_patch_snippet_not_found(testapp):
+    resp = await testapp.patch(
+        '/snippets/0123456789',
+        data=json.dumps({
+            'content': 'brand new snippet',
+        }),
+        headers={
+            'Accept': 'application/json',
+            'Content-Type': 'application/json',
+        }
+    )
+    assert resp.status == 404
+    assert await resp.json() == {
+        'message': 'Sorry, cannot find the requested snippet.',
+    }
+
+
+@pytest.mark.parametrize('name, value', [
+    ('title', 42),                          # must be string
+    ('content', 42),                        # must be string
+    ('tags', ['a tag with whitespaces']),   # tag must not contain spaces
+    ('created_at', '2016-09-11T19:07:43'),  # readonly
+    ('updated_at', '2016-09-11T19:07:43'),  # readonly
+    ('non-existent-key', 'must not be accepted'),
+])
+async def test_patch_snippet_malformed_snippet(
+        name, value, testapp, snippets, db):
+    await db.snippets.insert(snippets)
+
+    snippet = {'content': 'brand new snippet'}
+    snippet[name] = value
+
+    resp = await testapp.patch(
+        '/snippets/' + str(snippets[0]['id']),
+        data=json.dumps(snippet),
+        headers={
+            'Accept': 'application/json',
+            'Content-Type': 'application/json',
+        })
+    assert resp.status == 400
+
+    error_resp = await resp.json()
+    assert re.match('`%s` - .*' % name, error_resp['message'])
+
+
+async def test_patch_snippet_required_fields_are_not_forced(
+        testapp, snippets, db):
+    await db.snippets.insert(snippets)
+
+    resp = await testapp.patch(
+        '/snippets/' + str(snippets[0]['id']),
+        data=json.dumps({
+            'title': 'brand new snippet',
+        }),
+        headers={
+            'Accept': 'application/json',
+            'Content-Type': 'application/json',
+        })
+    assert resp.status == 200
+
+    snippet_resp = await resp.json()
+    snippet_db = await db.snippets.find_one(
+        {'_id': snippet_resp['id']}
+    )
+    _compare_snippets(snippet_db, snippet_resp)
+
+
+async def test_patch_snippet_syntax_enum_allowed(
+        testapp, snippets, db, appinstance):
+    appinstance['conf']['snippet']['syntaxes'] = 'python\nclojure'
+
+    await db.snippets.insert(snippets)
+
+    resp = await testapp.patch(
+        '/snippets/' + str(snippets[0]['id']),
+        data=json.dumps({
+            'content': 'brand new snippet',
+            'syntax': 'python',
+        }),
+        headers={
+            'Accept': 'application/json',
+            'Content-Type': 'application/json',
+        })
+    assert resp.status == 200
+
+    snippet_resp = await resp.json()
+    snippet_db = await db.snippets.find_one(
+        {'_id': snippet_resp['id']}
+    )
+
+    _compare_snippets(snippet_db, snippet_resp)
+
+
+async def test_patch_snippet_syntax_enum_not_allowed(
+        testapp, snippets, db, appinstance):
+    appinstance['conf']['snippet']['syntaxes'] = 'python\nclojure'
+
+    await db.snippets.insert(snippets)
+
+    resp = await testapp.patch(
+        '/snippets/' + str(snippets[0]['id']),
+        data=json.dumps({
+            'content': 'brand new snippet',
+            'syntax': 'go',
+        }),
+        headers={
+            'Accept': 'application/json',
+            'Content-Type': 'application/json',
+        })
+    assert resp.status == 400
+
+    error_resp = await resp.json()
+    assert re.match(
+        '`syntax` - unallowed value go.', error_resp['message'])
+
+
+@pytest.mark.parametrize('method', [
+    'put',
+    'patch',
+    'delete',
+])
+async def test_snippet_update_is_not_exposed(
+        method, testapp, snippets, appinstance, db):
+    appinstance['conf'].remove_option('test', 'sudo')
+    await db.snippets.insert(snippets)
+
+    request = getattr(testapp, method)
+
+    resp = await request(
+        '/snippets/' + str(snippets[0]['id']),
+        data=json.dumps({
+            'content': 'brand new snippet',
+            'syntax': 'go',
+        }),
+        headers={
+            'Accept': 'application/json',
+            'Content-Type': 'application/json',
+        })
+    assert resp.status == 403
+
+    error_resp = await resp.json()
+    assert error_resp['message'] == 'Not yet. :)'

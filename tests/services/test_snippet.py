@@ -226,3 +226,65 @@ async def test_delete_not_found(testservice):
         await testservice.delete(123456789)
 
     excinfo.match(r'Sorry, cannot find the requested snippet.')
+
+
+async def test_update(testservice, snippets, db):
+    snippet = {
+        'id': snippets[0]['id'],
+        'title': 'brand new snippet',
+    }
+
+    updated = await testservice.update(snippet)
+    updated_db = await db.snippets.find_one({'_id': snippet['id']})
+
+    for popcolumn in ('created_at', 'updated_at'):
+        updated.pop(popcolumn)
+        updated_db.pop(popcolumn)
+
+    assert updated == updated_db == {
+        'id': snippet['id'],
+        'title': snippet['title'],
+        'content': snippets[0]['content'],
+        'syntax': snippets[0]['syntax'],
+        'tags': snippets[0]['tags'],
+    }
+
+
+async def test_update_not_found(testservice):
+    with pytest.raises(exceptions.SnippetNotFound) as excinfo:
+        await testservice.update({'id': 123456789})
+
+    excinfo.match(r'Sorry, cannot find the requested snippet.')
+
+
+async def test_replace(testservice, snippets, db):
+    snippet = {
+        'id': snippets[0]['id'],
+        'title': 'brand new snippet',
+        'content': 'brand new snippet',
+    }
+
+    replaced = await testservice.replace(snippet)
+    replaced_db = await db.snippets.find_one({'_id': snippet['id']})
+
+    for popcolumn in ('created_at', 'updated_at'):
+        replaced.pop(popcolumn)
+        replaced_db.pop(popcolumn)
+
+    assert replaced == replaced_db == {
+        # those are changed
+        'id': snippet['id'],
+        'title': snippet['title'],
+        'content': snippet['content'],
+
+        # those are reset due to normalization
+        'syntax': 'text',
+        'tags': [],
+    }
+
+
+async def test_replace_not_found(testservice):
+    with pytest.raises(exceptions.SnippetNotFound) as excinfo:
+        await testservice.replace({'id': 123456789})
+
+    excinfo.match(r'Sorry, cannot find the requested snippet.')
