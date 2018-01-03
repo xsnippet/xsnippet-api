@@ -15,7 +15,6 @@ import cerberus
 
 from .misc import cerberus_errors_to_str, try_int
 from .. import exceptions, resource, services
-from ..application import endpoint
 
 
 class InvalidId(Exception):
@@ -86,7 +85,6 @@ async def _read(resource, service_fn, *, status):
     return resource.make_response(read, status=status)
 
 
-@endpoint('/snippets/{id}', '1.0')
 class Snippet(resource.Resource):
 
     def checkpermissions(fn):
@@ -132,7 +130,6 @@ class Snippet(resource.Resource):
         return await _write(self, service_fn, status=200)
 
 
-@endpoint('/snippets', '1.0')
 class Snippets(resource.Resource):
 
     async def get(self):

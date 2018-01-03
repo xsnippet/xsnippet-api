@@ -9,13 +9,11 @@
     :license: MIT, see LICENSE for details
 """
 
-import collections
 import functools
 
-import pkg_resources
 import aiohttp.web
 
-from . import database, router, middlewares
+from . import database, router, middlewares, resources
 
 
 def _inject_vary_header(request, response):
@@ -56,14 +54,19 @@ def create_app(conf):
     :return: an application instance
     :rtype: :class:`aiohttp.web.Application`
     """
+
+    v1 = aiohttp.web.UrlDispatcher()
+    v1.add_route('*', '/snippets', resources.Snippets)
+    v1.add_route('*', '/snippets/{id}', resources.Snippet)
+    v1.add_route('*', '/syntaxes', resources.Syntaxes)
+
     # We need to import all the resources in order to evaluate @endpoint
     # decorator, so they can be collected and passed to VersionRouter.
-    from . import resources  # noqa
     app = aiohttp.web.Application(
         middlewares=[
             functools.partial(middlewares.auth.auth, conf['auth']),
         ],
-        router=router.VersionRouter(endpoint.collect()))
+        router=router.VersionRouter({'1.0': v1}))
     app.on_startup.append(middlewares.auth.setup)
 
     # Attach settings to the application instance in order to make them
@@ -76,61 +79,3 @@ def create_app(conf):
     app.on_response_prepare.append(_inject_vary_header)
 
     return app
-
-
-class endpoint:
-    """Define a RESTful API endpoint.
-
-    Usage example:
-
-        @endpoint('/myresources/{id}', '1.0')
-        class MyResource(aiohttp.web.View):
-            def get(self):
-                pass
-
-    :param route: a route to a wrapped resource
-    :param version: initial supported API version
-    :param end_version: last supported version; latest version if None
-    """
-
-    _Item = collections.namedtuple('ResourceItem', [
-        'resource',
-        'route',
-        'version',
-        'end_version',
-    ])
-
-    _registry = []
-
-    def __init__(self, route, version, end_version=None):
-        self._options = (route, version, end_version)
-
-    def __call__(self, resource):
-        self._registry.append(self._Item(resource, *self._options))
-        return resource
-
-    @classmethod
-    def collect(cls):
-        rv = {}
-
-        # Create routers for each discovered API version. The main reason why
-        # we need that so early is to register resources in all needed routers
-        # according to supported version range.
-        for item in cls._registry:
-            rv[item.version] = aiohttp.web.UrlDispatcher()
-
-        for item in cls._registry:
-            # If there's no end_version then a resource is still working, and
-            # latest discovered version should be considered as end_version.
-            end_version = item.end_version or sorted(
-                rv.keys(),
-                key=pkg_resources.parse_version
-            )[-1]
-
-            V = pkg_resources.parse_version
-
-            for version in rv.keys():
-                if V(item.version) <= V(version) <= V(end_version):
-                    rv[version].add_route('*', item.route, item.resource)
-
-        return rv
