@@ -62,17 +62,9 @@ def create_app(conf):
     app = aiohttp.web.Application(
         middlewares=[
             functools.partial(middlewares.auth.auth, conf['auth']),
-        ])
+        ],
+        router=router.VersionRouter(endpoint.collect()))
     app.on_startup.append(middlewares.auth.setup)
-
-    # Since aiohttp 1.1, UrlDispatcher has one mandatory attribute -
-    # application instance, that's used internally only in subapps
-    # feature. Since aiohttp 1.2, application instance should be passed
-    # via post_init() method, however, this method must be called
-    # before registering any resources. That means we are forced
-    # to create router when application is created in order to
-    # do API auto discovering.
-    app._router = router.VersionRouter(endpoint.collect(app))
 
     # Attach settings to the application instance in order to make them
     # accessible at any point of execution (e.g. request handling).
@@ -118,7 +110,7 @@ class endpoint:
         return resource
 
     @classmethod
-    def collect(cls, app):
+    def collect(cls):
         rv = {}
 
         # Create routers for each discovered API version. The main reason why
@@ -126,7 +118,6 @@ class endpoint:
         # according to supported version range.
         for item in cls._registry:
             rv[item.version] = aiohttp.web.UrlDispatcher()
-            rv[item.version].post_init(app)
 
         for item in cls._registry:
             # If there's no end_version then a resource is still working, and
