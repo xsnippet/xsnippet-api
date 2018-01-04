@@ -10,10 +10,8 @@
 """
 
 from .. import resource
-from ..application import endpoint
 
 
-@endpoint('/syntaxes', '1.0')
 class Syntaxes(resource.Resource):
 
     async def get(self):
