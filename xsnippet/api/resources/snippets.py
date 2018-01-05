@@ -12,13 +12,10 @@
 import functools
 
 import cerberus
+import aiohttp.web as web
 
 from .misc import cerberus_errors_to_str, try_int
-from .. import exceptions, resource, services
-
-
-class InvalidId(Exception):
-    pass
+from .. import resource, services
 
 
 def _get_id(resource):
@@ -27,7 +24,8 @@ def _get_id(resource):
     })
 
     if not v.validate(dict(resource.request.match_info)):
-        raise InvalidId('%s.' % cerberus_errors_to_str(v.errors))
+        reason = '%s.' % cerberus_errors_to_str(v.errors)
+        raise web.HTTPBadRequest(reason=reason)
 
     return int(resource.request.match_info['id'])
 
@@ -44,7 +42,7 @@ async def _write(resource, service_fn, *, status):
         'updated_at': {'type': 'datetime', 'readonly': True},
     })
 
-    snippet = await resource.read_request()
+    snippet = await resource.request.get_data()
     conf = resource.request.app['conf']
     syntaxes = conf.getlist('snippet', 'syntaxes', fallback=None)
 
@@ -60,29 +58,15 @@ async def _write(resource, service_fn, *, status):
 
     if not v.validate(snippet, update=is_patch):
         error = cerberus_errors_to_str(v.errors)
-        return resource.make_response({'message': '%s.' % error}, status=400)
+        raise web.HTTPBadRequest(reason='%s.' % error)
 
-    try:
-        written = await service_fn(snippet)
-
-    except InvalidId as exc:
-        return resource.make_response({'message': str(exc)}, status=400)
-    except exceptions.SnippetNotFound as exc:
-        return resource.make_response({'message': str(exc)}, status=404)
-
-    return resource.make_response(written, status=status)
+    written = await service_fn(snippet)
+    return written, status
 
 
 async def _read(resource, service_fn, *, status):
-    try:
-        read = await service_fn(_get_id(resource))
-
-    except InvalidId as exc:
-        return resource.make_response({'message': str(exc)}, status=400)
-    except exceptions.SnippetNotFound as exc:
-        return resource.make_response({'message': str(exc)}, status=404)
-
-    return resource.make_response(read, status=status)
+    read = await service_fn(_get_id(resource))
+    return read, status
 
 
 class Snippet(resource.Resource):
@@ -98,11 +82,7 @@ class Snippet(resource.Resource):
             # functionality.
             conf = self.request.app['conf']
             if not conf.getboolean('test', 'sudo', fallback=False):
-                return self.make_response(
-                    {
-                        'message': 'Not yet. :)'
-                    },
-                    status=403)
+                raise web.HTTPForbidden(reason='Not yet. :)')
             return await fn(self, *args, **kwargs)
         return _wrapper
 
@@ -218,7 +198,7 @@ class Snippets(resource.Resource):
 
         if not v.validate(dict(self.request.GET)):
             error = '%s.' % cerberus_errors_to_str(v.errors)
-            return self.make_response({'message': error}, status=400)
+            raise web.HTTPBadRequest(reason=error)
 
         # It's safe to have type cast here since those query parameters
         # are guaranteed to be integer, thanks to validation above.
@@ -228,41 +208,38 @@ class Snippets(resource.Resource):
         tag = self.request.GET.get('tag')
         syntax = self.request.GET.get('syntax')
 
-        try:
-            # actual snippets to be returned
-            current_page = await services.Snippet(self.db).get(
+        # actual snippets to be returned
+        current_page = await services.Snippet(self.db).get(
+            title=title, tag=tag, syntax=syntax,
+            # read one more to know if there is next page
+            limit=limit + 1,
+            marker=marker,
+        )
+
+        # only needed to render a link to the previous page
+        if marker:
+            previous_page = await services.Snippet(self.db).get(
                 title=title, tag=tag, syntax=syntax,
-                # read one more to know if there is next page
+                # read one more to know if there is prev page
                 limit=limit + 1,
                 marker=marker,
+                direction='backward'
             )
+        else:
+            # we are at the very beginning of the list - no prev page
+            previous_page = []
 
-            # only needed to render a link to the previous page
-            if marker:
-                previous_page = await services.Snippet(self.db).get(
-                    title=title, tag=tag, syntax=syntax,
-                    # read one more to know if there is prev page
-                    limit=limit + 1,
-                    marker=marker,
-                    direction='backward'
-                )
-            else:
-                # we are at the very beginning of the list - no prev page
-                previous_page = []
-        except exceptions.SnippetNotFound as exc:
-            return self.make_response({'message': str(exc)}, status=404)
-
-        return self.make_response(
+        return (
             # return no more than $limit snippets (if we read $limit + 1)
             current_page[:limit],
-            headers={
+            200,
+            {
                 'Link': _build_link_header(
                     self.request,
                     current_page, previous_page,
                     limit=limit,
                 )
             },
-            status=200
         )
 
     async def post(self):

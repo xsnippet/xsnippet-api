@@ -16,6 +16,4 @@ class Syntaxes(resource.Resource):
 
     async def get(self):
         conf = self.request.app['conf']
-        syntaxes = conf.getlist('snippet', 'syntaxes', fallback=None) or []
-
-        return self.make_response(syntaxes, status=200)
+        return conf.getlist('snippet', 'syntaxes', fallback=[])

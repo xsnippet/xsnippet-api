@@ -19,11 +19,11 @@ from xsnippet.api import resource
 class _TestResource(resource.Resource):
 
     async def get(self):
-        return self.make_response({'who': 'batman'}, status=299)
+        return {'who': 'batman'}, 299
 
     async def post(self):
-        data = await self.read_request()
-        return self.make_response(data, status=298)
+        data = await self.request.get_data()
+        return data, 298
 
 
 @pytest.fixture(scope='function')
