@@ -152,8 +152,19 @@ class Snippets(resource.Resource):
             'tag': {
                 'type': 'string',
                 'regex': '[\w_-]+',
-            }
+            },
+            'syntax': {
+                'type': 'string',
+            },
         })
+
+        conf = self.request.app['conf']
+        syntaxes = conf.getlist('snippet', 'syntaxes', fallback=None)
+
+        # If 'snippet:syntaxes' option is not empty, we need to ensure that
+        # only specified syntaxes are allowed.
+        if syntaxes:
+            v.schema['syntax']['allowed'] = syntaxes
 
         if not v.validate(dict(self.request.GET)):
             error = '%s.' % cerberus_errors_to_str(v.errors)
@@ -163,6 +174,7 @@ class Snippets(resource.Resource):
             snippets = await services.Snippet(self.db).get(
                 title=self.request.GET.get('title'),
                 tag=self.request.GET.get('tag'),
+                syntax=self.request.GET.get('syntax'),
                 # It's safe to have type cast here since those query parameters
                 # are guaranteed to be integer, thanks to validation above.
                 limit=int(self.request.GET.get('limit', 0)),

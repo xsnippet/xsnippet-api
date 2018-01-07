@@ -52,13 +52,16 @@ class Snippet:
     async def replace(self, snippet):
         return await self.update(self._normalize(snippet))
 
-    async def get(self, *, title=None, tag=None, limit=100, marker=None):
+    async def get(self, *, title=None, tag=None, syntax=None, limit=100,
+                  marker=None):
         condition = {}
 
         if title is not None:
             condition['title'] = {'$regex': '^' + re.escape(title) + '.*'}
         if tag is not None:
             condition['tags'] = tag
+        if syntax is not None:
+            condition['syntax'] = syntax
 
         if marker:
             specimen = await self.db.snippets.find_one({'_id': marker})
