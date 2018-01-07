@@ -174,6 +174,49 @@ async def test_get_snippets_filter_by_tag_bad_request(
     }
 
 
+async def test_get_snippets_filter_by_syntax(testapp, snippets, db):
+    await db.snippets.insert(snippets)
+
+    resp = await testapp.get(
+        '/snippets?syntax=python',
+        headers={
+            'Accept': 'application/json',
+        })
+    assert resp.status == 200
+    expected = [snippets[0]]
+    for snippet_db, snippet_api in zip(expected, await resp.json()):
+        _compare_snippets(snippet_db, snippet_api)
+
+    nonexistent = await testapp.get(
+        '/snippets?syntax=javascript',
+        headers={
+            'Accept': 'application/json',
+        })
+    assert nonexistent.status == 200
+    assert list(nonexistent.json()) == []
+
+
+@pytest.mark.parametrize(
+    'value',
+    ['', 'ololo'],
+    ids=['empty', 'non-exist']
+)
+async def test_get_snippets_filter_by_syntax_bad_request(
+        value, testapp, snippets, db, appinstance):
+    appinstance['conf']['snippet']['syntaxes'] = 'python\nclojure'
+    await db.snippets.insert(snippets)
+
+    resp = await testapp.get(
+        '/snippets?syntax=' + value,
+        headers={
+            'Accept': 'application/json',
+        })
+    assert resp.status == 400
+    assert await resp.json() == {
+        'message': '`syntax` - unallowed value %s.' % value
+    }
+
+
 async def test_get_snippets_filter_by_title_and_tag(testapp, snippets, db):
     await db.snippets.insert(snippets)
 
