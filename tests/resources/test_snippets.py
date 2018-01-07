@@ -445,8 +445,8 @@ async def test_data_model_indexes_exist(db):
         'title': {'$type': 'string'}
     }
     assert res['tags_idx']['key'] == [('tags', 1)]
-    assert res['updated_idx']['key'] == [('updated_at', -1)]
-    assert res['created_idx']['key'] == [('created_at', -1)]
+    assert res['updated_id_idx']['key'] == [('updated_at', -1), ('_id', -1)]
+    assert res['created_id_idx']['key'] == [('created_at', -1), ('_id', -1)]
 
 
 async def test_get_snippet(testapp, snippets, db):
