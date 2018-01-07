@@ -70,11 +70,18 @@ async def setup(app):
         db.snippets.create_index('tags',
                                  name='tags_idx',
                                  background=True),
-        db.snippets.create_index([('created_at', pymongo.DESCENDING)],
-                                 name='created_idx',
+        # use compound indexes for created_at / updated_at attributes for the
+        # sake of efficiency of pagination (we need an extra attribute to
+        # guarantee uniqueness of the sorting key value). Note, that these
+        # indexes still speed up prefix searches by created_at / updated_at
+        # when _id is not passed
+        db.snippets.create_index([('created_at', pymongo.DESCENDING),
+                                  ('_id', pymongo.DESCENDING)],
+                                 name='created_id_idx',
                                  background=True),
-        db.snippets.create_index([('updated_at', pymongo.DESCENDING)],
-                                 name='updated_idx',
+        db.snippets.create_index([('updated_at', pymongo.DESCENDING),
+                                  ('_id', pymongo.DESCENDING)],
+                                 name='updated_id_idx',
                                  background=True)
     ]
     return await asyncio.gather(*futures)
