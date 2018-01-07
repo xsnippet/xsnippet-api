@@ -9,6 +9,7 @@
     :license: MIT, see LICENSE for details
 """
 
+import logging
 import os
 import sys
 
@@ -19,6 +20,10 @@ from xsnippet.api.conf import get_conf
 
 
 def main(args=sys.argv[1:]):
+    # write access/error logs to stderr
+    logging.basicConfig()
+    logging.getLogger('aiohttp').setLevel(logging.INFO)
+
     conf = get_conf([
         os.path.join(os.path.dirname(__file__), 'default.conf'),
     ], envvar='XSNIPPET_API_SETTINGS')
