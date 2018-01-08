@@ -58,7 +58,7 @@ class Resource(web.View):
         #: an application database alias to make code a bit readable
         self.db = self.request.app['db']
 
-    def make_response(self, data, status=200):
+    def make_response(self, data, headers=None, status=200):
         """Return an HTTP response object.
 
         The method serializes given data according to 'Accept' HTTP header,
@@ -66,6 +66,9 @@ class Resource(web.View):
 
         :param data: a data to be responded to client
         :type data: a serializable python object
+
+        :param headers: response headers to be returned to client
+        :type headers: dict
 
         :param status: an HTTP status code
         :type status: int
@@ -99,6 +102,7 @@ class Resource(web.View):
                 if fnmatch.fnmatch(supported_accept, accept):
                     return web.Response(
                         status=status,
+                        headers=headers,
                         content_type=supported_accept,
                         text=encode(data),
                     )

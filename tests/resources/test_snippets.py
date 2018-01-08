@@ -258,21 +258,37 @@ async def test_get_snippets_filter_by_title_and_tag_with_pagination(
         '/snippets?title=snippet+%231&tag=tag_a&limit=1',
         headers={
             'Accept': 'application/json',
+            'Host': 'api.xsnippet.org',
+            'X-Forwarded-Proto': 'https',
         })
     assert resp.status == 200
     expected = [snippet]
     for snippet_db, snippet_api in zip(expected, await resp.json()):
         _compare_snippets(snippet_db, snippet_api)
+    # Check that urls in Link preserve the additional query params
+    expected_link1 = (
+        '<https://api.xsnippet.org/snippets?title=snippet+%231&tag=tag_a&limit=1>; rel="first", '  # noqa
+        '<https://api.xsnippet.org/snippets?title=snippet+%231&tag=tag_a&limit=1&marker=3>; rel="next"'  # noqa
+    )
+    assert resp.headers['Link'] == expected_link1
 
     resp = await testapp.get(
         '/snippets?title=snippet+%231&tag=tag_a&limit=1&marker=3',
         headers={
             'Accept': 'application/json',
+            'Host': 'api.xsnippet.org',
+            'X-Forwarded-Proto': 'https',
         })
     assert resp.status == 200
     expected = [snippets[0]]
     for snippet_db, snippet_api in zip(expected, await resp.json()):
         _compare_snippets(snippet_db, snippet_api)
+    # Check that urls in Link preserve the additional query params
+    expected_link2 = (
+        '<https://api.xsnippet.org/snippets?title=snippet+%231&tag=tag_a&limit=1>; rel="first", '  # noqa
+        '<https://api.xsnippet.org/snippets?title=snippet+%231&tag=tag_a&limit=1>; rel="prev"'  # noqa
+    )
+    assert resp.headers['Link'] == expected_link2
 
 
 async def test_get_snippets_pagination(testapp, snippets, db):
@@ -318,6 +334,245 @@ async def test_get_snippets_pagination(testapp, snippets, db):
 
     for snippet_db, snippet_api in zip(expected, await resp.json()):
         _compare_snippets(snippet_db, snippet_api)
+
+
+async def _get_next_page(testapp, limit=3, marker=0):
+    """"Helper function of traversing of the list of snippets via API."""
+
+    params = []
+    if limit:
+        params.append('limit=%d' % limit)
+    if marker:
+        params.append('marker=%d' % marker)
+
+    resp = await testapp.get(
+        '/snippets' + ('?' if params else '') + '&'.join(params),
+        headers={
+            'Accept': 'application/json',
+            # Pass the additional headers, that are set by nginx in the
+            # production deployment, so that we ensure we generate the
+            # correct links for users
+            'Host': 'api.xsnippet.org',
+            'X-Forwarded-Proto': 'https',
+        }
+    )
+    assert resp.status == 200
+    return resp
+
+
+async def test_pagination_links(testapp, db):
+    # Put 10 snippets into the db
+    now = datetime.datetime.utcnow().replace(microsecond=0)
+    snippets = [
+        {
+            'id': i + 1,
+            'title': 'snippet #%d' % (i + 1),
+            'content': '(println "Hello, World!")',
+            'syntax': 'clojure',
+            'tags': ['tag_b'],
+            'created_at': (now + datetime.timedelta(seconds=1)),
+            'updated_at': (now + datetime.timedelta(seconds=1)),
+        }
+        for i in range(10)
+    ]
+    await db.snippets.insert(snippets)
+
+    # We should have seen snippets with ids 10, 9 and 8. No link to the prev
+    # page, as we are at the very beginning of the list
+    resp1 = await _get_next_page(testapp, limit=3)
+    expected_link1 = (
+        '<https://api.xsnippet.org/snippets?limit=3>; rel="first", '
+        '<https://api.xsnippet.org/snippets?limit=3&marker=8>; rel="next"'
+    )
+    assert resp1.headers['Link'] == expected_link1
+    assert [s['id'] for s in await resp1.json()] == [10, 9, 8]
+
+    # We should have seen snippets with ids 7, 6 and 5. Prev page is the
+    # beginning of the list, thus, no marker
+    resp2 = await _get_next_page(testapp, limit=3, marker=8)
+    expected_link2 = (
+        '<https://api.xsnippet.org/snippets?limit=3>; rel="first", '
+        '<https://api.xsnippet.org/snippets?limit=3&marker=5>; rel="next", '
+        '<https://api.xsnippet.org/snippets?limit=3>; rel="prev"'
+    )
+    assert resp2.headers['Link'] == expected_link2
+    assert [s['id'] for s in await resp2.json()] == [7, 6, 5]
+
+    # We should have seen snippets with ids 4, 3 and 2
+    resp3 = await _get_next_page(testapp, limit=3, marker=5)
+    expected_link3 = (
+        '<https://api.xsnippet.org/snippets?limit=3>; rel="first", '
+        '<https://api.xsnippet.org/snippets?limit=3&marker=2>; rel="next", '
+        '<https://api.xsnippet.org/snippets?limit=3&marker=8>; rel="prev"'
+    )
+    assert resp3.headers['Link'] == expected_link3
+    assert [s['id'] for s in await resp3.json()] == [4, 3, 2]
+
+    # We should have seen the snippet with id 1. No link to the next page,
+    # as we have reached the end of the list
+    resp4 = await _get_next_page(testapp, limit=3, marker=2)
+    expected_link4 = (
+        '<https://api.xsnippet.org/snippets?limit=3>; rel="first", '
+        '<https://api.xsnippet.org/snippets?limit=3&marker=5>; rel="prev"'
+    )
+    assert resp4.headers['Link'] == expected_link4
+    assert [s['id'] for s in await resp4.json()] == [1]
+
+
+async def test_pagination_links_one_page_larger_than_whole_list(testapp, db):
+    # Put 10 snippets into the db
+    now = datetime.datetime.utcnow().replace(microsecond=0)
+    snippets = [
+        {
+            'id': i + 1,
+            'title': 'snippet #%d' % (i + 1),
+            'content': '(println "Hello, World!")',
+            'syntax': 'clojure',
+            'tags': ['tag_b'],
+            'created_at': (now + datetime.timedelta(seconds=1)),
+            'updated_at': (now + datetime.timedelta(seconds=1)),
+        }
+        for i in range(10)
+    ]
+    await db.snippets.insert(snippets)
+
+    # Default limit is 20 and there no prev/next pages - only the first one
+    resp = await _get_next_page(testapp, limit=None)
+    expected_link = '<https://api.xsnippet.org/snippets?limit=20>; rel="first"'
+    assert resp.headers['Link'] == expected_link
+    assert [s['id'] for s in await resp.json()] == list(reversed(range(1, 11)))
+
+
+async def test_pagination_links_port_value_is_preserved_in_url(testapp):
+    # Port is omitted
+    resp1 = await testapp.get(
+        '/snippets',
+        headers={
+            'Accept': 'application/json',
+            # Pass the additional headers, that are set by nginx in the
+            # production deployment, so that we ensure we generate the
+            # correct links for users
+            'Host': 'api.xsnippet.org',
+            'X-Forwarded-Proto': 'https',
+        }
+    )
+    expected_link1 = '<https://api.xsnippet.org/snippets?limit=20>; rel="first"'  # noqa
+    assert resp1.headers['Link'] == expected_link1
+
+    # Port is passed explicitly
+    resp2 = await testapp.get(
+        '/snippets',
+        headers={
+            'Accept': 'application/json',
+            # Pass the additional headers, that are set by nginx in the
+            # production deployment, so that we ensure we generate the
+            # correct links for users
+            'Host': 'api.xsnippet.org:443',
+            'X-Forwarded-Proto': 'https',
+        }
+    )
+    expected_link2 = '<https://api.xsnippet.org:443/snippets?limit=20>; rel="first"'  # noqa
+    assert resp2.headers['Link'] == expected_link2
+
+
+async def test_pagination_links_num_of_items_is_multiple_of_pages(testapp, db):
+    # Put 12 snippets into the db
+    now = datetime.datetime.utcnow().replace(microsecond=0)
+    snippets = [
+        {
+            'id': i + 1,
+            'title': 'snippet #%d' % (i + 1),
+            'content': '(println "Hello, World!")',
+            'syntax': 'clojure',
+            'tags': ['tag_b'],
+            'created_at': (now + datetime.timedelta(seconds=1)),
+            'updated_at': (now + datetime.timedelta(seconds=1)),
+        }
+        for i in range(12)
+    ]
+    await db.snippets.insert(snippets)
+
+    # We should have seen snippets with ids 12, 11, 10 and 9. No link to the
+    # prev page, as we are at the very beginning of the list
+    resp1 = await _get_next_page(testapp, limit=4)
+    expected_link1 = (
+        '<https://api.xsnippet.org/snippets?limit=4>; rel="first", '
+        '<https://api.xsnippet.org/snippets?limit=4&marker=9>; rel="next"'
+    )
+    assert resp1.headers['Link'] == expected_link1
+    assert [s['id'] for s in await resp1.json()] == [12, 11, 10, 9]
+
+    # We should have seen snippets with ids 8, 7, 6 and 5. Link to the prev
+    # page is a link to the beginning of the list
+    resp2 = await _get_next_page(testapp, limit=4, marker=9)
+    expected_link2 = (
+        '<https://api.xsnippet.org/snippets?limit=4>; rel="first", '
+        '<https://api.xsnippet.org/snippets?limit=4&marker=5>; rel="next", '
+        '<https://api.xsnippet.org/snippets?limit=4>; rel="prev"'
+    )
+    assert resp2.headers['Link'] == expected_link2
+    assert [s['id'] for s in await resp2.json()] == [8, 7, 6, 5]
+
+    # We should have seen snippets with ids 4, 3, 2 and 1. Link to the next
+    # page is not rendered, as we reached the end of the list
+    resp3 = await _get_next_page(testapp, limit=4, marker=5)
+    expected_link3 = (
+        '<https://api.xsnippet.org/snippets?limit=4>; rel="first", '
+        '<https://api.xsnippet.org/snippets?limit=4&marker=9>; rel="prev"'
+    )
+    assert resp3.headers['Link'] == expected_link3
+    assert [s['id'] for s in await resp3.json()] == [4, 3, 2, 1]
+
+
+async def test_pagination_links_non_consecutive_ids(testapp, db):
+    now = datetime.datetime.utcnow().replace(microsecond=0)
+    snippets = [
+        {
+            'id': i,
+            'title': 'snippet #%d' % i,
+            'content': '(println "Hello, World!")',
+            'syntax': 'clojure',
+            'tags': ['tag_b'],
+            'created_at': (now + datetime.timedelta(seconds=1)),
+            'updated_at': (now + datetime.timedelta(seconds=1)),
+        }
+        for i in [1, 7, 17, 23, 24, 29, 31, 87, 93, 104]
+    ]
+    await db.snippets.insert(snippets)
+
+    resp1 = await _get_next_page(testapp, limit=3)
+    expected_link1 = (
+        '<https://api.xsnippet.org/snippets?limit=3>; rel="first", '
+        '<https://api.xsnippet.org/snippets?limit=3&marker=87>; rel="next"'
+    )
+    assert resp1.headers['Link'] == expected_link1
+    assert [s['id'] for s in await resp1.json()] == [104, 93, 87]
+
+    resp2 = await _get_next_page(testapp, limit=3, marker=87)
+    expected_link2 = (
+        '<https://api.xsnippet.org/snippets?limit=3>; rel="first", '
+        '<https://api.xsnippet.org/snippets?limit=3&marker=24>; rel="next", '
+        '<https://api.xsnippet.org/snippets?limit=3>; rel="prev"'
+    )
+    assert resp2.headers['Link'] == expected_link2
+    assert [s['id'] for s in await resp2.json()] == [31, 29, 24]
+
+    resp3 = await _get_next_page(testapp, limit=3, marker=24)
+    expected_link3 = (
+        '<https://api.xsnippet.org/snippets?limit=3>; rel="first", '
+        '<https://api.xsnippet.org/snippets?limit=3&marker=7>; rel="next", '
+        '<https://api.xsnippet.org/snippets?limit=3&marker=87>; rel="prev"'
+    )
+    assert resp3.headers['Link'] == expected_link3
+    assert [s['id'] for s in await resp3.json()] == [23, 17, 7]
+
+    resp4 = await _get_next_page(testapp, limit=3, marker=7)
+    expected_link4 = (
+        '<https://api.xsnippet.org/snippets?limit=3>; rel="first", '
+        '<https://api.xsnippet.org/snippets?limit=3&marker=24>; rel="prev"'
+    )
+    assert resp4.headers['Link'] == expected_link4
+    assert [s['id'] for s in await resp4.json()] == [1]
 
 
 async def test_get_snippets_pagination_not_found(testapp):
