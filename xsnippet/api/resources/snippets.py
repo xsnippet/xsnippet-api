@@ -130,6 +130,56 @@ class Snippet(resource.Resource):
         return await _write(self, service_fn, status=200)
 
 
+def _build_url_from_marker(request, marker=None, limit=None):
+    # take into account, that we might be running behind a reverse proxy
+    host = request.headers.get('Host', request.url.host).split(':')[0]
+    proto = request.headers.get('X-Forwarded-Proto', request.scheme)
+
+    # drop the previous values of limit and marker
+    new_query = request.url.query.copy()
+    new_query.pop('limit', None)
+    new_query.pop('marker', None)
+
+    # and replace them with new ones (if necessary for the given page)
+    if limit:
+        new_query['limit'] = limit
+    if marker:
+        new_query['marker'] = marker
+
+    return request.url.with_scheme(proto) \
+                      .with_host(host) \
+                      .with_query(new_query)
+
+
+def _build_link_header(request, current_page, previous_page, limit):
+    links = []
+
+    # always render a link to the first page
+    url = _build_url_from_marker(request, marker=None, limit=limit)
+    links.append('<%s>; rel="first"' % url)
+
+    # only render a link, if there more items after the current page
+    if len(current_page) > limit:
+        marker = current_page[:limit][-1]['id']
+        url = _build_url_from_marker(request, marker=marker, limit=limit)
+
+        links.append('<%s>; rel="next"' % url)
+
+    if len(previous_page) >= limit:
+        # account for the edge case when there is exactly one full page left -
+        # in this case the request for the previous page should be w/o any
+        # marker value passed
+        if len(previous_page) == limit:
+            marker = None
+        else:
+            marker = previous_page[-1]['id']
+        url = _build_url_from_marker(request, marker=marker, limit=limit)
+
+        links.append('<%s>; rel="prev"' % url)
+
+    return ', '.join(links)
+
+
 class Snippets(resource.Resource):
 
     async def get(self):
@@ -170,20 +220,50 @@ class Snippets(resource.Resource):
             error = '%s.' % cerberus_errors_to_str(v.errors)
             return self.make_response({'message': error}, status=400)
 
+        # It's safe to have type cast here since those query parameters
+        # are guaranteed to be integer, thanks to validation above.
+        limit = int(self.request.GET.get('limit', 20))
+        marker = int(self.request.GET.get('marker', 0))
+        title = self.request.GET.get('title')
+        tag = self.request.GET.get('tag')
+        syntax = self.request.GET.get('syntax')
+
         try:
-            snippets = await services.Snippet(self.db).get(
-                title=self.request.GET.get('title'),
-                tag=self.request.GET.get('tag'),
-                syntax=self.request.GET.get('syntax'),
-                # It's safe to have type cast here since those query parameters
-                # are guaranteed to be integer, thanks to validation above.
-                limit=int(self.request.GET.get('limit', 0)),
-                marker=int(self.request.GET.get('marker', 0)),
+            # actual snippets to be returned
+            current_page = await services.Snippet(self.db).get(
+                title=title, tag=tag, syntax=syntax,
+                # read one more to know if there is next page
+                limit=limit + 1,
+                marker=marker,
             )
+
+            # only needed to render a link to the previous page
+            if marker:
+                previous_page = await services.Snippet(self.db).get(
+                    title=title, tag=tag, syntax=syntax,
+                    # read one more to know if there is prev page
+                    limit=limit + 1,
+                    marker=marker,
+                    direction='backward'
+                )
+            else:
+                # we are at the very beginning of the list - no prev page
+                previous_page = []
         except exceptions.SnippetNotFound as exc:
             return self.make_response({'message': str(exc)}, status=404)
 
-        return self.make_response(snippets, status=200)
+        return self.make_response(
+            # return no more than $limit snippets (if we read $limit + 1)
+            current_page[:limit],
+            headers={
+                'Link': _build_link_header(
+                    self.request,
+                    current_page, previous_page,
+                    limit=limit,
+                )
+            },
+            status=200
+        )
 
     async def post(self):
         return await _write(self, services.Snippet(self.db).create, status=201)

@@ -20,6 +20,29 @@ from .. import exceptions
 
 class Snippet:
 
+    _pagination = {
+        'forward': {
+            'filters': {
+                'created_at': '$lte',
+                '_id': '$lt',
+            },
+            'sort': {
+                'created_at': pymongo.DESCENDING,
+                '_id': pymongo.DESCENDING,
+            }
+        },
+        'backward': {
+            'filters': {
+                'created_at': '$gte',
+                '_id': '$gte',
+            },
+            'sort': {
+                'created_at': pymongo.ASCENDING,
+                '_id': pymongo.ASCENDING,
+            }
+        },
+    }
+
     def __init__(self, db):
         self.db = db
 
@@ -53,8 +76,11 @@ class Snippet:
         return await self.update(self._normalize(snippet))
 
     async def get(self, *, title=None, tag=None, syntax=None, limit=100,
-                  marker=None):
+                  marker=None, direction='forward'):
         condition = {}
+
+        sort = self._pagination[direction]['sort']
+        filters = self._pagination[direction]['filters']
 
         if title is not None:
             condition['title'] = {'$regex': '^' + re.escape(title) + '.*'}
@@ -71,8 +97,8 @@ class Snippet:
                     'points to a nonexistent snippet.')
 
             condition['$and'] = [
-                {'created_at': {'$lte': specimen['created_at']}},
-                {'_id': {'$lt': specimen['id']}},
+                {'created_at': {filters['created_at']: specimen['created_at']}},
+                {'_id': {filters['_id']: specimen['id']}},
             ]
 
         # use a compound sorting key (created_at, _id) to avoid the ambiguity
@@ -80,10 +106,10 @@ class Snippet:
         # is guaranteed to be unique is the primary key - _id). There is a
         # corresponding index on (created_at, _id), that ensures this operation
         # can be performed efficiently (mongo does not need to sort documents
-        # at all - it just walks over the btree index in key descending order)
+        # at all - it just walks over the btree index in chosen order)
         query = self.db.snippets.find(condition).sort([
-            ('created_at', pymongo.DESCENDING),
-            ('_id', pymongo.DESCENDING),
+            ('created_at', sort['created_at']),
+            ('_id', sort['_id']),
         ])
         return await query.limit(limit).to_list(None)
 
