@@ -267,7 +267,7 @@ async def test_get_snippets_filter_by_title_and_tag_with_pagination(
         _compare_snippets(snippet_db, snippet_api)
     # Check that urls in Link preserve the additional query params
     expected_link1 = (
-        '<https://api.xsnippet.org/snippets?title=snippet+%231&tag=tag_a&limit=1>; rel="first", '  # noqa
+        '<https://api.xsnippet.org/snippets?title=snippet+%231&tag=tag_a&limit=1>; rel="first", '
         '<https://api.xsnippet.org/snippets?title=snippet+%231&tag=tag_a&limit=1&marker=3>; rel="next"'  # noqa
     )
     assert resp.headers['Link'] == expected_link1
@@ -285,8 +285,8 @@ async def test_get_snippets_filter_by_title_and_tag_with_pagination(
         _compare_snippets(snippet_db, snippet_api)
     # Check that urls in Link preserve the additional query params
     expected_link2 = (
-        '<https://api.xsnippet.org/snippets?title=snippet+%231&tag=tag_a&limit=1>; rel="first", '  # noqa
-        '<https://api.xsnippet.org/snippets?title=snippet+%231&tag=tag_a&limit=1>; rel="prev"'  # noqa
+        '<https://api.xsnippet.org/snippets?title=snippet+%231&tag=tag_a&limit=1>; rel="first", '
+        '<https://api.xsnippet.org/snippets?title=snippet+%231&tag=tag_a&limit=1>; rel="prev"'
     )
     assert resp.headers['Link'] == expected_link2
 
@@ -456,7 +456,7 @@ async def test_pagination_links_port_value_is_preserved_in_url(testapp):
             'X-Forwarded-Proto': 'https',
         }
     )
-    expected_link1 = '<https://api.xsnippet.org/snippets?limit=20>; rel="first"'  # noqa
+    expected_link1 = '<https://api.xsnippet.org/snippets?limit=20>; rel="first"'
     assert resp1.headers['Link'] == expected_link1
 
     # Port is passed explicitly
@@ -471,7 +471,7 @@ async def test_pagination_links_port_value_is_preserved_in_url(testapp):
             'X-Forwarded-Proto': 'https',
         }
     )
-    expected_link2 = '<https://api.xsnippet.org:443/snippets?limit=20>; rel="first"'  # noqa
+    expected_link2 = '<https://api.xsnippet.org:443/snippets?limit=20>; rel="first"'
     assert resp2.headers['Link'] == expected_link2
 
 

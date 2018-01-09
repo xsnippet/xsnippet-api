@@ -97,7 +97,7 @@ class Snippet:
                     'points to a nonexistent snippet.')
 
             condition['$and'] = [
-                {'created_at': {filters['created_at']: specimen['created_at']}},  # noqa
+                {'created_at': {filters['created_at']: specimen['created_at']}},
                 {'_id': {filters['_id']: specimen['id']}},
             ]
 
