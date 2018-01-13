@@ -10,6 +10,7 @@
     :license: MIT, see LICENSE for details
 """
 
+import asyncio
 import json
 import datetime
 import fnmatch
@@ -17,6 +18,8 @@ import functools
 
 from aiohttp import web, hdrs
 from werkzeug import http
+
+from . import exceptions
 
 
 class _JSONEncoder(json.JSONEncoder):
@@ -35,7 +38,7 @@ class _JSONEncoder(json.JSONEncoder):
 
 
 class Resource(web.View):
-    """Resource wrapper around :class:`aiohttp.web.View`.
+    """Class-based view to represent RESTful resource.
 
     The class provides basic facilities for building RESTful API, such as
     encoding responses according to ``Accept`` and decoding requests
@@ -58,7 +61,37 @@ class Resource(web.View):
         #: an application database alias to make code a bit readable
         self.db = self.request.app['db']
 
-    def make_response(self, data, headers=None, status=200):
+    @asyncio.coroutine
+    def __iter__(self):
+        # So far (Jan 5, 2018) aiohttp doesn't support custom request classes,
+        # but we would like to provide a better user experience for consumers
+        # of this middleware. Hence, we monkey patch the instance and add a new
+        # async method that would de-serialize income payload according to HTTP
+        # content negotiation rules.
+        setattr(self.request.__class__, 'get_data', self._get_data())
+
+        try:
+            response = yield from super(Resource, self).__iter__()
+
+        except exceptions.SnippetNotFound as exc:
+            error = {'message': str(exc)}
+            return self._make_response(error, None, 404)
+
+        except web.HTTPError as exc:
+            error = {'message': str(exc)}
+            return self._make_response(error, None, exc.status_code)
+
+        status_code = 200
+        headers = None
+
+        if isinstance(response, tuple):
+            response, status_code, *rest = response
+            if rest:
+                headers = rest[0]
+
+        return self._make_response(response, headers, status_code)
+
+    def _make_response(self, data, headers=None, status=200):
         """Return an HTTP response object.
 
         The method serializes given data according to 'Accept' HTTP header,
@@ -109,19 +142,13 @@ class Resource(web.View):
 
         raise web.HTTPNotAcceptable()
 
-    async def read_request(self):
-        """Return parsed request data.
+    def _get_data(self):
+        decoders = self._decoders
 
-        The method reads request's payload and tries to deserialize it
-        according to 'Content-Type' header.
+        async def impl(self):
+            if self.content_type in decoders:
+                decode = decoders[self.content_type]
+                return decode(await self.text())
 
-        :return: a deserialized content
-        :rtype: python object
-
-        :raise: :class:`aiohttp.web.HTTPUnsupportedMediaType`
-        """
-        if self.request.content_type in self._decoders:
-            decode = self._decoders[self.request.content_type]
-            return decode(await self.request.text())
-
-        raise web.HTTPUnsupportedMediaType()
+            raise web.HTTPUnsupportedMediaType()
+        return impl
