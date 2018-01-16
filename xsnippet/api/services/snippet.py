@@ -47,23 +47,41 @@ class Snippet:
         self.db = db
 
     async def create(self, snippet):
-        snippet = self._normalize(snippet)
-
         now = datetime.datetime.utcnow().replace(microsecond=0)
+
+        snippet = self._normalize(snippet)
+        snippet['changesets'] = [
+            {
+                'content': snippet.pop('content'),
+                'created_at': now,
+            },
+        ]
         snippet['created_at'] = now
         snippet['updated_at'] = now
 
         snippet_id = await self.db.snippets.insert(snippet)
         snippet['id'] = snippet_id
+        snippet['content'] = snippet.pop('changesets', [])[0]['content']
+
         return snippet
 
     async def update(self, snippet):
         now = datetime.datetime.utcnow().replace(microsecond=0)
         snippet['updated_at'] = now
 
+        parameters = {'$set': snippet}
+
+        if snippet.get('content'):
+            parameters['$push'] = {
+                'changesets': {
+                    'content': snippet.pop('content'),
+                    'created_at': now,
+                }
+            }
+
         result = await self.db.snippets.update(
             {'_id': snippet['id']},
-            {'$set': snippet},
+            parameters,
         )
 
         if not result['n']:
@@ -111,7 +129,11 @@ class Snippet:
             ('created_at', sort['created_at']),
             ('_id', sort['_id']),
         ])
-        return await query.limit(limit).to_list(None)
+
+        snippets = await query.limit(limit).to_list(None)
+        for snippet in snippets:
+            snippet['content'] = snippet.pop('changesets', [])[-1]['content']
+        return snippets
 
     async def get_one(self, id):
         snippet = await self.db.snippets.find_one({'_id': id})
@@ -120,6 +142,7 @@ class Snippet:
             raise exceptions.SnippetNotFound(
                 'Sorry, cannot find the requested snippet.')
 
+        snippet['content'] = snippet.pop('changesets', [])[-1]['content']
         return snippet
 
     async def delete(self, id):
