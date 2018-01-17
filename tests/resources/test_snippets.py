@@ -18,13 +18,15 @@ import pytest
 
 
 @pytest.fixture(scope='function')
-def snippets():
+def snippets(db):
     now = datetime.datetime.utcnow().replace(microsecond=0)
     return [
         {
             'id': 1,
             'title': 'snippet #1',
-            'content': 'def foo(): pass',
+            'changesets': [
+                {'content': 'def foo(): pass'},
+            ],
             'syntax': 'python',
             'tags': ['tag_a', 'tag_b'],
             'created_at': now - datetime.timedelta(100),
@@ -33,7 +35,9 @@ def snippets():
         {
             'id': 2,
             'title': 'snippet #2',
-            'content': 'int do_something() {}',
+            'changesets': [
+                {'content': 'int do_something() {}'},
+            ],
             'syntax': 'cpp',
             'tags': ['tag_c'],
             'created_at': now,
@@ -51,6 +55,12 @@ def _compare_snippets(snippet_db, snippet_api):
     assert (
         snippet_api.pop('updated_at') ==
         snippet_db.pop('updated_at').isoformat()
+    )
+
+    # compare content with the latest changeset
+    assert (
+        snippet_api.pop('content') ==
+        snippet_db.pop('changesets')[-1]['content']
     )
 
     # compare rest of snippet
@@ -245,7 +255,9 @@ async def test_get_snippets_filter_by_title_and_tag_with_pagination(
     snippet = {
         'id': 3,
         'title': 'snippet #1',
-        'content': '(println "Hello, World!")',
+        'changesets': [
+            {'content': '(println "Hello, World!")'},
+        ],
         'syntax': 'clojure',
         'tags': ['tag_a'],
         'created_at': now,
@@ -296,7 +308,9 @@ async def test_get_snippets_pagination(testapp, snippets, db):
     snippet = {
         'id': 3,
         'title': 'snippet #3',
-        'content': '(println "Hello, World!")',
+        'changesets': [
+            {'content': '(println "Hello, World!")'},
+        ],
         'syntax': 'clojure',
         'tags': ['tag_b'],
         'created_at': now,
@@ -367,7 +381,9 @@ async def test_pagination_links(testapp, db):
         {
             'id': i + 1,
             'title': 'snippet #%d' % (i + 1),
-            'content': '(println "Hello, World!")',
+            'changesets': [
+                {'content': '(println "Hello, World!")'},
+            ],
             'syntax': 'clojure',
             'tags': ['tag_b'],
             'created_at': (now + datetime.timedelta(seconds=1)),
@@ -426,7 +442,9 @@ async def test_pagination_links_one_page_larger_than_whole_list(testapp, db):
         {
             'id': i + 1,
             'title': 'snippet #%d' % (i + 1),
-            'content': '(println "Hello, World!")',
+            'changesets': [
+                {'content': '(println "Hello, World!")'},
+            ],
             'syntax': 'clojure',
             'tags': ['tag_b'],
             'created_at': (now + datetime.timedelta(seconds=1)),
@@ -482,7 +500,9 @@ async def test_pagination_links_num_of_items_is_multiple_of_pages(testapp, db):
         {
             'id': i + 1,
             'title': 'snippet #%d' % (i + 1),
-            'content': '(println "Hello, World!")',
+            'changesets': [
+                {'content': '(println "Hello, World!")'},
+            ],
             'syntax': 'clojure',
             'tags': ['tag_b'],
             'created_at': (now + datetime.timedelta(seconds=1)),
@@ -530,7 +550,9 @@ async def test_pagination_links_non_consecutive_ids(testapp, db):
         {
             'id': i,
             'title': 'snippet #%d' % i,
-            'content': '(println "Hello, World!")',
+            'changesets': [
+                {'content': '(println "Hello, World!")'},
+            ],
             'syntax': 'clojure',
             'tags': ['tag_b'],
             'created_at': (now + datetime.timedelta(seconds=1)),
@@ -638,7 +660,8 @@ async def test_get_snippets_pagination_bad_request_unknown_param(testapp):
 
 async def test_post_snippet(testapp, snippets, db):
     snippet = snippets[0]
-    for key in ('id', 'created_at', 'updated_at'):
+    snippet['content'] = snippets[0]['changesets'][0]['content']
+    for key in ('id', 'created_at', 'updated_at', 'changesets'):
         del snippet[key]
 
     resp = await testapp.post(
@@ -668,7 +691,8 @@ async def test_post_snippet(testapp, snippets, db):
 ])
 async def test_post_snippet_malformed_snippet(name, value, testapp, snippets):
     snippet = snippets[0]
-    for key in ('id', 'created_at', 'updated_at'):
+    snippet['content'] = snippets[0]['changesets'][0]['content']
+    for key in ('id', 'created_at', 'updated_at', 'changesets'):
         del snippet[key]
     snippet[name] = value
 
@@ -690,7 +714,8 @@ async def test_post_snippet_syntax_enum_allowed(
     appinstance['conf']['snippet']['syntaxes'] = 'python\nclojure'
 
     snippet = snippets[0]
-    for key in ('id', 'created_at', 'updated_at'):
+    snippet['content'] = snippets[0]['changesets'][0]['content']
+    for key in ('id', 'created_at', 'updated_at', 'changesets'):
         del snippet[key]
 
     snippet['syntax'] = 'python'
@@ -717,7 +742,8 @@ async def test_post_snippet_syntax_enum_not_allowed(
     appinstance['conf']['snippet']['syntaxes'] = 'python\nclojure'
 
     snippet = snippets[0]
-    for key in ('id', 'created_at', 'updated_at'):
+    snippet['content'] = snippets[0]['changesets'][0]['content']
+    for key in ('id', 'created_at', 'updated_at', 'changesets'):
         del snippet[key]
 
     snippet['syntax'] = 'go'
@@ -916,7 +942,8 @@ async def test_put_snippet_required_fields(name, testapp, snippets, db):
     await db.snippets.insert(snippets)
 
     snippet = copy.deepcopy(snippets[0])
-    for key in ('id', 'created_at', 'updated_at'):
+    snippet['content'] = snippet['changesets'][-1]['content']
+    for key in ('id', 'created_at', 'updated_at', 'changesets'):
         del snippet[key]
     del snippet[name]
 
