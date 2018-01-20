@@ -14,7 +14,7 @@ import functools
 import aiohttp.web
 import picobox
 
-from . import database, router, middlewares, resources
+from . import database, router, routes, middlewares
 
 
 async def _inject_vary_header(request, response):
@@ -59,9 +59,7 @@ def create_app(conf, db):
     """
 
     v1 = aiohttp.web.UrlDispatcher()
-    v1.add_route('*', '/snippets', resources.Snippets)
-    v1.add_route('*', '/snippets/{id}', resources.Snippet)
-    v1.add_route('*', '/syntaxes', resources.Syntaxes)
+    v1.add_routes(routes.v1)
 
     # We need to import all the resources in order to evaluate @endpoint
     # decorator, so they can be collected and passed to VersionRouter.
