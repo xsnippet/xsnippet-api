@@ -13,6 +13,7 @@
 import datetime
 import re
 
+import picobox
 import pymongo
 
 from .. import exceptions
@@ -43,8 +44,9 @@ class Snippet:
         },
     }
 
-    def __init__(self, db):
-        self.db = db
+    @picobox.pass_('database')
+    def __init__(self, database):
+        self.db = database
 
     async def create(self, snippet):
         now = datetime.datetime.utcnow().replace(microsecond=0)
