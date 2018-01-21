@@ -43,17 +43,8 @@ def create_connection(conf):
     return db
 
 
-async def setup(app):
-    """Perform setup actions on application startup.
-
-    This function is expected to inject the `db` key to the application
-    instance, that must point to a properly initialized DB connection. Some
-    operations (e.g. ensuring of indexes) may be performed asynchronously.
-    """
-
-    db = create_connection(app['conf'])
-    app['db'] = db
-
+async def setup(app, db):
+    """Setup database indexes on application startup."""
     # ensure necessary indexes exist. background=True allows operations
     # read/write operations on collections while indexes are being built
     futures = [

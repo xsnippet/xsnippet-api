@@ -11,7 +11,7 @@
 import pytest
 
 
-async def test_get_syntaxes_default_conf(testapp, appinstance):
+async def test_get_syntaxes_default_conf(testapp):
     resp = await testapp.get(
         '/syntaxes',
         headers={
@@ -26,9 +26,8 @@ async def test_get_syntaxes_default_conf(testapp, appinstance):
     ('', []),
     ('clojure\npython', ['clojure', 'python'])
 ])
-async def test_get_syntaxes_overriden_conf(testapp, appinstance,
-                                           syntaxes, expected):
-    appinstance['conf']['snippet']['syntaxes'] = syntaxes
+async def test_get_syntaxes_overriden_conf(testapp, testconf, syntaxes, expected):
+    testconf['snippet']['syntaxes'] = syntaxes
 
     resp = await testapp.get(
         '/syntaxes',
@@ -40,8 +39,8 @@ async def test_get_syntaxes_overriden_conf(testapp, appinstance,
     assert await resp.json() == expected
 
 
-async def test_get_syntaxes_overriden_conf_no_syntaxes(testapp, appinstance):
-    appinstance['conf']['snippet'].pop('syntaxes', None)
+async def test_get_syntaxes_overriden_conf_no_syntaxes(testapp, testconf):
+    testconf['snippet'].pop('syntaxes', None)
 
     resp = await testapp.get(
         '/syntaxes',

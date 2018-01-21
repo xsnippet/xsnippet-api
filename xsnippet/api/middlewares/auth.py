@@ -19,19 +19,17 @@ import jose.jwt as jwt
 SECRET_LEN = 64
 
 
-async def setup(app):
+async def setup(app, conf):
     """Perform middleware setup steps at application startup.
 
     E.g. generate a temporary secret, if one was not set in conf explicitly."""
 
-    conf = app['conf']['auth']
-
-    secret = conf.get('secret', '')
+    secret = conf['auth'].get('secret', '')
     if not secret:
         symbols = string.ascii_letters + string.digits
         secret = ''.join(random.choice(symbols) for _ in range(SECRET_LEN))
 
-        conf['secret'] = secret
+        conf['auth']['secret'] = secret
 
 
 def auth(conf):

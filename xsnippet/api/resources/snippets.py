@@ -13,6 +13,7 @@ import functools
 
 import cerberus
 import aiohttp.web as web
+import picobox
 
 from .misc import cerberus_errors_to_str, try_int
 from .. import resource, services
@@ -30,7 +31,8 @@ def _get_id(resource):
     return int(resource.request.match_info['id'])
 
 
-async def _write(resource, service_fn, *, status):
+@picobox.pass_('conf')
+async def _write(resource, service_fn, *, status, conf):
     v = cerberus.Validator({
         'id': {'type': 'integer', 'readonly': True},
         'title': {'type': 'string'},
@@ -43,7 +45,6 @@ async def _write(resource, service_fn, *, status):
     })
 
     snippet = await resource.request.get_data()
-    conf = resource.request.app['conf']
     syntaxes = conf.getlist('snippet', 'syntaxes', fallback=None)
 
     # If 'snippet:syntaxes' option is not empty, we need to ensure that
@@ -73,31 +74,31 @@ class Snippet(resource.Resource):
 
     def checkpermissions(fn):
         @functools.wraps(fn)
-        async def _wrapper(self, *args, **kwargs):
+        @picobox.pass_('conf')
+        async def _wrapper(self, conf, *args, **kwargs):
             # So far there's no way to check user's permissions as we don't
             # track users and snippets' owners. However, we do support methods
             # to change the snippet and we need to ensure it's not exposed to
             # public but can be tested. That's why we check for a fake flag in
             # conf object that can be set in tests in order to test existing
             # functionality.
-            conf = self.request.app['conf']
             if not conf.getboolean('test', 'sudo', fallback=False):
                 raise web.HTTPForbidden(reason='Not yet. :)')
             return await fn(self, *args, **kwargs)
         return _wrapper
 
     async def get(self):
-        return await _read(self, services.Snippet(self.db).get_one, status=200)
+        return await _read(self, services.Snippet().get_one, status=200)
 
     @checkpermissions
     async def delete(self):
-        return await _read(self, services.Snippet(self.db).delete, status=204)
+        return await _read(self, services.Snippet().delete, status=204)
 
     @checkpermissions
     async def put(self):
         async def service_fn(snippet):
             snippet['id'] = _get_id(self)
-            return await services.Snippet(self.db).replace(snippet)
+            return await services.Snippet().replace(snippet)
 
         return await _write(self, service_fn, status=200)
 
@@ -105,7 +106,7 @@ class Snippet(resource.Resource):
     async def patch(self):
         async def service_fn(snippet):
             snippet['id'] = _get_id(self)
-            return await services.Snippet(self.db).update(snippet)
+            return await services.Snippet().update(snippet)
 
         return await _write(self, service_fn, status=200)
 
@@ -162,7 +163,8 @@ def _build_link_header(request, current_page, previous_page, limit):
 
 class Snippets(resource.Resource):
 
-    async def get(self):
+    @picobox.pass_('conf')
+    async def get(self, conf):
         v = cerberus.Validator({
             'limit': {
                 'type': 'integer',
@@ -188,7 +190,6 @@ class Snippets(resource.Resource):
             },
         })
 
-        conf = self.request.app['conf']
         syntaxes = conf.getlist('snippet', 'syntaxes', fallback=None)
 
         # If 'snippet:syntaxes' option is not empty, we need to ensure that
@@ -209,7 +210,7 @@ class Snippets(resource.Resource):
         syntax = self.request.GET.get('syntax')
 
         # actual snippets to be returned
-        current_page = await services.Snippet(self.db).get(
+        current_page = await services.Snippet().get(
             title=title, tag=tag, syntax=syntax,
             # read one more to know if there is next page
             limit=limit + 1,
@@ -218,7 +219,7 @@ class Snippets(resource.Resource):
 
         # only needed to render a link to the previous page
         if marker:
-            previous_page = await services.Snippet(self.db).get(
+            previous_page = await services.Snippet().get(
                 title=title, tag=tag, syntax=syntax,
                 # read one more to know if there is prev page
                 limit=limit + 1,
@@ -243,4 +244,4 @@ class Snippets(resource.Resource):
         )
 
     async def post(self):
-        return await _write(self, services.Snippet(self.db).create, status=201)
+        return await _write(self, services.Snippet().create, status=201)

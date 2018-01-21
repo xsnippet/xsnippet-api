@@ -44,6 +44,7 @@ setup(
         'motor >= 1.1',
         'python-jose >= 1.3.2',
         'werkzeug >= 0.11.4',
+        'picobox >= 1.1.0, < 2',
     ],
     tests_require=[
         'pytest >= 2.8.7',

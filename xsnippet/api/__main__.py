@@ -13,10 +13,12 @@ import logging
 import os
 import sys
 
-from aiohttp import web
+import aiohttp.web as web
+import picobox
 
 from xsnippet.api.application import create_app
 from xsnippet.api.conf import get_conf
+from xsnippet.api.database import create_connection
 
 
 def main(args=sys.argv[1:]):
@@ -27,13 +29,18 @@ def main(args=sys.argv[1:]):
     conf = get_conf([
         os.path.join(os.path.dirname(__file__), 'default.conf'),
     ], envvar='XSNIPPET_API_SETTINGS')
+    database = create_connection(conf)
 
-    web.run_app(
-        create_app(conf),
-        host=conf['server']['host'],
-        port=int(conf['server']['port']),
-        access_log_format=conf['server']['access_log_format']
-    )
+    with picobox.push(picobox.Box()) as box:
+        box.put('conf', conf)
+        box.put('database', database)
+
+        web.run_app(
+            create_app(conf, database),
+            host=conf['server']['host'],
+            port=int(conf['server']['port']),
+            access_log_format=conf['server']['access_log_format']
+        )
 
 
 # let's make this module and xsnippet.api package to be executable, so

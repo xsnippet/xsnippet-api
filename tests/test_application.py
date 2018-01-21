@@ -9,28 +9,17 @@
 """
 
 import pytest
-import pkg_resources
 
-from xsnippet.api import application, conf
+from xsnippet.api import application
 from xsnippet.api.middlewares import auth
 
 
-@pytest.fixture(scope='function')
-async def testapp(test_client):
-    app_conf = conf.get_conf(
-        pkg_resources.resource_filename('xsnippet.api', 'default.conf'))
-    app_conf['auth'] = {'secret': 'SWORDFISH'}
-    return await test_client(application.create_app(app_conf))
-
-
-async def test_auth_secret_is_generated_if_not_set(test_server):
-    app_conf = conf.get_conf(
-        pkg_resources.resource_filename('xsnippet.api', 'default.conf'))
-    app_conf['auth'] = {'secret': ''}
-    app_instance = application.create_app(app_conf)
+async def test_auth_secret_is_generated_if_not_set(test_server, testconf, testdatabase):
+    testconf['auth'] = {'secret': ''}
+    app_instance = application.create_app(testconf, testdatabase)
 
     await test_server(app_instance)
-    assert len(app_instance['conf']['auth']['secret']) == auth.SECRET_LEN
+    assert len(testconf['auth']['secret']) == auth.SECRET_LEN
 
 
 @pytest.mark.parametrize('name, value', [

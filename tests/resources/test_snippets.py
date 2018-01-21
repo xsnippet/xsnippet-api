@@ -18,9 +18,9 @@ import pytest
 
 
 @pytest.fixture(scope='function')
-def snippets(db):
+async def snippets(testdatabase):
     now = datetime.datetime.utcnow().replace(microsecond=0)
-    return [
+    snippets = [
         {
             'id': 1,
             'title': 'snippet #1',
@@ -44,6 +44,8 @@ def snippets(db):
             'updated_at': now,
         },
     ]
+    await testdatabase.snippets.insert(snippets)
+    return snippets
 
 
 def _compare_snippets(snippet_db, snippet_api):
@@ -78,9 +80,7 @@ async def test_get_no_snippets(testapp):
     assert await resp.json() == []
 
 
-async def test_get_snippets(testapp, snippets, db):
-    await db.snippets.insert(snippets)
-
+async def test_get_snippets(testapp, snippets):
     resp = await testapp.get(
         '/snippets',
         headers={
@@ -98,9 +98,7 @@ async def test_get_snippets(testapp, snippets, db):
         _compare_snippets(snippet_db, snippet_api)
 
 
-async def test_get_snippets_filter_by_title(testapp, snippets, db):
-    await db.snippets.insert(snippets)
-
+async def test_get_snippets_filter_by_title(testapp, snippets):
     resp = await testapp.get(
         '/snippets?title=snippet+%231',
         headers={
@@ -128,9 +126,7 @@ async def test_get_snippets_filter_by_title(testapp, snippets, db):
     assert list(regexes_are_escaped.json()) == []
 
 
-async def test_get_snippets_filter_by_title_bad_request(testapp, snippets, db):
-    await db.snippets.insert(snippets)
-
+async def test_get_snippets_filter_by_title_bad_request(testapp, snippets):
     resp = await testapp.get(
         '/snippets?title=',
         headers={
@@ -142,9 +138,7 @@ async def test_get_snippets_filter_by_title_bad_request(testapp, snippets, db):
     }
 
 
-async def test_get_snippets_filter_by_tag(testapp, snippets, db):
-    await db.snippets.insert(snippets)
-
+async def test_get_snippets_filter_by_tag(testapp, snippets):
     resp = await testapp.get(
         '/snippets?tag=tag_c',
         headers={
@@ -169,10 +163,7 @@ async def test_get_snippets_filter_by_tag(testapp, snippets, db):
     ['', 'test%20tag'],
     ids=['empty', 'whitespace']
 )
-async def test_get_snippets_filter_by_tag_bad_request(
-        value, testapp, snippets, db):
-    await db.snippets.insert(snippets)
-
+async def test_get_snippets_filter_by_tag_bad_request(value, testapp, snippets):
     resp = await testapp.get(
         '/snippets?tag=' + value,
         headers={
@@ -184,9 +175,7 @@ async def test_get_snippets_filter_by_tag_bad_request(
     }
 
 
-async def test_get_snippets_filter_by_syntax(testapp, snippets, db):
-    await db.snippets.insert(snippets)
-
+async def test_get_snippets_filter_by_syntax(testapp, snippets):
     resp = await testapp.get(
         '/snippets?syntax=python',
         headers={
@@ -211,10 +200,8 @@ async def test_get_snippets_filter_by_syntax(testapp, snippets, db):
     ['', 'ololo'],
     ids=['empty', 'non-exist']
 )
-async def test_get_snippets_filter_by_syntax_bad_request(
-        value, testapp, snippets, db, appinstance):
-    appinstance['conf']['snippet']['syntaxes'] = 'python\nclojure'
-    await db.snippets.insert(snippets)
+async def test_get_snippets_filter_by_syntax_bad_request(value, testapp, testconf, snippets):
+    testconf['snippet']['syntaxes'] = 'python\nclojure'
 
     resp = await testapp.get(
         '/snippets?syntax=' + value,
@@ -227,9 +214,7 @@ async def test_get_snippets_filter_by_syntax_bad_request(
     }
 
 
-async def test_get_snippets_filter_by_title_and_tag(testapp, snippets, db):
-    await db.snippets.insert(snippets)
-
+async def test_get_snippets_filter_by_title_and_tag(testapp, snippets):
     resp = await testapp.get(
         '/snippets?title=snippet+%231&tag=tag_a',
         headers={
@@ -249,8 +234,7 @@ async def test_get_snippets_filter_by_title_and_tag(testapp, snippets, db):
     assert list(nonexistent.json()) == []
 
 
-async def test_get_snippets_filter_by_title_and_tag_with_pagination(
-        testapp, snippets, db):
+async def test_get_snippets_filter_by_title_and_tag_with_pagination(testapp, testdatabase, snippets):  # noqa
     now = datetime.datetime.utcnow().replace(microsecond=0)
     snippet = {
         'id': 3,
@@ -263,8 +247,7 @@ async def test_get_snippets_filter_by_title_and_tag_with_pagination(
         'created_at': now,
         'updated_at': now,
     }
-
-    await db.snippets.insert(snippets + [snippet])
+    await testdatabase.snippets.insert([snippet])
 
     resp = await testapp.get(
         '/snippets?title=snippet+%231&tag=tag_a&limit=1',
@@ -303,7 +286,7 @@ async def test_get_snippets_filter_by_title_and_tag_with_pagination(
     assert resp.headers['Link'] == expected_link2
 
 
-async def test_get_snippets_pagination(testapp, snippets, db):
+async def test_get_snippets_pagination(testapp, testdatabase, snippets):
     now = datetime.datetime.utcnow().replace(microsecond=0)
     snippet = {
         'id': 3,
@@ -316,8 +299,7 @@ async def test_get_snippets_pagination(testapp, snippets, db):
         'created_at': now,
         'updated_at': now,
     }
-
-    await db.snippets.insert(snippets + [snippet])
+    await testdatabase.snippets.insert([snippet])
 
     # ask for one latest snippet
     resp = await testapp.get(
@@ -374,7 +356,7 @@ async def _get_next_page(testapp, limit=3, marker=0):
     return resp
 
 
-async def test_pagination_links(testapp, db):
+async def test_pagination_links(testapp, testdatabase):
     # Put 10 snippets into the db
     now = datetime.datetime.utcnow().replace(microsecond=0)
     snippets = [
@@ -391,7 +373,7 @@ async def test_pagination_links(testapp, db):
         }
         for i in range(10)
     ]
-    await db.snippets.insert(snippets)
+    await testdatabase.snippets.insert(snippets)
 
     # We should have seen snippets with ids 10, 9 and 8. No link to the prev
     # page, as we are at the very beginning of the list
@@ -435,7 +417,7 @@ async def test_pagination_links(testapp, db):
     assert [s['id'] for s in await resp4.json()] == [1]
 
 
-async def test_pagination_links_one_page_larger_than_whole_list(testapp, db):
+async def test_pagination_links_one_page_larger_than_whole_list(testapp, testdatabase):
     # Put 10 snippets into the db
     now = datetime.datetime.utcnow().replace(microsecond=0)
     snippets = [
@@ -452,7 +434,7 @@ async def test_pagination_links_one_page_larger_than_whole_list(testapp, db):
         }
         for i in range(10)
     ]
-    await db.snippets.insert(snippets)
+    await testdatabase.snippets.insert(snippets)
 
     # Default limit is 20 and there no prev/next pages - only the first one
     resp = await _get_next_page(testapp, limit=None)
@@ -493,7 +475,7 @@ async def test_pagination_links_port_value_is_preserved_in_url(testapp):
     assert resp2.headers['Link'] == expected_link2
 
 
-async def test_pagination_links_num_of_items_is_multiple_of_pages(testapp, db):
+async def test_pagination_links_num_of_items_is_multiple_of_pages(testapp, testdatabase):
     # Put 12 snippets into the db
     now = datetime.datetime.utcnow().replace(microsecond=0)
     snippets = [
@@ -510,7 +492,7 @@ async def test_pagination_links_num_of_items_is_multiple_of_pages(testapp, db):
         }
         for i in range(12)
     ]
-    await db.snippets.insert(snippets)
+    await testdatabase.snippets.insert(snippets)
 
     # We should have seen snippets with ids 12, 11, 10 and 9. No link to the
     # prev page, as we are at the very beginning of the list
@@ -544,7 +526,7 @@ async def test_pagination_links_num_of_items_is_multiple_of_pages(testapp, db):
     assert [s['id'] for s in await resp3.json()] == [4, 3, 2, 1]
 
 
-async def test_pagination_links_non_consecutive_ids(testapp, db):
+async def test_pagination_links_non_consecutive_ids(testapp, testdatabase):
     now = datetime.datetime.utcnow().replace(microsecond=0)
     snippets = [
         {
@@ -560,7 +542,7 @@ async def test_pagination_links_non_consecutive_ids(testapp, db):
         }
         for i in [1, 7, 17, 23, 24, 29, 31, 87, 93, 104]
     ]
-    await db.snippets.insert(snippets)
+    await testdatabase.snippets.insert(snippets)
 
     resp1 = await _get_next_page(testapp, limit=3)
     expected_link1 = (
@@ -658,15 +640,15 @@ async def test_get_snippets_pagination_bad_request_unknown_param(testapp):
     }
 
 
-async def test_post_snippet(testapp, snippets, db):
-    snippet = snippets[0]
-    snippet['content'] = snippets[0]['changesets'][0]['content']
-    for key in ('id', 'created_at', 'updated_at', 'changesets'):
-        del snippet[key]
-
+async def test_post_snippet(testapp, testdatabase):
     resp = await testapp.post(
         '/snippets',
-        data=json.dumps(snippet),
+        data=json.dumps({
+            'title': 'snippet #1',
+            'content': 'def foo(): pass',
+            'syntax': 'python',
+            'tags': ['tag_a', 'tag_b'],
+        }),
         headers={
             'Accept': 'application/json',
             'Content-Type': 'application/json',
@@ -674,7 +656,7 @@ async def test_post_snippet(testapp, snippets, db):
     assert resp.status == 201
 
     snippet_resp = await resp.json()
-    snippet_db = await db.snippets.find_one(
+    snippet_db = await testdatabase.snippets.find_one(
         {'_id': snippet_resp['id']}
     )
 
@@ -709,20 +691,15 @@ async def test_post_snippet_malformed_snippet(name, value, testapp, snippets):
     assert re.match('`%s` - .*' % name, error_resp['message'])
 
 
-async def test_post_snippet_syntax_enum_allowed(
-        testapp, snippets, db, appinstance):
-    appinstance['conf']['snippet']['syntaxes'] = 'python\nclojure'
-
-    snippet = snippets[0]
-    snippet['content'] = snippets[0]['changesets'][0]['content']
-    for key in ('id', 'created_at', 'updated_at', 'changesets'):
-        del snippet[key]
-
-    snippet['syntax'] = 'python'
+async def test_post_snippet_syntax_enum_allowed(testapp, testconf, testdatabase):
+    testconf['snippet']['syntaxes'] = 'python\nclojure'
 
     resp = await testapp.post(
         '/snippets',
-        data=json.dumps(snippet),
+        data=json.dumps({
+            'content': 'test',
+            'syntax': 'python',
+        }),
         headers={
             'Accept': 'application/json',
             'Content-Type': 'application/json',
@@ -730,27 +707,22 @@ async def test_post_snippet_syntax_enum_allowed(
     assert resp.status == 201
 
     snippet_resp = await resp.json()
-    snippet_db = await db.snippets.find_one(
+    snippet_db = await testdatabase.snippets.find_one(
         {'_id': snippet_resp['id']}
     )
 
     _compare_snippets(snippet_db, snippet_resp)
 
 
-async def test_post_snippet_syntax_enum_not_allowed(
-        testapp, snippets, appinstance):
-    appinstance['conf']['snippet']['syntaxes'] = 'python\nclojure'
-
-    snippet = snippets[0]
-    snippet['content'] = snippets[0]['changesets'][0]['content']
-    for key in ('id', 'created_at', 'updated_at', 'changesets'):
-        del snippet[key]
-
-    snippet['syntax'] = 'go'
+async def test_post_snippet_syntax_enum_not_allowed(testapp, testconf):
+    testconf['snippet']['syntaxes'] = 'python\nclojure'
 
     resp = await testapp.post(
         '/snippets',
-        data=json.dumps(snippet),
+        data=json.dumps({
+            'content': 'test',
+            'syntax': 'go',
+        }),
         headers={
             'Accept': 'application/json',
             'Content-Type': 'application/json',
@@ -761,8 +733,8 @@ async def test_post_snippet_syntax_enum_not_allowed(
     assert re.match('`syntax` - .*', error_resp['message'])
 
 
-async def test_data_model_indexes_exist(db):
-    res = await db.snippets.index_information()
+async def test_data_model_indexes_exist(testapp, testdatabase):
+    res = await testdatabase.snippets.index_information()
 
     assert res['title_idx']['key'] == [('title', 1)]
     assert res['title_idx']['partialFilterExpression'] == {
@@ -773,9 +745,8 @@ async def test_data_model_indexes_exist(db):
     assert res['created_id_idx']['key'] == [('created_at', -1), ('_id', -1)]
 
 
-async def test_get_snippet(testapp, snippets, db):
+async def test_get_snippet(testapp, snippets):
     awaited = copy.deepcopy(snippets[0])
-    await db.snippets.insert(snippets)
 
     resp = await testapp.get(
         '/snippets/' + str(awaited['id']),
@@ -815,9 +786,8 @@ async def test_get_snippet_bad_request(testapp):
     }
 
 
-async def test_delete_snippet(testapp, snippets, db):
+async def test_delete_snippet(testapp, snippets):
     created = snippets[0]
-    await db.snippets.insert(created)
 
     resp = await testapp.delete(
         '/snippets/' + str(created['id']),
@@ -852,9 +822,7 @@ async def test_delete_snippet_bad_request(testapp):
     }
 
 
-async def test_put_snippet(testapp, snippets, db):
-    await db.snippets.insert(snippets)
-
+async def test_put_snippet(testapp, testdatabase, snippets):
     resp = await testapp.put(
         '/snippets/' + str(snippets[0]['id']),
         data=json.dumps({
@@ -867,7 +835,7 @@ async def test_put_snippet(testapp, snippets, db):
     assert resp.status == 200
 
     snippet_resp = await resp.json()
-    snippet_db = await db.snippets.find_one(
+    snippet_db = await testdatabase.snippets.find_one(
         {'_id': snippet_resp['id']}
     )
 
@@ -916,9 +884,7 @@ async def test_put_snippet_not_found(testapp):
     ('updated_at', '2016-09-11T19:07:43'),  # readonly
     ('non-existent-key', 'must not be accepted'),
 ])
-async def test_put_snippet_malformed_snippet(name, val, testapp, snippets, db):
-    await db.snippets.insert(snippets)
-
+async def test_put_snippet_malformed_snippet(name, val, testapp, snippets):
     snippet = {'content': 'brand new snippet'}
     snippet[name] = val
 
@@ -938,9 +904,7 @@ async def test_put_snippet_malformed_snippet(name, val, testapp, snippets, db):
 @pytest.mark.parametrize('name', [
     'content',
 ])
-async def test_put_snippet_required_fields(name, testapp, snippets, db):
-    await db.snippets.insert(snippets)
-
+async def test_put_snippet_required_fields(name, testapp, snippets):
     snippet = copy.deepcopy(snippets[0])
     snippet['content'] = snippet['changesets'][-1]['content']
     for key in ('id', 'created_at', 'updated_at', 'changesets'):
@@ -961,11 +925,8 @@ async def test_put_snippet_required_fields(name, testapp, snippets, db):
         '`%s` - required field.' % name, error_resp['message'])
 
 
-async def test_put_snippet_syntax_enum_allowed(
-        testapp, snippets, db, appinstance):
-    appinstance['conf']['snippet']['syntaxes'] = 'python\nclojure'
-
-    await db.snippets.insert(snippets)
+async def test_put_snippet_syntax_enum_allowed(testapp, testconf, testdatabase, snippets):
+    testconf['snippet']['syntaxes'] = 'python\nclojure'
 
     resp = await testapp.put(
         '/snippets/' + str(snippets[0]['id']),
@@ -980,17 +941,14 @@ async def test_put_snippet_syntax_enum_allowed(
     assert resp.status == 200
 
     snippet_resp = await resp.json()
-    snippet_db = await db.snippets.find_one(
+    snippet_db = await testdatabase.snippets.find_one(
         {'_id': snippet_resp['id']}
     )
     _compare_snippets(snippet_db, snippet_resp)
 
 
-async def test_put_snippet_syntax_enum_not_allowed(
-        testapp, snippets, db, appinstance):
-    appinstance['conf']['snippet']['syntaxes'] = 'python\nclojure'
-
-    await db.snippets.insert(snippets)
+async def test_put_snippet_syntax_enum_not_allowed(testapp, testconf, snippets):
+    testconf['snippet']['syntaxes'] = 'python\nclojure'
 
     resp = await testapp.put(
         '/snippets/' + str(snippets[0]['id']),
@@ -1009,9 +967,7 @@ async def test_put_snippet_syntax_enum_not_allowed(
         '`syntax` - unallowed value go.', error_resp['message'])
 
 
-async def test_patch_snippet(testapp, snippets, db):
-    await db.snippets.insert(snippets)
-
+async def test_patch_snippet(testapp, testdatabase, snippets):
     resp = await testapp.patch(
         '/snippets/' + str(snippets[0]['id']),
         data=json.dumps({
@@ -1024,7 +980,7 @@ async def test_patch_snippet(testapp, snippets, db):
     assert resp.status == 200
 
     snippet_resp = await resp.json()
-    snippet_db = await db.snippets.find_one(
+    snippet_db = await testdatabase.snippets.find_one(
         {'_id': snippet_resp['id']}
     )
     _compare_snippets(snippet_db, snippet_resp)
@@ -1072,9 +1028,7 @@ async def test_patch_snippet_not_found(testapp):
     ('updated_at', '2016-09-11T19:07:43'),  # readonly
     ('non-existent-key', 'must not be accepted'),
 ])
-async def test_patch_snippet_malformed_snippet(
-        name, value, testapp, snippets, db):
-    await db.snippets.insert(snippets)
+async def test_patch_snippet_malformed_snippet(name, value, testapp, snippets):
 
     snippet = {'content': 'brand new snippet'}
     snippet[name] = value
@@ -1092,10 +1046,7 @@ async def test_patch_snippet_malformed_snippet(
     assert re.match('`%s` - .*' % name, error_resp['message'])
 
 
-async def test_patch_snippet_required_fields_are_not_forced(
-        testapp, snippets, db):
-    await db.snippets.insert(snippets)
-
+async def test_patch_snippet_required_fields_are_not_forced(testapp, testdatabase, snippets):
     resp = await testapp.patch(
         '/snippets/' + str(snippets[0]['id']),
         data=json.dumps({
@@ -1108,17 +1059,14 @@ async def test_patch_snippet_required_fields_are_not_forced(
     assert resp.status == 200
 
     snippet_resp = await resp.json()
-    snippet_db = await db.snippets.find_one(
+    snippet_db = await testdatabase.snippets.find_one(
         {'_id': snippet_resp['id']}
     )
     _compare_snippets(snippet_db, snippet_resp)
 
 
-async def test_patch_snippet_syntax_enum_allowed(
-        testapp, snippets, db, appinstance):
-    appinstance['conf']['snippet']['syntaxes'] = 'python\nclojure'
-
-    await db.snippets.insert(snippets)
+async def test_patch_snippet_syntax_enum_allowed(testapp, testconf, testdatabase, snippets):
+    testconf['snippet']['syntaxes'] = 'python\nclojure'
 
     resp = await testapp.patch(
         '/snippets/' + str(snippets[0]['id']),
@@ -1133,18 +1081,15 @@ async def test_patch_snippet_syntax_enum_allowed(
     assert resp.status == 200
 
     snippet_resp = await resp.json()
-    snippet_db = await db.snippets.find_one(
+    snippet_db = await testdatabase.snippets.find_one(
         {'_id': snippet_resp['id']}
     )
 
     _compare_snippets(snippet_db, snippet_resp)
 
 
-async def test_patch_snippet_syntax_enum_not_allowed(
-        testapp, snippets, db, appinstance):
-    appinstance['conf']['snippet']['syntaxes'] = 'python\nclojure'
-
-    await db.snippets.insert(snippets)
+async def test_patch_snippet_syntax_enum_not_allowed(testapp, testconf, snippets):
+    testconf['snippet']['syntaxes'] = 'python\nclojure'
 
     resp = await testapp.patch(
         '/snippets/' + str(snippets[0]['id']),
@@ -1168,11 +1113,8 @@ async def test_patch_snippet_syntax_enum_not_allowed(
     'patch',
     'delete',
 ])
-async def test_snippet_update_is_not_exposed(
-        method, testapp, snippets, appinstance, db):
-    appinstance['conf'].remove_option('test', 'sudo')
-    await db.snippets.insert(snippets)
-
+async def test_snippet_update_is_not_exposed(method, testapp, testconf, snippets):
+    testconf.remove_option('test', 'sudo')
     request = getattr(testapp, method)
 
     resp = await request(

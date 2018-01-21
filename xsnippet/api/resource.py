@@ -55,12 +55,6 @@ class Resource(web.View):
         'application/json': json.loads,
     }
 
-    def __init__(self, *args, **kwargs):
-        super(Resource, self).__init__(*args, **kwargs)
-
-        #: an application database alias to make code a bit readable
-        self.db = self.request.app['db']
-
     @asyncio.coroutine
     def __iter__(self):
         # So far (Jan 5, 2018) aiohttp doesn't support custom request classes,

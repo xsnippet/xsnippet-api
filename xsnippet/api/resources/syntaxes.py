@@ -9,11 +9,13 @@
     :license: MIT, see LICENSE for details
 """
 
+import picobox
+
 from .. import resource
 
 
 class Syntaxes(resource.Resource):
 
-    async def get(self):
-        conf = self.request.app['conf']
+    @picobox.pass_('conf')
+    async def get(self, conf):
         return conf.getlist('snippet', 'syntaxes', fallback=[])

@@ -9,7 +9,10 @@
     :license: MIT, see LICENSE for details
 """
 
+import functools
+
 import aiohttp.web
+import picobox
 
 from . import database, router, middlewares, resources
 
@@ -39,7 +42,9 @@ def _inject_vary_header(request, response):
         response.headers['Vary'] = ', '.join(found)
 
 
-def create_app(conf):
+@picobox.pass_('conf')
+@picobox.pass_('database', as_='db')
+def create_app(conf, db):
     """Create and return a web application instance.
 
     The whole point of that function is to provide a way to create
@@ -65,12 +70,9 @@ def create_app(conf):
             middlewares.auth.auth(conf['auth']),
         ],
         router=router.VersionRouter({'1.0': v1}, default='1.0'))
-    app.on_startup.append(middlewares.auth.setup)
 
-    # Attach settings to the application instance in order to make them
-    # accessible at any point of execution (e.g. request handling).
-    app['conf'] = conf
-    app.on_startup.append(database.setup)
+    app.on_startup.append(functools.partial(middlewares.auth.setup, conf=conf))
+    app.on_startup.append(functools.partial(database.setup, db=db))
 
     # We need to respond with Vary header time to time in order to avoid
     # issues with cache on client side.
