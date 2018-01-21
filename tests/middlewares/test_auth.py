@@ -8,8 +8,6 @@
     :license: MIT, see LICENSE for details
 """
 
-import functools
-
 import aiohttp.web as web
 import jose.jwt as jwt
 import pytest
@@ -20,7 +18,7 @@ from xsnippet.api import middlewares
 @pytest.fixture(scope='function')
 async def testapp(test_client):
     app = web.Application(middlewares=[
-        functools.partial(middlewares.auth.auth, {'secret': 'SWORDFISH'})
+        middlewares.auth.auth({'secret': 'SWORDFISH'}),
     ])
 
     async def handler(request):
