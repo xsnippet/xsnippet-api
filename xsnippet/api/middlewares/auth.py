@@ -34,7 +34,7 @@ async def setup(app):
         conf['secret'] = secret
 
 
-async def auth(conf, app, next_handler):
+def auth(conf):
     """Authentication middleware.
 
     Performs user authentication by validating tokens passed in Authorization
@@ -46,9 +46,9 @@ async def auth(conf, app, next_handler):
     On failure 401 Unauthorized error is raised.
     """
 
-    secret = conf['secret']
-
-    async def auth_handler(request):
+    @web.middleware
+    async def _auth(request, handler):
+        secret = conf['secret']
         authorization = request.headers.get('Authorization')
 
         if authorization is not None:
@@ -68,6 +68,5 @@ async def auth(conf, app, next_handler):
         else:
             request['auth'] = None
 
-        return await next_handler(request)
-
-    return auth_handler
+        return await handler(request)
+    return _auth
