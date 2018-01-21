@@ -9,8 +9,6 @@
     :license: MIT, see LICENSE for details
 """
 
-import functools
-
 import aiohttp.web
 
 from . import database, router, middlewares, resources
@@ -64,7 +62,7 @@ def create_app(conf):
     # decorator, so they can be collected and passed to VersionRouter.
     app = aiohttp.web.Application(
         middlewares=[
-            functools.partial(middlewares.auth.auth, conf['auth']),
+            middlewares.auth.auth(conf['auth']),
         ],
         router=router.VersionRouter({'1.0': v1}))
     app.on_startup.append(middlewares.auth.setup)
