@@ -10,46 +10,7 @@
     :license: MIT, see LICENSE for details
 """
 
-import pkg_resources
-
 from aiohttp import abc, web, web_urldispatcher
-
-
-def _get_latest_version(versions, stable=True):
-    """Search ``versions`` array and return the latest one.
-
-    The function requires a contract that an input array indeed contains at
-    least one stable version in case of ``stable=True`` or at least one
-    version otherwise. Examples::
-
-       >>> get_latest_version(['1.0', '2.0', '2.1-alpha'])
-       '2.0'
-
-       >>> get_latest_version(['1.0', '2.0', '2.1-alpha'], stable=False)
-       '2.1-alpha'
-
-    :param versions: an array of string-based versions
-    :param stable: search only among stable versions if ``True``
-    :return: the latest version as string
-    """
-    # Unfortunately, `packaging.version.parse` looses original version
-    # representation in favor of PEP-440. Despite the fact I doubt
-    # anyone would use complex API versions (with alpha/beta notation),
-    # it still better to implement things correctly and return original
-    # representation. That's why we save version pairs here.
-    versions = ((v, pkg_resources.parse_version(v)) for v in versions)
-
-    # Both PEP-440 and SemVer define so called "pre-release" version such
-    # as alpha or beta. Most of the time, we aren't interested in them
-    # since they shouldn't be considered as stable, and hence as default
-    # one. So we need to filter them out from list and don't take into
-    # account in sorting below.
-    if stable:
-        versions = filter(lambda item: not item[1].is_prerelease, versions)
-
-    # Sort using PEP's rules and return an original version value.
-    versions = sorted(versions, key=lambda item: item[1])
-    return versions[-1][0]
 
 
 class VersionRouter(abc.AbstractRouter):
@@ -64,17 +25,18 @@ class VersionRouter(abc.AbstractRouter):
     is passed, ``412 Precondition Failed`` response is returned.
 
     :param routers: a 'API version' -> 'router' map
+    :param default: an API version to be used if 'Api-Version' was omitted
     """
 
-    def __init__(self, routers):
+    def __init__(self, routers, *, default):
         self._routers = routers
-        self._latest = _get_latest_version(self._routers.keys())
+        self._default = default
 
     async def resolve(self, request):
         version = request.headers.get('Api-Version')
 
         if version is None:
-            version = self._latest
+            version = self._default
 
         if version not in self._routers:
             return web_urldispatcher.MatchInfoError(web.HTTPNotAcceptable())

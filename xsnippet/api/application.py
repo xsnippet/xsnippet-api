@@ -64,7 +64,7 @@ def create_app(conf):
         middlewares=[
             middlewares.auth.auth(conf['auth']),
         ],
-        router=router.VersionRouter({'1.0': v1}))
+        router=router.VersionRouter({'1.0': v1}, default='1.0'))
     app.on_startup.append(middlewares.auth.setup)
 
     # Attach settings to the application instance in order to make them
