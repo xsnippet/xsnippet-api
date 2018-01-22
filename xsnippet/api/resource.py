@@ -13,11 +13,10 @@
 import asyncio
 import json
 import datetime
-import fnmatch
 import functools
 
 from aiohttp import web, hdrs
-from werkzeug import http
+import werkzeug
 
 from . import exceptions
 
@@ -105,34 +104,28 @@ class Resource(web.View):
 
         :raise: :class:`aiohttp.web.HTTPNotAcceptable`
         """
-        # By an HTTP standard the 'Accept' header might have multiple
-        # media ranges (i.e. types) specified with priority. Moreover,
-        # we also may have several 'Accept' headers in one HTTP request.
-        #
-        # This is going to parse them and prioritize, so we respond
-        # with most preferable content type.
-        #
-        # No header means any type.
-        accepts = http.parse_accept_header(
+        mimeaccept = werkzeug.parse_accept_header(
+            # According to HTTP standard, 'Accept' header may show up multiple
+            # times in the request. So let's join them before passing to parser
+            # so we call parser only once.
+            ','.join(self.request.headers.getall(hdrs.ACCEPT, ['*/*'])),
 
-            # combine few headers into one in order to simplify parsing,
-            # or use any type pattern if no headers are passed
-            ','.join(self.request.headers.getall(hdrs.ACCEPT, ['*/*']))
+            # A handful wrapper to choose a best match with one method.
+            werkzeug.MIMEAccept,
         )
 
-        for accept, _ in accepts:
-            for supported_accept, encode in self._encoders.items():
+        # According to HTTP standard, 'Accept' header may have multiple media
+        # ranges (i.e. MIME types), each specified with a priority. So choose
+        # one that matches best for further usage.
+        accept = mimeaccept.best_match(self._encoders)
 
-                # since 'Accept' may contain glob patterns (e.g. */*) we
-                # can't use dict lookup and should search for suitable
-                # encoder manually
-                if fnmatch.fnmatch(supported_accept, accept):
-                    return web.Response(
-                        status=status,
-                        headers=headers,
-                        content_type=supported_accept,
-                        text=encode(data),
-                    )
+        if accept in self._encoders:
+            return web.Response(
+                status=status,
+                headers=headers,
+                content_type=accept,
+                text=self._encoders[accept](data),
+            )
 
         raise web.HTTPNotAcceptable()
 
