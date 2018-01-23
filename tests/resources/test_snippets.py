@@ -22,7 +22,6 @@ async def snippets(testdatabase):
     now = datetime.datetime.utcnow().replace(microsecond=0)
     snippets = [
         {
-            'id': 1,
             'title': 'snippet #1',
             'changesets': [
                 {'content': 'def foo(): pass'},
@@ -33,7 +32,6 @@ async def snippets(testdatabase):
             'updated_at': now - datetime.timedelta(100),
         },
         {
-            'id': 2,
             'title': 'snippet #2',
             'changesets': [
                 {'content': 'int do_something() {}'},
@@ -44,7 +42,19 @@ async def snippets(testdatabase):
             'updated_at': now,
         },
     ]
-    await testdatabase.snippets.insert(snippets)
+
+    # Usually pymongo updates passed collection so it has generated IDs
+    # in-place. However, due to our custom SON manipulators it's not the
+    # case in our case, since one of them makes a shallow copy which
+    # basically results in no changes in the updated documents.
+    ids = await testdatabase.snippets.insert(snippets)
+
+    for id_, snippet in zip(ids, snippets):
+        # One of SON manipulators we use converts 'id' into '_id' during
+        # inserts/updates, and vice versa during reads. That's why we use
+        # human readable 'id' and not '_id'.
+        snippet['id'] = id_
+
     return snippets
 
 
