@@ -18,8 +18,9 @@ services:
   - mongodb
 
 before_install:
-  - docker build -t xsnippet_api -f contrib/docker/Dockerfile .
-  - docker run -d --net=host xsnippet_api
+  - pip install tox
+  - tox -e docker-build -- smoke
+  - docker run -d --net=host xsnippet/xsnippet-api:smoke
 
 install:
   - pip install tox coveralls
