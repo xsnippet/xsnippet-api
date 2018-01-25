@@ -27,11 +27,46 @@ class _TestResource(resource.Resource):
         return data, 298
 
 
+class _TestEncodersResource(resource.Resource):
+
+    _encoders = collections.OrderedDict([
+        ('application/json', lambda _: 'application/json'),
+        ('text/csv', lambda _: 'text/csv'),
+        ('image/png', lambda _: 'image/png'),
+    ])
+
+    async def get(self):
+        return {}
+
+
+class _TestDecodersResource(resource.Resource):
+
+    _encoders = collections.OrderedDict([
+        ('text/plain', lambda text: text),
+    ])
+
+    _decoders = collections.OrderedDict([
+        ('application/json', lambda _: 'application/json'),
+        ('text/plain', lambda _: 'text/plain'),
+    ])
+
+    async def post(self):
+        return await self.request.get_data()
+
+
 @pytest.fixture(scope='function')
 async def testapp(test_client):
     app = web.Application()
     app.router.add_route('*', '/test', _TestResource)
-    return await test_client(app)
+    app.router.add_route('*', '/test-encoders', _TestEncodersResource)
+    app.router.add_route('*', '/test-decoders', _TestDecodersResource)
+
+    # If 'Content-Type' is not passed to HTTP request, aiohttp client will
+    # report 'Content-Type: text/plain' to server. This is completely
+    # ridiculous because in case of RESTful API this is completely wrong
+    # and APIs usually have their own defaults. So turn off this feature,
+    # and do not set 'Content-Type' for us if it wasn't passed.
+    return await test_client(app, skip_auto_headers={'Content-Type'})
 
 
 @pytest.mark.parametrize('headers,', [
@@ -85,34 +120,32 @@ async def test_get_unsupported_media_type(testapp, headers):
     ('text/*, application/yaml',
      'text/csv')
 ])
-async def test_get_best_mimetype(test_client, accept, best_match):
-    class _TestResource(resource.Resource):
-        _encoders = collections.OrderedDict([
-            ('application/json', lambda _: 'application/json'),
-            ('text/csv', lambda _: 'text/csv'),
-            ('image/png', lambda _: 'image/png'),
-        ])
+async def test_get_best_mimetype(testapp, accept, best_match):
+    resp = await testapp.get('/test-encoders', headers={'Accept': accept})
 
-        async def get(self):
-            return {}
-
-    app = web.Application()
-    app.router.add_route('*', '/test', _TestResource)
-    testapp = await test_client(app)
-
-    resp = await testapp.get('/test', headers={'Accept': accept})
+    assert resp.status == 200
     assert await resp.text() == best_match
 
 
-async def test_post_json(testapp):
-    resp = await testapp.post(
-        '/test',
-        data=json.dumps({'who': 'batman'}),
-        headers={
-            'Accept': 'application/json',
-            'Content-Type': 'application/json',
-        }
-    )
+@pytest.mark.parametrize('content_type, best_match', [
+    ('application/json', 'application/json'),
+    ('text/plain', 'text/plain'),
+    ('text/plain; format=fixed', 'text/plain'),
+])
+async def test_get_decoders(testapp, content_type, best_match):
+    resp = await testapp.post('/test-decoders', headers={'Content-Type': content_type})
+
+    assert resp.status == 200
+    assert await resp.text() == best_match
+
+
+@pytest.mark.parametrize('headers', [
+    {'Accept': 'application/json', 'Content-Type': 'application/json'},
+    {'Accept': 'application/json'},
+    {},
+])
+async def test_post_json(testapp, headers):
+    resp = await testapp.post('/test', data=json.dumps({'who': 'batman'}), headers=headers)
 
     assert resp.status == 298
     assert await resp.json() == {'who': 'batman'}

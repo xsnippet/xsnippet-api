@@ -11,6 +11,7 @@
 """
 
 import asyncio
+import cgi
 import json
 import datetime
 import functools
@@ -133,8 +134,17 @@ class Resource(web.View):
         decoders = self._decoders
 
         async def impl(self):
-            if self.content_type in decoders:
-                decode = decoders[self.content_type]
+            # We cannot use 'self.content_type' here because aiohttp follows
+            # RFC 2616, and if nothing is passed set content type to
+            # application/octet-stream. So check raw headers instead and
+            # fallback for first available decoders if not found. We also need
+            # to parse headers, as some mime types may contain parameters and
+            # we need to strip them out.
+            content_type, _ = cgi.parse_header(
+                self.headers.get(hdrs.CONTENT_TYPE, next(iter(decoders))))
+
+            if content_type in decoders:
+                decode = decoders[content_type]
                 return decode(await self.text())
 
             raise web.HTTPUnsupportedMediaType()
