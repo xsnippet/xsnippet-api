@@ -47,4 +47,13 @@ async def testapp(request, test_client, testconf, testdatabase):
     # This is especially weird as Picobox provides convenient context manager
     # and no plain functions, that's why manual triggering is required.
     request.addfinalizer(lambda: scope.__exit__(None, None, None))
-    return await test_client(create_app())
+    return await test_client(
+        create_app(),
+
+        # If 'Content-Type' is not passed to HTTP request, aiohttp client will
+        # report 'Content-Type: text/plain' to server. This is completely
+        # ridiculous because in case of RESTful API this is completely wrong
+        # and APIs usually have their own defaults. So turn off this feature,
+        # and do not set 'Content-Type' for us if it wasn't passed.
+        skip_auto_headers={'Content-Type'},
+    )
