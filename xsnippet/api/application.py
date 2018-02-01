@@ -70,8 +70,6 @@ def create_app(conf, db):
             middlewares.auth.auth(conf['auth']),
         ],
         router=router.VersionRouter({'1.0': v1}, default='1.0'))
-
-    app.on_startup.append(functools.partial(middlewares.auth.setup, conf=conf))
     app.on_startup.append(functools.partial(database.setup, db=db))
 
     # We need to respond with Vary header time to time in order to avoid
