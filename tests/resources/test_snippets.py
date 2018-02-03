@@ -9,17 +9,60 @@
 """
 
 import re
-import copy
 import json
 import datetime
-import operator
+import cgi
+import urllib.parse
 
 import pytest
 
 
+class _pytest_regex:
+    """Assert that a given string matches a given regular expression."""
+
+    def __init__(self, pattern, flags=0):
+        self._regex = re.compile(pattern, flags)
+
+    def __eq__(self, actual):
+        return bool(self._regex.match(actual))
+
+    def __repr__(self):
+        return self._regex.pattern
+
+
+class _pytest_link_header:
+    """Assert that two HTTP Link headers are equal to each other."""
+
+    @staticmethod
+    def parse(link):
+        rv = []
+
+        for link in link.split(','):
+            link, params = cgi.parse_header(link)
+            link = link.lstrip('<').rstrip('>')
+
+            parts = urllib.parse.urlsplit(link)
+            query = urllib.parse.parse_qs(parts.query)
+
+            rv.append((parts.scheme, parts.netloc, parts.path, query, params))
+
+        # Dictionaries can't be compared by < and/or >, so we need to sort by
+        # first three components (scheme, netloc, path) and optional "rel"
+        # parameter because the latter usually uniquely defines a link.
+        return sorted(rv, key=lambda i: (i[-1].get('rel'), i[:3]))
+
+    def __init__(self, link):
+        self._link = link
+
+    def __eq__(self, actual):
+        return self.parse(self._link) == self.parse(actual)
+
+    def __repr__(self):
+        return "'%s'" % self._link
+
+
 @pytest.fixture(scope='function')
 async def snippets(testdatabase):
-    now = datetime.datetime.utcnow().replace(microsecond=0)
     snippets = [
         {
             'title': 'snippet #1',
@@ -28,8 +71,8 @@ async def snippets(testdatabase):
             ],
             'syntax': 'python',
             'tags': ['tag_a', 'tag_b'],
-            'created_at': now - datetime.timedelta(100),
-            'updated_at': now - datetime.timedelta(100),
+            'created_at': datetime.datetime(2018, 1, 24, 22, 26, 35),
+            'updated_at': datetime.datetime(2018, 1, 24, 22, 26, 35),
         },
         {
             'title': 'snippet #2',
@@ -38,8 +81,8 @@ async def snippets(testdatabase):
             ],
             'syntax': 'cpp',
             'tags': ['tag_c'],
-            'created_at': now,
-            'updated_at': now,
+            'created_at': datetime.datetime(2018, 1, 24, 22, 32, 7),
+            'updated_at': datetime.datetime(2018, 1, 24, 22, 32, 7),
         },
     ]
 
@@ -58,310 +101,198 @@ async def snippets(testdatabase):
     return snippets
 
 
-def _compare_snippets(snippet_db, snippet_api):
-    # compare datetimes
-    assert (
-        snippet_api.pop('created_at') ==
-        snippet_db.pop('created_at').isoformat()
-    )
-    assert (
-        snippet_api.pop('updated_at') ==
-        snippet_db.pop('updated_at').isoformat()
-    )
-
-    # compare content with the latest changeset
-    assert (
-        snippet_api.pop('content') ==
-        snippet_db.pop('changesets')[-1]['content']
-    )
-
-    # compare rest of snippet
-    assert snippet_api == snippet_db
-
-
 async def test_get_no_snippets(testapp):
-    resp = await testapp.get(
-        '/snippets',
-        headers={
-            'Accept': 'application/json',
-        })
+    resp = await testapp.get('/snippets')
 
     assert resp.status == 200
     assert await resp.json() == []
 
 
-async def test_get_snippets(testapp, snippets):
-    resp = await testapp.get(
-        '/snippets',
-        headers={
-            'Accept': 'application/json',
-        })
+@pytest.mark.parametrize('params, rv, link', [
+    (
+        {},
+        [{'id': 2,
+          'title': 'snippet #2',
+          'content': 'int do_something() {}',
+          'syntax': 'cpp',
+          'tags': ['tag_c'],
+          'created_at': '2018-01-24T22:32:07',
+          'updated_at': '2018-01-24T22:32:07'},
+         {'id': 1,
+          'title': 'snippet #1',
+          'content': 'def foo(): pass',
+          'syntax': 'python',
+          'tags': ['tag_a', 'tag_b'],
+          'created_at': '2018-01-24T22:26:35',
+          'updated_at': '2018-01-24T22:26:35'}],
+        ('<https://api.xsnippet.org/snippets?limit=20>; rel="first"'),
+    ),
+    (
+        {'title': 'snippet #1'},
+        [{'id': 1,
+          'title': 'snippet #1',
+          'content': 'def foo(): pass',
+          'syntax': 'python',
+          'tags': ['tag_a', 'tag_b'],
+          'created_at': '2018-01-24T22:26:35',
+          'updated_at': '2018-01-24T22:26:35'}],
+        ('<https://api.xsnippet.org/snippets?title=snippet+%231&limit=20>; rel="first"'),
+    ),
+    (
+        {'title': 'nonexistent'},
+        [],
+        ('<https://api.xsnippet.org/snippets?title=nonexistent&limit=20>; rel="first"'),
+    ),
+    (
+        {'tag': 'tag_c'},
+        [{'id': 2,
+          'title': 'snippet #2',
+          'content': 'int do_something() {}',
+          'syntax': 'cpp',
+          'tags': ['tag_c'],
+          'created_at': '2018-01-24T22:32:07',
+          'updated_at': '2018-01-24T22:32:07'}],
+        ('<https://api.xsnippet.org/snippets?tag=tag_c&limit=20>; rel="first"'),
+    ),
+    (
+        {'tag': 'nonexistent'},
+        [],
+        ('<https://api.xsnippet.org/snippets?tag=nonexistent&limit=20>; rel="first"'),
+    ),
+    (
+        {'syntax': 'python'},
+        [{'id': 1,
+          'title': 'snippet #1',
+          'content': 'def foo(): pass',
+          'syntax': 'python',
+          'tags': ['tag_a', 'tag_b'],
+          'created_at': '2018-01-24T22:26:35',
+          'updated_at': '2018-01-24T22:26:35'}],
+        ('<https://api.xsnippet.org/snippets?syntax=python&limit=20>; rel="first"'),
+    ),
+    (
+        {'syntax': 'nonexistent'},
+        [],
+        ('<https://api.xsnippet.org/snippets?syntax=nonexistent&limit=20>; rel="first"'),
+    ),
+    (
+        {'syntax': 'cpp', 'tag': 'tag_c'},
+        [{'id': 2,
+          'title': 'snippet #2',
+          'content': 'int do_something() {}',
+          'syntax': 'cpp',
+          'tags': ['tag_c'],
+          'created_at': '2018-01-24T22:32:07',
+          'updated_at': '2018-01-24T22:32:07'}],
+        ('<https://api.xsnippet.org/snippets?syntax=cpp&tag=tag_c&limit=20>; rel="first"'),
+    ),
+    (
+        {'syntax': 'python', 'tag': 'tag_c'},
+        [],
+        ('<https://api.xsnippet.org/snippets?syntax=python&tag=tag_c&limit=20>; rel="first"'),
+    ),
+    (
+        {'limit': 1},
+        [{'id': 2,
+          'title': 'snippet #2',
+          'content': 'int do_something() {}',
+          'syntax': 'cpp',
+          'tags': ['tag_c'],
+          'created_at': '2018-01-24T22:32:07',
+          'updated_at': '2018-01-24T22:32:07'}],
+        ('<https://api.xsnippet.org/snippets?limit=1>; rel="first", '
+         '<https://api.xsnippet.org/snippets?limit=1&marker=2>; rel="next"'),
+    ),
+    (
+        {'marker': 2},
+        [{'id': 1,
+          'title': 'snippet #1',
+          'content': 'def foo(): pass',
+          'syntax': 'python',
+          'tags': ['tag_a', 'tag_b'],
+          'created_at': '2018-01-24T22:26:35',
+          'updated_at': '2018-01-24T22:26:35'}],
+        ('<https://api.xsnippet.org/snippets?limit=20>; rel="first"'),
+    ),
+    (
+        {'marker': 1},
+        [],
+        ('<https://api.xsnippet.org/snippets?limit=20>; rel="first"'),
+    ),
+])
+async def test_get_snippets(testapp, snippets, params, rv, link):
+    resp = await testapp.get('/snippets', params=params, headers={
+        # Pass the additional headers, that are set by nginx in the production
+        # deployment, so that we ensure we generate the correct links for
+        # users.
+        'Host': 'api.xsnippet.org',
+        'X-Forwarded-Proto': 'https',
+    })
+
     assert resp.status == 200
-
-    # snippets must be returned in descending order (newer first)
-    expected = sorted(
-        snippets,
-        key=operator.itemgetter('created_at'),
-        reverse=True)
-
-    for snippet_db, snippet_api in zip(expected, await resp.json()):
-        _compare_snippets(snippet_db, snippet_api)
+    assert await resp.json() == rv
+    assert resp.headers['Link'] == _pytest_link_header(link)
 
 
-async def test_get_snippets_filter_by_title(testapp, snippets):
-    resp = await testapp.get(
-        '/snippets?title=snippet+%231',
-        headers={
-            'Accept': 'application/json',
-        })
-    assert resp.status == 200
-    expected = [snippets[0]]
-    for snippet_db, snippet_api in zip(expected, await resp.json()):
-        _compare_snippets(snippet_db, snippet_api)
+@pytest.mark.parametrize('params, rv', [
+    (
+        {'title': ''},
+        {'message': '`title` - empty values not allowed.'},
+    ),
+    (
+        {'tag': ''},
+        {'message': "`tag` - value does not match regex '[\\w_-]+'."},
+    ),
+    (
+        {'tag': 'white space'},
+        {'message': "`tag` - value does not match regex '[\\w_-]+'."},
+    ),
+    (
+        {'syntax': ''},
+        {'message': '`syntax` - unallowed value .'},
+    ),
+    (
+        {'syntax': 'nonexistent'},
+        {'message': '`syntax` - unallowed value nonexistent.'},
+    ),
+    (
+        {'limit': 'deadbeef'},
+        {'message': '`limit` - must be of integer type.'},
+    ),
+    (
+        {'limit': '-1'},
+        {'message': '`limit` - min value is 1.'},
+    ),
+    (
+        {'deadbeef': 'joker'},
+        {'message': '`deadbeef` - unknown field.'},
+    ),
+])
+async def test_get_snippets_bad_request(testapp, testconf, snippets, params, rv):
+    testconf['snippet']['syntaxes'] = '\n'.join(['python', 'clojure'])
 
-    nonexistent = await testapp.get(
-        '/snippets?title=nonexistent',
-        headers={
-            'Accept': 'application/json',
-        })
-    assert nonexistent.status == 200
-    assert list(nonexistent.json()) == []
+    resp = await testapp.get('/snippets', params=params)
 
-    regexes_are_escaped = await testapp.get(
-        '/snippets?title=%5Esnippet.%2A',  # title=^snippet.*
-        headers={
-            'Accept': 'application/json',
-        })
-    assert regexes_are_escaped.status == 200
-    assert list(regexes_are_escaped.json()) == []
-
-
-async def test_get_snippets_filter_by_title_bad_request(testapp, snippets):
-    resp = await testapp.get(
-        '/snippets?title=',
-        headers={
-            'Accept': 'application/json',
-        })
     assert resp.status == 400
-    assert await resp.json() == {
-        'message': '`title` - empty values not allowed.'
-    }
-
-
-async def test_get_snippets_filter_by_tag(testapp, snippets):
-    resp = await testapp.get(
-        '/snippets?tag=tag_c',
-        headers={
-            'Accept': 'application/json',
-        })
-    assert resp.status == 200
-    expected = [snippets[1]]
-    for snippet_db, snippet_api in zip(expected, await resp.json()):
-        _compare_snippets(snippet_db, snippet_api)
-
-    nonexistent = await testapp.get(
-        '/snippets?tag=nonexistent_tag',
-        headers={
-            'Accept': 'application/json',
-        })
-    assert nonexistent.status == 200
-    assert list(nonexistent.json()) == []
-
-
-@pytest.mark.parametrize(
-    'value',
-    ['', 'test%20tag'],
-    ids=['empty', 'whitespace']
-)
-async def test_get_snippets_filter_by_tag_bad_request(value, testapp, snippets):
-    resp = await testapp.get(
-        '/snippets?tag=' + value,
-        headers={
-            'Accept': 'application/json',
-        })
-    assert resp.status == 400
-    assert await resp.json() == {
-        'message': "`tag` - value does not match regex '[\\w_-]+'."
-    }
-
-
-async def test_get_snippets_filter_by_syntax(testapp, snippets):
-    resp = await testapp.get(
-        '/snippets?syntax=python',
-        headers={
-            'Accept': 'application/json',
-        })
-    assert resp.status == 200
-    expected = [snippets[0]]
-    for snippet_db, snippet_api in zip(expected, await resp.json()):
-        _compare_snippets(snippet_db, snippet_api)
-
-    nonexistent = await testapp.get(
-        '/snippets?syntax=javascript',
-        headers={
-            'Accept': 'application/json',
-        })
-    assert nonexistent.status == 200
-    assert list(nonexistent.json()) == []
-
-
-@pytest.mark.parametrize(
-    'value',
-    ['', 'ololo'],
-    ids=['empty', 'non-exist']
-)
-async def test_get_snippets_filter_by_syntax_bad_request(value, testapp, testconf, snippets):
-    testconf['snippet']['syntaxes'] = 'python\nclojure'
-
-    resp = await testapp.get(
-        '/snippets?syntax=' + value,
-        headers={
-            'Accept': 'application/json',
-        })
-    assert resp.status == 400
-    assert await resp.json() == {
-        'message': '`syntax` - unallowed value %s.' % value
-    }
-
-
-async def test_get_snippets_filter_by_title_and_tag(testapp, snippets):
-    resp = await testapp.get(
-        '/snippets?title=snippet+%231&tag=tag_a',
-        headers={
-            'Accept': 'application/json',
-        })
-    assert resp.status == 200
-    expected = [snippets[0]]
-    for snippet_db, snippet_api in zip(expected, await resp.json()):
-        _compare_snippets(snippet_db, snippet_api)
-
-    nonexistent = await testapp.get(
-        '/snippets?title=snippet+%231&tag=tag_c',
-        headers={
-            'Accept': 'application/json',
-        })
-    assert nonexistent.status == 200
-    assert list(nonexistent.json()) == []
-
-
-async def test_get_snippets_filter_by_title_and_tag_with_pagination(testapp, testdatabase, snippets):  # noqa
-    now = datetime.datetime.utcnow().replace(microsecond=0)
-    snippet = {
-        'id': 3,
-        'title': 'snippet #1',
-        'changesets': [
-            {'content': '(println "Hello, World!")'},
-        ],
-        'syntax': 'clojure',
-        'tags': ['tag_a'],
-        'created_at': now,
-        'updated_at': now,
-    }
-    await testdatabase.snippets.insert([snippet])
-
-    resp = await testapp.get(
-        '/snippets?title=snippet+%231&tag=tag_a&limit=1',
-        headers={
-            'Accept': 'application/json',
-            'Host': 'api.xsnippet.org',
-            'X-Forwarded-Proto': 'https',
-        })
-    assert resp.status == 200
-    expected = [snippet]
-    for snippet_db, snippet_api in zip(expected, await resp.json()):
-        _compare_snippets(snippet_db, snippet_api)
-    # Check that urls in Link preserve the additional query params
-    expected_link1 = (
-        '<https://api.xsnippet.org/snippets?title=snippet+%231&tag=tag_a&limit=1>; rel="first", '
-        '<https://api.xsnippet.org/snippets?title=snippet+%231&tag=tag_a&limit=1&marker=3>; rel="next"'  # noqa
-    )
-    assert resp.headers['Link'] == expected_link1
-
-    resp = await testapp.get(
-        '/snippets?title=snippet+%231&tag=tag_a&limit=1&marker=3',
-        headers={
-            'Accept': 'application/json',
-            'Host': 'api.xsnippet.org',
-            'X-Forwarded-Proto': 'https',
-        })
-    assert resp.status == 200
-    expected = [snippets[0]]
-    for snippet_db, snippet_api in zip(expected, await resp.json()):
-        _compare_snippets(snippet_db, snippet_api)
-    # Check that urls in Link preserve the additional query params
-    expected_link2 = (
-        '<https://api.xsnippet.org/snippets?title=snippet+%231&tag=tag_a&limit=1>; rel="first", '
-        '<https://api.xsnippet.org/snippets?title=snippet+%231&tag=tag_a&limit=1>; rel="prev"'
-    )
-    assert resp.headers['Link'] == expected_link2
-
-
-async def test_get_snippets_pagination(testapp, testdatabase, snippets):
-    now = datetime.datetime.utcnow().replace(microsecond=0)
-    snippet = {
-        'id': 3,
-        'title': 'snippet #3',
-        'changesets': [
-            {'content': '(println "Hello, World!")'},
-        ],
-        'syntax': 'clojure',
-        'tags': ['tag_b'],
-        'created_at': now,
-        'updated_at': now,
-    }
-    await testdatabase.snippets.insert([snippet])
-
-    # ask for one latest snippet
-    resp = await testapp.get(
-        '/snippets?limit=1',
-        headers={
-            'Accept': 'application/json',
-        })
-    assert resp.status == 200
-
-    snippet_api = await resp.json()
-    assert len(snippet_api) == 1
-    _compare_snippets(snippet, snippet_api[0])
-
-    # ask for (up to) 10 snippets created before the last seen one
-    marker = snippet_api[0]['id']
-    resp = await testapp.get(
-        '/snippets?limit=10&marker=%d' % marker,
-        headers={
-            'Accept': 'application/json',
-        })
-    assert resp.status == 200
-
-    # snippets must be returned in descending order (newer first)
-    expected = sorted(
-        snippets,
-        key=operator.itemgetter('created_at'),
-        reverse=True)
-
-    for snippet_db, snippet_api in zip(expected, await resp.json()):
-        _compare_snippets(snippet_db, snippet_api)
+    assert await resp.json() == rv
 
 
 async def _get_next_page(testapp, limit=3, marker=0):
     """"Helper function of traversing of the list of snippets via API."""
 
-    params = []
+    params = {}
     if limit:
-        params.append('limit=%d' % limit)
+        params['limit'] = limit
     if marker:
-        params.append('marker=%d' % marker)
+        params['marker'] = marker
 
-    resp = await testapp.get(
-        '/snippets' + ('?' if params else '') + '&'.join(params),
-        headers={
-            'Accept': 'application/json',
-            # Pass the additional headers, that are set by nginx in the
-            # production deployment, so that we ensure we generate the
-            # correct links for users
-            'Host': 'api.xsnippet.org',
-            'X-Forwarded-Proto': 'https',
-        }
-    )
+    resp = await testapp.get('/snippets', params=params, headers={
+        # Pass the additional headers, that are set by nginx in the production
+        # deployment, so that we ensure we generate the correct links for
+        # users.
+        'Host': 'api.xsnippet.org',
+        'X-Forwarded-Proto': 'https',
+    })
     assert resp.status == 200
     return resp
 
@@ -453,36 +384,24 @@ async def test_pagination_links_one_page_larger_than_whole_list(testapp, testdat
     assert [s['id'] for s in await resp.json()] == list(reversed(range(1, 11)))
 
 
-async def test_pagination_links_port_value_is_preserved_in_url(testapp):
-    # Port is omitted
-    resp1 = await testapp.get(
-        '/snippets',
-        headers={
-            'Accept': 'application/json',
-            # Pass the additional headers, that are set by nginx in the
-            # production deployment, so that we ensure we generate the
-            # correct links for users
-            'Host': 'api.xsnippet.org',
-            'X-Forwarded-Proto': 'https',
-        }
-    )
-    expected_link1 = '<https://api.xsnippet.org/snippets?limit=20>; rel="first"'
-    assert resp1.headers['Link'] == expected_link1
+@pytest.mark.parametrize('protocol, host, link', [
+    ('http', 'api.xsnippet.org',
+     '<http://api.xsnippet.org/snippets?limit=20>; rel="first"'),
+    ('https', 'api.xsnippet.org',
+     '<https://api.xsnippet.org/snippets?limit=20>; rel="first"'),
+    ('https', 'api.xsnippet.org:443',
+     '<https://api.xsnippet.org:443/snippets?limit=20>; rel="first"'),
+])
+async def test_pagination_link_respect_headers(testapp, protocol, host, link):
+    resp = await testapp.get('/snippets', headers={
+        # Pass the additional headers, that are set by nginx in the production
+        # deployment, so that we ensure we generate the correct links for
+        # users.
+        'Host': host,
+        'X-Forwarded-Proto':  protocol,
+    })
 
-    # Port is passed explicitly
-    resp2 = await testapp.get(
-        '/snippets',
-        headers={
-            'Accept': 'application/json',
-            # Pass the additional headers, that are set by nginx in the
-            # production deployment, so that we ensure we generate the
-            # correct links for users
-            'Host': 'api.xsnippet.org:443',
-            'X-Forwarded-Proto': 'https',
-        }
-    )
-    expected_link2 = '<https://api.xsnippet.org:443/snippets?limit=20>; rel="first"'
-    assert resp2.headers['Link'] == expected_link2
+    assert resp.headers['Link'] == link
 
 
 async def test_pagination_links_num_of_items_is_multiple_of_pages(testapp, testdatabase):
@@ -602,145 +521,69 @@ async def test_get_snippets_pagination_not_found(testapp):
     }
 
 
-async def test_get_snippets_pagination_bad_request_limit(testapp):
-    resp = await testapp.get(
-        '/snippets?limit=deadbeef',
-        headers={
-            'Accept': 'application/json',
-        })
-    assert resp.status == 400
-    assert await resp.json() == {
-        'message': '`limit` - must be of integer type.',
-    }
+async def test_post_snippet(testapp, testconf):
+    testconf['snippet']['syntaxes'] = 'python\nclojure'
 
+    resp = await testapp.post('/snippets', data=json.dumps({
+        'title': 'snippet #1',
+        'content': 'def foo(): pass',
+        'syntax': 'python',
+        'tags': ['tag_a', 'tag_b'],
+    }))
 
-async def test_get_snippets_pagination_bad_request_limit_negative(testapp):
-    resp = await testapp.get(
-        '/snippets?limit=-1',
-        headers={
-            'Accept': 'application/json',
-        })
-    assert resp.status == 400
-    assert await resp.json() == {
-        'message': '`limit` - min value is 1.',
-    }
-
-
-async def test_get_snippets_pagination_bad_request_marker(testapp):
-    resp = await testapp.get(
-        '/snippets?marker=deadbeef',
-        headers={
-            'Accept': 'application/json',
-        })
-    assert resp.status == 400
-    assert await resp.json() == {
-        'message': '`marker` - must be of integer type.',
-    }
-
-
-async def test_get_snippets_pagination_bad_request_unknown_param(testapp):
-    resp = await testapp.get(
-        '/snippets?deadbeef=1',
-        headers={
-            'Accept': 'application/json',
-        })
-    assert resp.status == 400
-    assert await resp.json() == {
-        'message': '`deadbeef` - unknown field.',
-    }
-
-
-async def test_post_snippet(testapp, testdatabase):
-    resp = await testapp.post(
-        '/snippets',
-        data=json.dumps({
-            'title': 'snippet #1',
-            'content': 'def foo(): pass',
-            'syntax': 'python',
-            'tags': ['tag_a', 'tag_b'],
-        }),
-        headers={
-            'Accept': 'application/json',
-            'Content-Type': 'application/json',
-        })
     assert resp.status == 201
+    assert await resp.json() == {
+        'id': 1,
+        'title': 'snippet #1',
+        'content': 'def foo(): pass',
+        'syntax': 'python',
+        'tags': ['tag_a', 'tag_b'],
+        'created_at': _pytest_regex('\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}'),
+        'updated_at': _pytest_regex('\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}'),
+    }
 
-    snippet_resp = await resp.json()
-    snippet_db = await testdatabase.snippets.find_one(
-        {'_id': snippet_resp['id']}
-    )
 
-    _compare_snippets(snippet_db, snippet_resp)
-
-
-@pytest.mark.parametrize('name, value', [
-    ('title', 42),                          # must be string
-    ('content', 42),                        # must be string
-    ('tags', ['a tag with whitespaces']),   # tag must not contain spaces
-    ('created_at', '2016-09-11T19:07:43'),  # readonly
-    ('updated_at', '2016-09-11T19:07:43'),  # readonly
-    ('non-existent-key', 'must not be accepted'),
+@pytest.mark.parametrize('snippet, rv', [
+    (
+        {},
+        {'message': '`content` - required field.'},
+    ),
+    (
+        {'content': 'test', 'title': 42},
+        {'message': '`title` - must be of string type.'},
+    ),
+    (
+        {'content': 42},
+        {'message': '`content` - must be of string type.'},
+    ),
+    (
+        {'content': 'test', 'tags': ['white space']},
+        {'message': '`tags` - {0: ["value does not match regex \'[\\\\w_-]+\'"]}.'},
+    ),
+    (
+        {'content': 'test', 'created_at': '2016-09-11T19:07:43'},
+        {'message': '`created_at` - field is read-only.'},
+    ),
+    (
+        {'content': 'test', 'updated_at': '2016-09-11T19:07:43'},
+        {'message': '`updated_at` - field is read-only.'},
+    ),
+    (
+        {'content': 'test', 'non-existent-key': 'you-shall-not-pass'},
+        {'message': '`non-existent-key` - unknown field.'},
+    ),
+    (
+        {'content': 'test', 'syntax': 'go'},
+        {'message': '`syntax` - unallowed value go.'},
+    ),
 ])
-async def test_post_snippet_malformed_snippet(name, value, testapp, snippets):
-    snippet = snippets[0]
-    snippet['content'] = snippets[0]['changesets'][0]['content']
-    for key in ('id', 'created_at', 'updated_at', 'changesets'):
-        del snippet[key]
-    snippet[name] = value
-
-    resp = await testapp.post(
-        '/snippets',
-        data=json.dumps(snippet),
-        headers={
-            'Accept': 'application/json',
-            'Content-Type': 'application/json',
-        })
-    assert resp.status == 400
-
-    error_resp = await resp.json()
-    assert re.match('`%s` - .*' % name, error_resp['message'])
-
-
-async def test_post_snippet_syntax_enum_allowed(testapp, testconf, testdatabase):
+async def test_post_snippet_bad_request(snippet, rv, testapp, testconf):
     testconf['snippet']['syntaxes'] = 'python\nclojure'
 
-    resp = await testapp.post(
-        '/snippets',
-        data=json.dumps({
-            'content': 'test',
-            'syntax': 'python',
-        }),
-        headers={
-            'Accept': 'application/json',
-            'Content-Type': 'application/json',
-        })
-    assert resp.status == 201
+    resp = await testapp.post('/snippets', data=json.dumps(snippet))
 
-    snippet_resp = await resp.json()
-    snippet_db = await testdatabase.snippets.find_one(
-        {'_id': snippet_resp['id']}
-    )
-
-    _compare_snippets(snippet_db, snippet_resp)
-
-
-async def test_post_snippet_syntax_enum_not_allowed(testapp, testconf):
-    testconf['snippet']['syntaxes'] = 'python\nclojure'
-
-    resp = await testapp.post(
-        '/snippets',
-        data=json.dumps({
-            'content': 'test',
-            'syntax': 'go',
-        }),
-        headers={
-            'Accept': 'application/json',
-            'Content-Type': 'application/json',
-        })
     assert resp.status == 400
-
-    error_resp = await resp.json()
-    assert re.match('`syntax` - .*', error_resp['message'])
+    assert await resp.json() == rv
 
 
 async def test_data_model_indexes_exist(testapp, testdatabase):
@@ -756,366 +599,197 @@ async def test_data_model_indexes_exist(testapp, testdatabase):
 
 
 async def test_get_snippet(testapp, snippets):
-    awaited = copy.deepcopy(snippets[0])
-
-    resp = await testapp.get(
-        '/snippets/' + str(awaited['id']),
-        headers={
-            'Accept': 'application/json',
-        })
+    resp = await testapp.get('/snippets/%d' % snippets[0]['id'])
 
     assert resp.status == 200
-    assert (resp.headers['Content-Type'] ==
-            'application/json; charset=utf-8')
-
-    _compare_snippets(awaited, await resp.json())
+    assert await resp.json() == {
+        'id': 1,
+        'title': 'snippet #1',
+        'content': 'def foo(): pass',
+        'syntax': 'python',
+        'tags': ['tag_a', 'tag_b'],
+        'created_at': '2018-01-24T22:26:35',
+        'updated_at': '2018-01-24T22:26:35',
+    }
 
 
 async def test_get_snippet_not_found(testapp):
-    resp = await testapp.get(
-        '/snippets/0123456789',
-        headers={
-            'Accept': 'application/json',
-        })
+    resp = await testapp.get('/snippets/123456789')
+
     assert resp.status == 404
-    assert await resp.json() == {
-        'message': 'Sorry, cannot find the requested snippet.',
-    }
+    assert await resp.json() == {'message': 'Sorry, cannot find the requested snippet.'}
 
 
 async def test_get_snippet_bad_request(testapp):
-    resp = await testapp.get(
-        '/snippets/deadbeef',
-        headers={
-            'Accept': 'application/json',
-        }
-    )
+    resp = await testapp.get('/snippets/deadbeef')
+
     assert resp.status == 400
-    assert await resp.json() == {
-        'message': '`id` - must be of integer type.'
-    }
+    assert await resp.json() == {'message': '`id` - must be of integer type.'}
 
 
 async def test_delete_snippet(testapp, snippets):
-    created = snippets[0]
-
-    resp = await testapp.delete(
-        '/snippets/' + str(created['id']),
-        headers={
-            'Accept': 'application/json',
-        })
+    resp = await testapp.delete('/snippets/%d' % snippets[0]['id'])
 
     assert resp.status == 204
+    assert await resp.text() == ''
 
 
 async def test_delete_snippet_not_found(testapp):
-    resp = await testapp.delete(
-        '/snippets/' + str(123456789),
-        headers={
-            'Accept': 'application/json',
-        })
+    resp = await testapp.delete('/snippets/123456789')
+
     assert resp.status == 404
-    assert await resp.json() == {
-        'message': 'Sorry, cannot find the requested snippet.',
-    }
+    assert await resp.json() == {'message': 'Sorry, cannot find the requested snippet.'}
 
 
 async def test_delete_snippet_bad_request(testapp):
-    resp = await testapp.delete(
-        '/snippets/deadbeef',
-        headers={
-            'Accept': 'application/json',
-        })
+    resp = await testapp.delete('/snippets/deadbeef')
+
     assert resp.status == 400
-    assert await resp.json() == {
-        'message': '`id` - must be of integer type.'
-    }
+    assert await resp.json() == {'message': '`id` - must be of integer type.'}
 
 
-async def test_put_snippet(testapp, testdatabase, snippets):
-    resp = await testapp.put(
-        '/snippets/' + str(snippets[0]['id']),
-        data=json.dumps({
-            'content': 'brand new snippet',
-        }),
-        headers={
-            'Accept': 'application/json',
-            'Content-Type': 'application/json',
-        })
+async def test_put_snippet(testapp, snippets):
+    resp = await testapp.put('/snippets/%d' % snippets[0]['id'], data=json.dumps({
+        'content': 'test'
+    }))
+
     assert resp.status == 200
-
-    snippet_resp = await resp.json()
-    snippet_db = await testdatabase.snippets.find_one(
-        {'_id': snippet_resp['id']}
-    )
-
-    _compare_snippets(snippet_db, snippet_resp)
+    assert await resp.json() == {
+        'id': 1,
+        'title': None,
+        'content': 'test',
+        'syntax': 'text',
+        'tags': [],
+        'created_at': '2018-01-24T22:26:35',
+        'updated_at': _pytest_regex('\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}'),
+    }
 
 
 async def test_put_snippet_bad_id(testapp):
-    resp = await testapp.put(
-        '/snippets/deadbeef',
-        data=json.dumps({
-            'content': 'brand new snippet',
-        }),
-        headers={
-            'Accept': 'application/json',
-            'Content-Type': 'application/json',
-        }
-    )
+    resp = await testapp.put('/snippets/deadbeef', data=json.dumps({'content': 'test'}))
+
     assert resp.status == 400
-    assert await resp.json() == {
-        'message': '`id` - must be of integer type.'
-    }
+    assert await resp.json() == {'message': '`id` - must be of integer type.'}
 
 
 async def test_put_snippet_not_found(testapp):
-    resp = await testapp.put(
-        '/snippets/0123456789',
-        data=json.dumps({
-            'content': 'brand new snippet',
-        }),
-        headers={
-            'Accept': 'application/json',
-            'Content-Type': 'application/json',
-        }
-    )
+    resp = await testapp.put('/snippets/123456789', data=json.dumps({'content': 'test'}))
+
     assert resp.status == 404
+    assert await resp.json() == {'message': 'Sorry, cannot find the requested snippet.'}
+
+
+@pytest.mark.parametrize('snippet, rv', [
+    (
+        {},
+        {'message': '`content` - required field.'},
+    ),
+    (
+        {'content': 'test', 'title': 42},
+        {'message': '`title` - must be of string type.'},
+    ),
+    (
+        {'content': 42},
+        {'message': '`content` - must be of string type.'},
+    ),
+    (
+        {'content': 'test', 'tags': ['white space']},
+        {'message': '`tags` - {0: ["value does not match regex \'[\\\\w_-]+\'"]}.'},
+    ),
+    (
+        {'content': 'test', 'created_at': '2016-09-11T19:07:43'},
+        {'message': '`created_at` - field is read-only.'},
+    ),
+    (
+        {'content': 'test', 'updated_at': '2016-09-11T19:07:43'},
+        {'message': '`updated_at` - field is read-only.'},
+    ),
+    (
+        {'content': 'test', 'non-existent-key': 'you-shall-not-pass'},
+        {'message': '`non-existent-key` - unknown field.'},
+    ),
+    (
+        {'content': 'test', 'syntax': 'go'},
+        {'message': '`syntax` - unallowed value go.'},
+    ),
+])
+async def test_put_snippet_bad_request(snippet, rv, testapp, testconf, snippets):
+    testconf['snippet']['syntaxes'] = 'python\nclojure'
+
+    resp = await testapp.put('/snippets/%d' % snippets[0]['id'], data=json.dumps(snippet))
+
+    assert resp.status == 400
+    assert await resp.json() == rv
+
+
+async def test_patch_snippet(testapp, snippets):
+    resp = await testapp.patch('/snippets/%d' % snippets[0]['id'], data=json.dumps({
+        'content': 'test',
+    }))
+
+    assert resp.status == 200
     assert await resp.json() == {
-        'message': 'Sorry, cannot find the requested snippet.',
+        'id': 1,
+        'title': 'snippet #1',
+        'content': 'test',
+        'syntax': 'python',
+        'tags': ['tag_a', 'tag_b'],
+        'created_at': '2018-01-24T22:26:35',
+        'updated_at': _pytest_regex('\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}'),
     }
-
-
-@pytest.mark.parametrize('name, val', [
-    ('title', 42),                          # must be string
-    ('content', 42),                        # must be string
-    ('tags', ['a tag with whitespaces']),   # tag must not contain spaces
-    ('created_at', '2016-09-11T19:07:43'),  # readonly
-    ('updated_at', '2016-09-11T19:07:43'),  # readonly
-    ('non-existent-key', 'must not be accepted'),
-])
-async def test_put_snippet_malformed_snippet(name, val, testapp, snippets):
-    snippet = {'content': 'brand new snippet'}
-    snippet[name] = val
-
-    resp = await testapp.put(
-        '/snippets/' + str(snippets[0]['id']),
-        data=json.dumps(snippet),
-        headers={
-            'Accept': 'application/json',
-            'Content-Type': 'application/json',
-        })
-    assert resp.status == 400
-
-    error_resp = await resp.json()
-    assert re.match('`%s` - .*' % name, error_resp['message'])
-
-
-@pytest.mark.parametrize('name', [
-    'content',
-])
-async def test_put_snippet_required_fields(name, testapp, snippets):
-    snippet = copy.deepcopy(snippets[0])
-    snippet['content'] = snippet['changesets'][-1]['content']
-    for key in ('id', 'created_at', 'updated_at', 'changesets'):
-        del snippet[key]
-    del snippet[name]
-
-    resp = await testapp.put(
-        '/snippets/' + str(snippets[0]['id']),
-        data=json.dumps(snippet),
-        headers={
-            'Accept': 'application/json',
-            'Content-Type': 'application/json',
-        })
-    assert resp.status == 400
-
-    error_resp = await resp.json()
-    assert re.match(
-        '`%s` - required field.' % name, error_resp['message'])
-
-
-async def test_put_snippet_syntax_enum_allowed(testapp, testconf, testdatabase, snippets):
-    testconf['snippet']['syntaxes'] = 'python\nclojure'
-
-    resp = await testapp.put(
-        '/snippets/' + str(snippets[0]['id']),
-        data=json.dumps({
-            'content': 'brand new snippet',
-            'syntax': 'python',
-        }),
-        headers={
-            'Accept': 'application/json',
-            'Content-Type': 'application/json',
-        })
-    assert resp.status == 200
-
-    snippet_resp = await resp.json()
-    snippet_db = await testdatabase.snippets.find_one(
-        {'_id': snippet_resp['id']}
-    )
-    _compare_snippets(snippet_db, snippet_resp)
-
-
-async def test_put_snippet_syntax_enum_not_allowed(testapp, testconf, snippets):
-    testconf['snippet']['syntaxes'] = 'python\nclojure'
-
-    resp = await testapp.put(
-        '/snippets/' + str(snippets[0]['id']),
-        data=json.dumps({
-            'content': 'brand new snippet',
-            'syntax': 'go',
-        }),
-        headers={
-            'Accept': 'application/json',
-            'Content-Type': 'application/json',
-        })
-    assert resp.status == 400
-
-    error_resp = await resp.json()
-    assert re.match(
-        '`syntax` - unallowed value go.', error_resp['message'])
-
-
-async def test_patch_snippet(testapp, testdatabase, snippets):
-    resp = await testapp.patch(
-        '/snippets/' + str(snippets[0]['id']),
-        data=json.dumps({
-            'content': 'brand new snippet',
-        }),
-        headers={
-            'Accept': 'application/json',
-            'Content-Type': 'application/json',
-        })
-    assert resp.status == 200
-
-    snippet_resp = await resp.json()
-    snippet_db = await testdatabase.snippets.find_one(
-        {'_id': snippet_resp['id']}
-    )
-    _compare_snippets(snippet_db, snippet_resp)
 
 
 async def test_patch_snippet_bad_id(testapp):
-    resp = await testapp.patch(
-        '/snippets/deadbeef',
-        data=json.dumps({
-            'content': 'brand new snippet',
-        }),
-        headers={
-            'Accept': 'application/json',
-            'Content-Type': 'application/json',
-        }
-    )
+    resp = await testapp.patch('/snippets/deadbeef', data=json.dumps({'content': 'test'}))
+
     assert resp.status == 400
-    assert await resp.json() == {
-        'message': '`id` - must be of integer type.'
-    }
+    assert await resp.json() == {'message': '`id` - must be of integer type.'}
 
 
 async def test_patch_snippet_not_found(testapp):
-    resp = await testapp.patch(
-        '/snippets/0123456789',
-        data=json.dumps({
-            'content': 'brand new snippet',
-        }),
-        headers={
-            'Accept': 'application/json',
-            'Content-Type': 'application/json',
-        }
-    )
+    resp = await testapp.patch('/snippets/123456789', data=json.dumps({'content': 'test'}))
+
     assert resp.status == 404
-    assert await resp.json() == {
-        'message': 'Sorry, cannot find the requested snippet.',
-    }
+    assert await resp.json() == {'message': 'Sorry, cannot find the requested snippet.'}
 
 
-@pytest.mark.parametrize('name, value', [
-    ('title', 42),                          # must be string
-    ('content', 42),                        # must be string
-    ('tags', ['a tag with whitespaces']),   # tag must not contain spaces
-    ('created_at', '2016-09-11T19:07:43'),  # readonly
-    ('updated_at', '2016-09-11T19:07:43'),  # readonly
-    ('non-existent-key', 'must not be accepted'),
+@pytest.mark.parametrize('snippet, rv', [
+    (
+        {'title': 42},
+        {'message': '`title` - must be of string type.'},
+    ),
+    (
+        {'content': 42},
+        {'message': '`content` - must be of string type.'},
+    ),
+    (
+        {'tags': ['white space']},
+        {'message': '`tags` - {0: ["value does not match regex \'[\\\\w_-]+\'"]}.'},
+    ),
+    (
+        {'created_at': '2016-09-11T19:07:43'},
+        {'message': '`created_at` - field is read-only.'},
+    ),
+    (
+        {'updated_at': '2016-09-11T19:07:43'},
+        {'message': '`updated_at` - field is read-only.'},
+    ),
+    (
+        {'non-existent-key': 'you-shall-not-pass'},
+        {'message': '`non-existent-key` - unknown field.'},
+    ),
+    (
+        {'syntax': 'go'},
+        {'message': '`syntax` - unallowed value go.'},
+    ),
 ])
-async def test_patch_snippet_malformed_snippet(name, value, testapp, snippets):
-
-    snippet = {'content': 'brand new snippet'}
-    snippet[name] = value
-
-    resp = await testapp.patch(
-        '/snippets/' + str(snippets[0]['id']),
-        data=json.dumps(snippet),
-        headers={
-            'Accept': 'application/json',
-            'Content-Type': 'application/json',
-        })
-    assert resp.status == 400
-
-    error_resp = await resp.json()
-    assert re.match('`%s` - .*' % name, error_resp['message'])
-
-
-async def test_patch_snippet_required_fields_are_not_forced(testapp, testdatabase, snippets):
-    resp = await testapp.patch(
-        '/snippets/' + str(snippets[0]['id']),
-        data=json.dumps({
-            'title': 'brand new snippet',
-        }),
-        headers={
-            'Accept': 'application/json',
-            'Content-Type': 'application/json',
-        })
-    assert resp.status == 200
-
-    snippet_resp = await resp.json()
-    snippet_db = await testdatabase.snippets.find_one(
-        {'_id': snippet_resp['id']}
-    )
-    _compare_snippets(snippet_db, snippet_resp)
-
-
-async def test_patch_snippet_syntax_enum_allowed(testapp, testconf, testdatabase, snippets):
+async def test_patch_snippet_bad_request(snippet, rv, testapp, testconf, snippets):
     testconf['snippet']['syntaxes'] = 'python\nclojure'
 
-    resp = await testapp.patch(
-        '/snippets/' + str(snippets[0]['id']),
-        data=json.dumps({
-            'content': 'brand new snippet',
-            'syntax': 'python',
-        }),
-        headers={
-            'Accept': 'application/json',
-            'Content-Type': 'application/json',
-        })
-    assert resp.status == 200
+    resp = await testapp.patch('/snippets/%d' % snippets[0]['id'], data=json.dumps(snippet))
 
-    snippet_resp = await resp.json()
-    snippet_db = await testdatabase.snippets.find_one(
-        {'_id': snippet_resp['id']}
-    )
-
-    _compare_snippets(snippet_db, snippet_resp)
-
-
-async def test_patch_snippet_syntax_enum_not_allowed(testapp, testconf, snippets):
-    testconf['snippet']['syntaxes'] = 'python\nclojure'
-
-    resp = await testapp.patch(
-        '/snippets/' + str(snippets[0]['id']),
-        data=json.dumps({
-            'content': 'brand new snippet',
-            'syntax': 'go',
-        }),
-        headers={
-            'Accept': 'application/json',
-            'Content-Type': 'application/json',
-        })
     assert resp.status == 400
-
-    error_resp = await resp.json()
-    assert re.match(
-        '`syntax` - unallowed value go.', error_resp['message'])
+    assert await resp.json() == rv
 
 
 @pytest.mark.parametrize('method', [
@@ -1127,17 +801,7 @@ async def test_snippet_update_is_not_exposed(method, testapp, testconf, snippets
     testconf.remove_option('test', 'sudo')
     request = getattr(testapp, method)
 
-    resp = await request(
-        '/snippets/' + str(snippets[0]['id']),
-        data=json.dumps({
-            'content': 'brand new snippet',
-            'syntax': 'go',
-        }),
-        headers={
-            'Accept': 'application/json',
-            'Content-Type': 'application/json',
-        })
-    assert resp.status == 403
+    resp = await request('/snippets/%d' % snippets[0]['id'], data=json.dumps({'content': 'test'}))
 
-    error_resp = await resp.json()
-    assert error_resp['message'] == 'Not yet. :)'
+    assert resp.status == 403
+    assert await resp.json() == {'message': 'Not yet. :)'}
