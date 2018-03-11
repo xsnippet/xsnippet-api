@@ -10,7 +10,6 @@
     :license: MIT, see LICENSE for details
 """
 
-import asyncio
 import cgi
 import json
 import datetime
@@ -55,8 +54,10 @@ class Resource(web.View):
         'application/json': json.loads,
     }
 
-    @asyncio.coroutine
-    def __iter__(self):
+    def __await__(self):
+        return self._poor_asyncio_api().__await__()
+
+    async def _poor_asyncio_api(self):
         # So far (Jan 5, 2018) aiohttp doesn't support custom request classes,
         # but we would like to provide a better user experience for consumers
         # of this middleware. Hence, we monkey patch the instance and add a new
@@ -65,7 +66,8 @@ class Resource(web.View):
         setattr(self.request.__class__, 'get_data', self._get_data())
 
         try:
-            response = yield from super(Resource, self).__iter__()
+            # TODO: do not access internal method of parent class
+            response = await super(Resource, self)._iter()
 
         except exceptions.SnippetNotFound as exc:
             error = {'message': str(exc)}
