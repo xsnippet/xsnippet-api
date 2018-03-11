@@ -521,26 +521,35 @@ async def test_get_snippets_pagination_not_found(testapp):
     }
 
 
-async def test_post_snippet(testapp, testconf):
+@pytest.mark.parametrize('snippet, rv', [
+    ({'content': 'def foo(): pass'},
+     {'id': 1,
+      'title': None,
+      'content': 'def foo(): pass',
+      'syntax': None,
+      'tags': [],
+      'created_at': _pytest_regex('\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}'),
+      'updated_at': _pytest_regex('\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}')}),
+
+    ({'title': 'snippet #1',
+      'content': 'def foo(): pass',
+      'syntax': 'python',
+      'tags': ['tag_a', 'tag_b']},
+     {'id': 1,
+      'title': 'snippet #1',
+      'content': 'def foo(): pass',
+      'syntax': 'python',
+      'tags': ['tag_a', 'tag_b'],
+      'created_at': _pytest_regex('\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}'),
+      'updated_at': _pytest_regex('\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}')}),
+])
+async def test_post_snippet(testapp, testconf, snippet, rv):
     testconf['snippet']['syntaxes'] = 'python\nclojure'
 
-    resp = await testapp.post('/snippets', data=json.dumps({
-        'title': 'snippet #1',
-        'content': 'def foo(): pass',
-        'syntax': 'python',
-        'tags': ['tag_a', 'tag_b'],
-    }))
+    resp = await testapp.post('/snippets', data=json.dumps(snippet))
 
     assert resp.status == 201
-    assert await resp.json() == {
-        'id': 1,
-        'title': 'snippet #1',
-        'content': 'def foo(): pass',
-        'syntax': 'python',
-        'tags': ['tag_a', 'tag_b'],
-        'created_at': _pytest_regex('\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}'),
-        'updated_at': _pytest_regex('\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}'),
-    }
+    assert await resp.json() == rv
 
 
 @pytest.mark.parametrize('snippet, rv', [
@@ -648,21 +657,33 @@ async def test_delete_snippet_bad_request(testapp):
     assert await resp.json() == {'message': '`id` - must be of integer type.'}
 
 
-async def test_put_snippet(testapp, snippets):
-    resp = await testapp.put('/snippets/%d' % snippets[0]['id'], data=json.dumps({
-        'content': 'test'
-    }))
+@pytest.mark.parametrize('snippet, rv', [
+    ({'content': 'def foo(): pass'},
+     {'id': 1,
+      'title': None,
+      'content': 'def foo(): pass',
+      'syntax': None,
+      'tags': [],
+      'created_at': _pytest_regex('\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}'),
+      'updated_at': _pytest_regex('\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}')}),
+
+    ({'title': 'snippet #1',
+      'content': 'def foo(): pass',
+      'syntax': 'python',
+      'tags': ['tag_a', 'tag_b']},
+     {'id': 1,
+      'title': 'snippet #1',
+      'content': 'def foo(): pass',
+      'syntax': 'python',
+      'tags': ['tag_a', 'tag_b'],
+      'created_at': _pytest_regex('\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}'),
+      'updated_at': _pytest_regex('\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}')}),
+])
+async def test_put_snippet(testapp, snippets, snippet, rv):
+    resp = await testapp.put('/snippets/1', data=json.dumps(snippet))
 
     assert resp.status == 200
-    assert await resp.json() == {
-        'id': 1,
-        'title': None,
-        'content': 'test',
-        'syntax': 'text',
-        'tags': [],
-        'created_at': '2018-01-24T22:26:35',
-        'updated_at': _pytest_regex('\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}'),
-    }
+    assert await resp.json() == rv
 
 
 async def test_put_snippet_bad_id(testapp):
