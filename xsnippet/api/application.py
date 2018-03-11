@@ -17,7 +17,7 @@ import picobox
 from . import database, router, middlewares, resources
 
 
-def _inject_vary_header(request, response):
+async def _inject_vary_header(request, response):
     """Inject a ``Vary`` HTTP header to response if needed.
 
     Depends on whether request has varies HTTP headers or not, we may or may

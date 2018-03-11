@@ -197,17 +197,17 @@ class Snippets(resource.Resource):
         if syntaxes:
             v.schema['syntax']['allowed'] = syntaxes
 
-        if not v.validate(dict(self.request.GET)):
+        if not v.validate(dict(self.request.query)):
             error = '%s.' % cerberus_errors_to_str(v.errors)
             raise web.HTTPBadRequest(reason=error)
 
         # It's safe to have type cast here since those query parameters
         # are guaranteed to be integer, thanks to validation above.
-        limit = int(self.request.GET.get('limit', 20))
-        marker = int(self.request.GET.get('marker', 0))
-        title = self.request.GET.get('title')
-        tag = self.request.GET.get('tag')
-        syntax = self.request.GET.get('syntax')
+        limit = int(self.request.query.get('limit', 20))
+        marker = int(self.request.query.get('marker', 0))
+        title = self.request.query.get('title')
+        tag = self.request.query.get('tag')
+        syntax = self.request.query.get('syntax')
 
         # actual snippets to be returned
         current_page = await services.Snippet().get(
