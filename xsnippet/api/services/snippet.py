@@ -156,7 +156,7 @@ class Snippet:
     def _normalize(self, snippet):
         rv = dict({
             'title': None,
-            'syntax': 'text',
+            'syntax': None,
             'tags': [],
         }, **snippet)
         return rv
