@@ -10,17 +10,6 @@
 
 import pytest
 
-from xsnippet.api import application
-from xsnippet.api.middlewares import auth
-
-
-async def test_auth_secret_is_generated_if_not_set(test_server, testconf, testdatabase):
-    testconf['auth'] = {'secret': ''}
-    app_instance = application.create_app(testconf, testdatabase)
-
-    await test_server(app_instance)
-    assert len(testconf['auth']['secret']) == auth.SECRET_LEN
-
 
 @pytest.mark.parametrize('name, value', [
     ('Accept', 'application/json'),

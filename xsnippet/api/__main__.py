@@ -9,9 +9,11 @@
     :license: MIT, see LICENSE for details
 """
 
+import binascii
 import logging
 import os
 import sys
+import warnings
 
 import aiohttp.web as web
 import picobox
@@ -30,6 +32,16 @@ def main(args=sys.argv[1:]):
         os.path.join(os.path.dirname(__file__), 'default.conf'),
     ], envvar='XSNIPPET_API_SETTINGS')
     database = create_connection(conf)
+
+    # The secret is required to sign issued JWT tokens, therefore it's crucial
+    # to warn about importance of settings secret before going production. The
+    # only reason why we don't enforce it's setting is because we want the app
+    # to fly (at least for development purpose) using defaults.
+    if not conf['auth'].get('secret', ''):
+        warnings.warn(
+            'Auth secret has not been provided. Please generate a long random '
+            'secret before going to production.')
+        conf['auth']['secret'] = binascii.hexlify(os.urandom(32)).decode('ascii')
 
     with picobox.push(picobox.Box()) as box:
         box.put('conf', conf)
