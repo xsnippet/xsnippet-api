@@ -151,6 +151,16 @@ async def test_post_json(testapp, headers):
     assert await resp.json() == {'who': 'batman'}
 
 
+async def test_post_malformed_payload(testapp):
+    resp = await testapp.post('/test', data='malformed')
+
+    assert resp.status == 400
+    assert await resp.json() == {
+        'message': ('Malformed application/json payload: '
+                    'Expecting value: line 1 column 1 (char 0)'),
+    }
+
+
 async def test_post_unsupported_media_type(testapp):
     resp = await testapp.post(
         '/test',

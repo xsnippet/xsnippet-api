@@ -147,7 +147,13 @@ class Resource(web.View):
 
             if content_type in decoders:
                 decode = decoders[content_type]
-                return decode(await self.text())
+                text = await self.text()
+
+                try:
+                    return decode(text)
+                except Exception as exc:
+                    raise web.HTTPBadRequest(
+                        reason='Malformed %s payload: %s' % (content_type, exc))
 
             raise web.HTTPUnsupportedMediaType()
         return impl
