@@ -39,14 +39,13 @@ async def testapp(request, test_client, testconf, testdatabase):
     box.put('conf', testconf)
     box.put('database', testdatabase)
 
-    scope = picobox.push(box)
-    scope.__enter__()
+    picobox.push(box)
 
     # Python 3.5 does not support yield statement inside coroutines, hence we
     # cannot use yield fixtures here and are forced to use finalizers instead.
     # This is especially weird as Picobox provides convenient context manager
     # and no plain functions, that's why manual triggering is required.
-    request.addfinalizer(lambda: scope.__exit__(None, None, None))
+    request.addfinalizer(lambda: picobox.pop())
     return await test_client(
         create_app(),
 
