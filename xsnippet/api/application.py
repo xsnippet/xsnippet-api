@@ -14,7 +14,7 @@ import functools
 import aiohttp.web
 import picobox
 
-from . import database, router, routes, middlewares
+from . import database, routes, middlewares
 
 
 async def _inject_vary_header(request, response):
@@ -58,16 +58,11 @@ def create_app(conf, db):
     :rtype: :class:`aiohttp.web.Application`
     """
 
-    v1 = aiohttp.web.UrlDispatcher()
-    v1.add_routes(routes.v1)
-
-    # We need to import all the resources in order to evaluate @endpoint
-    # decorator, so they can be collected and passed to VersionRouter.
     app = aiohttp.web.Application(
         middlewares=[
             middlewares.auth.auth(conf['auth']),
-        ],
-        router=router.VersionRouter({'1.0': v1}, default='1.0'))
+        ])
+    app.router.add_routes(routes.v1)
     app.on_startup.append(functools.partial(database.setup, db=db))
 
     # We need to respond with Vary header time to time in order to avoid

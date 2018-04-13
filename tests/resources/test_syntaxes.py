@@ -13,7 +13,7 @@ import pytest
 
 async def test_get_syntaxes_default_conf(testapp):
     resp = await testapp.get(
-        '/syntaxes',
+        '/v1/syntaxes',
         headers={
             'Accept': 'application/json',
         }
@@ -30,7 +30,7 @@ async def test_get_syntaxes_overriden_conf(testapp, testconf, syntaxes, expected
     testconf['snippet']['syntaxes'] = syntaxes
 
     resp = await testapp.get(
-        '/syntaxes',
+        '/v1/syntaxes',
         headers={
             'Accept': 'application/json',
         }
@@ -43,7 +43,7 @@ async def test_get_syntaxes_overriden_conf_no_syntaxes(testapp, testconf):
     testconf['snippet'].pop('syntaxes', None)
 
     resp = await testapp.get(
-        '/syntaxes',
+        '/v1/syntaxes',
         headers={
             'Accept': 'application/json',
         }
@@ -57,7 +57,7 @@ async def test_get_syntaxes_unsupported_method(testapp, method):
     func = getattr(testapp, method)
 
     resp = await func(
-        '/syntaxes',
+        '/v1/syntaxes',
         headers={
             'Accept': 'application/json',
         }
@@ -68,7 +68,7 @@ async def test_get_syntaxes_unsupported_method(testapp, method):
 
 async def test_get_syntaxes_unsupported_accept_type(testapp):
     resp = await testapp.get(
-        '/syntaxes',
+        '/v1/syntaxes',
         headers={
             'Accept': 'application/xml',
         }
