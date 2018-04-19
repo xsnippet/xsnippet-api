@@ -35,8 +35,12 @@ setup(
     packages=find_packages('xsnippet'),
     include_package_data=True,
     zip_safe=False,
+    use_scm_version={
+        'root': here,
+    },
     setup_requires=[
         'pytest-runner',
+        'setuptools_scm',
     ],
     install_requires=[
         'aiohttp >= 3.0.0, < 4',
