@@ -34,7 +34,7 @@ async def testdatabase(request, loop, testconf):
 
 
 @pytest.fixture(scope='function')
-async def testapp(request, test_client, testconf, testdatabase):
+async def testapp(request, aiohttp_client, testconf, testdatabase):
     box = picobox.Box()
     box.put('conf', testconf)
     box.put('database', testdatabase)
@@ -46,7 +46,7 @@ async def testapp(request, test_client, testconf, testdatabase):
     # This is especially weird as Picobox provides convenient context manager
     # and no plain functions, that's why manual triggering is required.
     request.addfinalizer(lambda: picobox.pop())
-    return await test_client(
+    return await aiohttp_client(
         create_app(),
 
         # If 'Content-Type' is not passed to HTTP request, aiohttp client will
