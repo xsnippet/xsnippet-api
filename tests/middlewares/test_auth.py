@@ -16,7 +16,7 @@ from xsnippet.api import middlewares
 
 
 @pytest.fixture(scope='function')
-async def testapp(test_client):
+async def testapp(aiohttp_client):
     app = web.Application(middlewares=[
         middlewares.auth.auth({'secret': 'SWORDFISH'}),
     ])
@@ -35,7 +35,7 @@ async def testapp(test_client):
         return web.Response(text='success')
     app.router.add_get('/success-no-token', handler)
 
-    return await test_client(app)
+    return await aiohttp_client(app)
 
 
 @pytest.mark.parametrize('token', [

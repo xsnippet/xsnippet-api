@@ -15,7 +15,7 @@ from xsnippet.api import router
 
 
 @pytest.fixture(scope='function')
-async def testapp(test_client):
+async def testapp(aiohttp_client):
     class _TestResource1(web.View):
         async def get(self):
             return web.Response(text='I am the night!')
@@ -39,7 +39,7 @@ async def testapp(test_client):
             default='2',
         )
     )
-    return await test_client(app)
+    return await aiohttp_client(app)
 
 
 async def test_version_1(testapp):

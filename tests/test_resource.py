@@ -55,7 +55,7 @@ class _TestDecodersResource(resource.Resource):
 
 
 @pytest.fixture(scope='function')
-async def testapp(test_client):
+async def testapp(aiohttp_client):
     app = web.Application()
     app.router.add_route('*', '/test', _TestResource)
     app.router.add_route('*', '/test-encoders', _TestEncodersResource)
@@ -66,7 +66,7 @@ async def testapp(test_client):
     # ridiculous because in case of RESTful API this is completely wrong
     # and APIs usually have their own defaults. So turn off this feature,
     # and do not set 'Content-Type' for us if it wasn't passed.
-    return await test_client(app, skip_auto_headers={'Content-Type'})
+    return await aiohttp_client(app, skip_auto_headers={'Content-Type'})
 
 
 @pytest.mark.parametrize('headers,', [
