@@ -36,7 +36,7 @@ async def _write(resource, service_fn, *, status, conf):
     v = cerberus.Validator({
         'id': {'type': 'integer', 'readonly': True},
         'title': {'type': 'string'},
-        'content': {'type': 'string', 'required': True},
+        'content': {'type': 'string', 'required': True, 'empty': False},
         'syntax': {'type': 'string'},
         'tags': {'type': 'list',
                  'schema': {'type': 'string', 'regex': '[\w_-]+'}},
