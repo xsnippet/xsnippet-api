@@ -17,31 +17,6 @@ import picobox
 from . import database, routes, middlewares
 
 
-async def _inject_vary_header(request, response):
-    """Inject a ``Vary`` HTTP header to response if needed.
-
-    Depends on whether request has varies HTTP headers or not, we may or may
-    not inject a ``Vary`` HTTP header into response. Since XSnippet API
-    implements content negotiation and API versioning, we've got to pass at
-    least ``Accept`` and ``Api-Version`` HTTP headers.
-
-    :param request: an http request instance
-    :type request: :class:`~aiohttp.web.Request`
-
-    :param response: an http response instance
-    :type response: :class:`~aiohttp.web.Response`
-    """
-    known = set([
-        'Accept',
-        'Accept-Encoding',
-        'Api-Version',
-    ])
-    found = [header for header in known if header in request.headers]
-
-    if found:
-        response.headers['Vary'] = ', '.join(found)
-
-
 @picobox.pass_('conf')
 @picobox.pass_('database', as_='db')
 def create_app(conf, db):
@@ -64,9 +39,5 @@ def create_app(conf, db):
         ])
     app.router.add_routes(routes.v1)
     app.on_startup.append(functools.partial(database.setup, db=db))
-
-    # We need to respond with Vary header time to time in order to avoid
-    # issues with cache on client side.
-    app.on_response_prepare.append(_inject_vary_header)
 
     return app
