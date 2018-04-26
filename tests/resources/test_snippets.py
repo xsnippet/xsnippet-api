@@ -566,6 +566,10 @@ async def test_post_snippet(testapp, testconf, snippet, rv):
         {'message': '`content` - must be of string type.'},
     ),
     (
+        {'content': ''},
+        {'message': '`content` - empty values not allowed.'},
+    ),
+    (
         {'content': 'test', 'tags': ['white space']},
         {'message': '`tags` - {0: ["value does not match regex \'[\\\\w_-]+\'"]}.'},
     ),
@@ -714,6 +718,10 @@ async def test_put_snippet_not_found(testapp):
         {'message': '`content` - must be of string type.'},
     ),
     (
+        {'content': ''},
+        {'message': '`content` - empty values not allowed.'},
+    ),
+    (
         {'content': 'test', 'tags': ['white space']},
         {'message': '`tags` - {0: ["value does not match regex \'[\\\\w_-]+\'"]}.'},
     ),
@@ -782,6 +790,10 @@ async def test_patch_snippet_not_found(testapp):
     (
         {'content': 42},
         {'message': '`content` - must be of string type.'},
+    ),
+    (
+        {'content': ''},
+        {'message': '`content` - empty values not allowed.'},
     ),
     (
         {'tags': ['white space']},
