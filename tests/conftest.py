@@ -1,5 +1,7 @@
 """Some pytest fixtures used around the code."""
 
+import re
+
 import picobox
 import pkg_resources
 import pytest
@@ -56,3 +58,22 @@ async def testapp(request, aiohttp_client, testconf, testdatabase):
         # and do not set 'Content-Type' for us if it wasn't passed.
         skip_auto_headers={'Content-Type'},
     )
+
+
+def pytest_namespace():
+    # Expose some internally used helpers via 'pytest' module to make it
+    # available everywhere without making modules and packages.
+    return {'regex': _pytest_regex}
+
+
+class _pytest_regex:
+    """Assert that a given string matches a given regular expression."""
+
+    def __init__(self, pattern, flags=0):
+        self._regex = re.compile(pattern, flags)
+
+    def __eq__(self, actual):
+        return bool(self._regex.match(actual))
+
+    def __repr__(self):
+        return self._regex.pattern
