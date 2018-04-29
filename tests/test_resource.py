@@ -156,8 +156,7 @@ async def test_post_malformed_payload(testapp):
 
     assert resp.status == 400
     assert await resp.json() == {
-        'message': ('Malformed application/json payload: '
-                    'Expecting value: line 1 column 1 (char 0)'),
+        'message': pytest.regex('^Malformed application/json payload:.*'),
     }
 
 

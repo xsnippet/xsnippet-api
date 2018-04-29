@@ -8,26 +8,12 @@
     :license: MIT, see LICENSE for details
 """
 
-import re
 import json
 import datetime
 import cgi
 import urllib.parse
 
 import pytest
-
-
-class _pytest_regex:
-    """Assert that a given string matches a given regular expression."""
-
-    def __init__(self, pattern, flags=0):
-        self._regex = re.compile(pattern, flags)
-
-    def __eq__(self, actual):
-        return bool(self._regex.match(actual))
-
-    def __repr__(self):
-        return self._regex.pattern
 
 
 class _pytest_link_header:
@@ -528,8 +514,8 @@ async def test_get_snippets_pagination_not_found(testapp):
       'content': 'def foo(): pass',
       'syntax': None,
       'tags': [],
-      'created_at': _pytest_regex('\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}'),
-      'updated_at': _pytest_regex('\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}')}),
+      'created_at': pytest.regex('\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}'),
+      'updated_at': pytest.regex('\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}')}),
 
     ({'title': 'snippet #1',
       'content': 'def foo(): pass',
@@ -540,8 +526,8 @@ async def test_get_snippets_pagination_not_found(testapp):
       'content': 'def foo(): pass',
       'syntax': 'python',
       'tags': ['tag_a', 'tag_b'],
-      'created_at': _pytest_regex('\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}'),
-      'updated_at': _pytest_regex('\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}')}),
+      'created_at': pytest.regex('\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}'),
+      'updated_at': pytest.regex('\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}')}),
 ])
 async def test_post_snippet(testapp, testconf, snippet, rv):
     testconf['snippet']['syntaxes'] = 'python\nclojure'
@@ -668,8 +654,8 @@ async def test_delete_snippet_bad_request(testapp):
       'content': 'def foo(): pass',
       'syntax': None,
       'tags': [],
-      'created_at': _pytest_regex('\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}'),
-      'updated_at': _pytest_regex('\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}')}),
+      'created_at': pytest.regex('\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}'),
+      'updated_at': pytest.regex('\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}')}),
 
     ({'title': 'snippet #1',
       'content': 'def foo(): pass',
@@ -680,8 +666,8 @@ async def test_delete_snippet_bad_request(testapp):
       'content': 'def foo(): pass',
       'syntax': 'python',
       'tags': ['tag_a', 'tag_b'],
-      'created_at': _pytest_regex('\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}'),
-      'updated_at': _pytest_regex('\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}')}),
+      'created_at': pytest.regex('\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}'),
+      'updated_at': pytest.regex('\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}')}),
 ])
 async def test_put_snippet(testapp, snippets, snippet, rv):
     resp = await testapp.put('/v1/snippets/1', data=json.dumps(snippet))
@@ -764,7 +750,7 @@ async def test_patch_snippet(testapp, snippets):
         'syntax': 'python',
         'tags': ['tag_a', 'tag_b'],
         'created_at': '2018-01-24T22:26:35',
-        'updated_at': _pytest_regex('\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}'),
+        'updated_at': pytest.regex('\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}'),
     }
 
 
