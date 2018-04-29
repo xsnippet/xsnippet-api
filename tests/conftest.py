@@ -3,7 +3,6 @@
 import re
 
 import picobox
-import pkg_resources
 import pytest
 
 from xsnippet.api.application import create_app
@@ -13,15 +12,14 @@ from xsnippet.api.database import create_connection
 
 @pytest.fixture(scope='function')
 def testconf():
-    path = pkg_resources.resource_filename('xsnippet.api', 'default.conf')
-    conf = get_conf(path)
-    conf['auth'] = {'secret': 'SWORDFISH'}
+    conf = get_conf()
+    conf['AUTH_SECRET'] = 'SWORDFISH'
 
     # This flag exist to workaround permissions (which we currently lack of)
     # and test PUT/PATCH requests to the snippet. Once permissions are
     # implemented and the hack is removed from @checkpermissions decorator
     # in resources/snippets.py - this silly flag must be thrown away.
-    conf['test'] = {'sudo': True}
+    conf['_SUDO'] = True
     return conf
 
 

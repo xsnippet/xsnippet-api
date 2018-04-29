@@ -28,20 +28,18 @@ def main(args=sys.argv[1:]):
     logging.basicConfig()
     logging.getLogger('aiohttp').setLevel(logging.INFO)
 
-    conf = get_conf([
-        os.path.join(os.path.dirname(__file__), 'default.conf'),
-    ], envvar='XSNIPPET_API_SETTINGS')
+    conf = get_conf(envvar='XSNIPPET_API_SETTINGS')
     database = create_connection(conf)
 
     # The secret is required to sign issued JWT tokens, therefore it's crucial
     # to warn about importance of settings secret before going production. The
     # only reason why we don't enforce it's setting is because we want the app
     # to fly (at least for development purpose) using defaults.
-    if not conf['auth'].get('secret', ''):
+    if not conf.get('AUTH_SECRET', ''):
         warnings.warn(
             'Auth secret has not been provided. Please generate a long random '
             'secret before going to production.')
-        conf['auth']['secret'] = binascii.hexlify(os.urandom(32)).decode('ascii')
+        conf['AUTH_SECRET'] = binascii.hexlify(os.urandom(32)).decode('ascii')
 
     with picobox.push(picobox.Box()) as box:
         box.put('conf', conf)
@@ -49,9 +47,9 @@ def main(args=sys.argv[1:]):
 
         web.run_app(
             create_app(conf, database),
-            host=conf['server']['host'],
-            port=int(conf['server']['port']),
-            access_log_format=conf['server']['access_log_format']
+            host=conf['SERVER_HOST'],
+            port=conf['SERVER_PORT'],
+            access_log_format=conf['SERVER_ACCESS_LOG_FORMAT'],
         )
 
 

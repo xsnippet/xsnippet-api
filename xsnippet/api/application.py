@@ -35,7 +35,7 @@ def create_app(conf, db):
 
     app = aiohttp.web.Application(
         middlewares=[
-            middlewares.auth.auth(conf['auth']),
+            middlewares.auth.auth(conf),
         ])
     app.router.add_routes(routes.v1)
     app.on_startup.append(functools.partial(database.setup, db=db))

@@ -45,7 +45,7 @@ async def _write(resource, service_fn, *, status, conf):
     })
 
     snippet = await resource.request.get_data()
-    syntaxes = conf.getlist('snippet', 'syntaxes', fallback=None)
+    syntaxes = conf['SNIPPET_SYNTAXES']
 
     # If 'snippet:syntaxes' option is not empty, we need to ensure that
     # only specified syntaxes are allowed.
@@ -82,7 +82,7 @@ class Snippet(resource.Resource):
             # public but can be tested. That's why we check for a fake flag in
             # conf object that can be set in tests in order to test existing
             # functionality.
-            if not conf.getboolean('test', 'sudo', fallback=False):
+            if not conf.get('_SUDO', False):
                 raise web.HTTPForbidden(reason='Not yet. :)')
             return await fn(self, *args, **kwargs)
         return _wrapper
@@ -190,7 +190,7 @@ class Snippets(resource.Resource):
             },
         })
 
-        syntaxes = conf.getlist('snippet', 'syntaxes', fallback=None)
+        syntaxes = conf['SNIPPET_SYNTAXES']
 
         # If 'snippet:syntaxes' option is not empty, we need to ensure that
         # only specified syntaxes are allowed.

@@ -22,12 +22,12 @@ async def test_get_syntaxes_default_conf(testapp):
     assert await resp.json() == []
 
 
-@pytest.mark.parametrize('syntaxes,expected', [
-    ('', []),
-    ('clojure\npython', ['clojure', 'python'])
+@pytest.mark.parametrize('syntaxes', [
+    [],
+    ['clojure', 'python'],
 ])
-async def test_get_syntaxes_overriden_conf(testapp, testconf, syntaxes, expected):
-    testconf['snippet']['syntaxes'] = syntaxes
+async def test_get_syntaxes_overriden_conf(testapp, testconf, syntaxes):
+    testconf['SNIPPET_SYNTAXES'] = syntaxes
 
     resp = await testapp.get(
         '/v1/syntaxes',
@@ -36,11 +36,11 @@ async def test_get_syntaxes_overriden_conf(testapp, testconf, syntaxes, expected
         }
     )
     assert resp.status == 200
-    assert await resp.json() == expected
+    assert await resp.json() == syntaxes
 
 
 async def test_get_syntaxes_overriden_conf_no_syntaxes(testapp, testconf):
-    testconf['snippet'].pop('syntaxes', None)
+    testconf['SNIPPET_SYNTAXES'] = []
 
     resp = await testapp.get(
         '/v1/syntaxes',
