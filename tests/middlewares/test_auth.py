@@ -18,7 +18,7 @@ from xsnippet.api import middlewares
 @pytest.fixture(scope='function')
 async def testapp(aiohttp_client):
     app = web.Application(middlewares=[
-        middlewares.auth.auth({'secret': 'SWORDFISH'}),
+        middlewares.auth.auth({'AUTH_SECRET': 'SWORDFISH'}),
     ])
 
     async def handler(request):

@@ -255,7 +255,7 @@ async def test_get_snippets(testapp, snippets, params, rv, link):
     ),
 ])
 async def test_get_snippets_bad_request(testapp, testconf, snippets, params, rv):
-    testconf['snippet']['syntaxes'] = '\n'.join(['python', 'clojure'])
+    testconf['SNIPPET_SYNTAXES'] = ['python', 'clojure']
 
     resp = await testapp.get('/v1/snippets', params=params)
 
@@ -530,7 +530,7 @@ async def test_get_snippets_pagination_not_found(testapp):
       'updated_at': pytest.regex('\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}')}),
 ])
 async def test_post_snippet(testapp, testconf, snippet, rv):
-    testconf['snippet']['syntaxes'] = 'python\nclojure'
+    testconf['SNIPPET_SYNTAXES'] = ['python', 'clojure']
 
     resp = await testapp.post('/v1/snippets', data=json.dumps(snippet))
 
@@ -577,7 +577,7 @@ async def test_post_snippet(testapp, testconf, snippet, rv):
     ),
 ])
 async def test_post_snippet_bad_request(snippet, rv, testapp, testconf):
-    testconf['snippet']['syntaxes'] = 'python\nclojure'
+    testconf['SNIPPET_SYNTAXES'] = ['python', 'clojure']
 
     resp = await testapp.post('/v1/snippets', data=json.dumps(snippet))
 
@@ -729,7 +729,7 @@ async def test_put_snippet_not_found(testapp):
     ),
 ])
 async def test_put_snippet_bad_request(snippet, rv, testapp, testconf, snippets):
-    testconf['snippet']['syntaxes'] = 'python\nclojure'
+    testconf['SNIPPET_SYNTAXES'] = ['python', 'clojure']
 
     resp = await testapp.put('/v1/snippets/%d' % snippets[0]['id'], data=json.dumps(snippet))
 
@@ -803,7 +803,7 @@ async def test_patch_snippet_not_found(testapp):
     ),
 ])
 async def test_patch_snippet_bad_request(snippet, rv, testapp, testconf, snippets):
-    testconf['snippet']['syntaxes'] = 'python\nclojure'
+    testconf['SNIPPET_SYNTAXES'] = ['python', 'clojure']
 
     resp = await testapp.patch('/v1/snippets/%d' % snippets[0]['id'], data=json.dumps(snippet))
 
@@ -817,7 +817,7 @@ async def test_patch_snippet_bad_request(snippet, rv, testapp, testconf, snippet
     'delete',
 ])
 async def test_snippet_update_is_not_exposed(method, testapp, testconf, snippets):
-    testconf.remove_option('test', 'sudo')
+    testconf.pop('_SUDO', None)
     request = getattr(testapp, method)
 
     snippet = {'content': 'test'}

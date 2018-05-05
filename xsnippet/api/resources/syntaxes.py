@@ -18,4 +18,4 @@ class Syntaxes(resource.Resource):
 
     @picobox.pass_('conf')
     async def get(self, conf):
-        return conf.getlist('snippet', 'syntaxes', fallback=[])
+        return conf['SNIPPET_SYNTAXES']

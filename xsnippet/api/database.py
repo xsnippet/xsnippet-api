@@ -25,7 +25,7 @@ def create_connection(conf):
     :return: a database connection
     :rtype: :class:`motor.motor_asyncio.AsyncIOMotorDatabase`
     """
-    mongo = AsyncIOMotorClient(conf['database']['connection'])
+    mongo = AsyncIOMotorClient(conf['DATABASE_CONNECTION_URI'])
 
     # get_default_database returns a database from the connection string
     db = mongo.get_default_database()

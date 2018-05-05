@@ -47,6 +47,7 @@ setup(
         'cerberus >= 0.9.2',
         'motor >= 1.1',
         'python-jose >= 1.3.2',
+        'python-decouple >= 3.1',
         'werkzeug >= 0.11.4',
         'picobox >= 2.0',
     ],

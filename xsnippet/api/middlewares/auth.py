@@ -27,7 +27,7 @@ def auth(conf):
 
     @web.middleware
     async def _auth(request, handler):
-        secret = conf['secret']
+        secret = conf['AUTH_SECRET']
         authorization = request.headers.get('Authorization')
 
         if authorization is not None:
