@@ -28,7 +28,7 @@ def main(args=sys.argv[1:]):
     logging.basicConfig()
     logging.getLogger('aiohttp').setLevel(logging.INFO)
 
-    conf = get_conf(envvar='XSNIPPET_API_SETTINGS')
+    conf = get_conf()
     database = create_connection(conf)
 
     # The secret is required to sign issued JWT tokens, therefore it's crucial
