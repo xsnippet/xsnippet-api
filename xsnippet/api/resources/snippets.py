@@ -212,6 +212,7 @@ class Snippets(resource.Resource):
         # actual snippets to be returned
         current_page = await services.Snippet().get(
             title=title, tag=tag, syntax=syntax,
+            author=self.request.GET.get('author'),
             # read one more to know if there is next page
             limit=limit + 1,
             marker=marker,

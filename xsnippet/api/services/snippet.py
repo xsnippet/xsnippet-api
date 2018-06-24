@@ -95,8 +95,9 @@ class Snippet:
     async def replace(self, snippet):
         return await self.update(self._normalize(snippet))
 
-    async def get(self, *, title=None, tag=None, syntax=None, limit=100,
-                  marker=None, direction='forward'):
+    async def get(self, *, title=None, tag=None, syntax=None,
+                  author=None,
+                  limit=100, marker=None, direction='forward'):
         condition = {}
 
         sort = self._pagination[direction]['sort']
@@ -108,6 +109,8 @@ class Snippet:
             condition['tags'] = tag
         if syntax is not None:
             condition['syntax'] = syntax
+        if author is not None:
+            condition['author'] = syntax
 
         if marker:
             specimen = await self.db.snippets.find_one({'_id': marker})
