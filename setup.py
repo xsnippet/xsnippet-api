@@ -2,7 +2,7 @@
 # coding: utf-8
 
 import os
-from setuptools import setup, find_packages as _find_packages
+from setuptools import setup, find_namespace_packages
 
 from xsnippet.api import __version__ as version
 from xsnippet.api import __license__ as license
@@ -11,13 +11,6 @@ from xsnippet.api import __license__ as license
 here = os.path.dirname(__file__)
 with open(os.path.join(here, 'README.rst'), 'r', encoding='utf-8') as f:
     long_description = f.read()
-
-
-# Unfortunately setuptools.find_packages() doesn't support PEP-420 namespace
-# packages so we need our own implementation that does. All this shit happened
-# due to desperate @ikalnytskyi's desire to use namespace packages.
-def find_packages(namespace):
-    return ['%s.%s' % (namespace, pkg) for pkg in _find_packages(namespace)]
 
 
 setup(
@@ -32,7 +25,7 @@ setup(
     keywords='web-service restful-api snippet storage',
     author='The XSnippet Team',
     author_email='dev@xsnippet.org',
-    packages=find_packages('xsnippet'),
+    packages=find_namespace_packages(include=['xsnippet.*']),
     include_package_data=True,
     zip_safe=False,
     use_scm_version={
