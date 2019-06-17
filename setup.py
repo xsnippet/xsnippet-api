@@ -52,7 +52,7 @@ setup(
         'picobox >= 2.0',
     ],
     tests_require=[
-        'pytest >= 2.8.7',
+        'pytest >= 4.0.0',
         'pytest-aiohttp >= 0.3.0',
     ],
     entry_points={

@@ -58,10 +58,12 @@ async def testapp(request, aiohttp_client, testconf, testdatabase):
     )
 
 
-def pytest_namespace():
+def pytest_configure():
     # Expose some internally used helpers via 'pytest' module to make it
-    # available everywhere without making modules and packages.
-    return {'regex': _pytest_regex}
+    # available everywhere without making modules and packages. We used
+    # to have 'pytest_namespace' hook, however, it's been removed since
+    # pytest 4.0 and thus we need this line for backward compatibility.
+    pytest.regex = _pytest_regex
 
 
 class _pytest_regex:
