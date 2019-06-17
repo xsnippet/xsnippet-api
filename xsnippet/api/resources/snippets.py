@@ -39,7 +39,7 @@ async def _write(resource, service_fn, *, status, conf):
         'content': {'type': 'string', 'required': True, 'empty': False},
         'syntax': {'type': 'string'},
         'tags': {'type': 'list',
-                 'schema': {'type': 'string', 'regex': '[\w_-]+'}},
+                 'schema': {'type': 'string', 'regex': r'[\w_-]+'}},
         'created_at': {'type': 'datetime', 'readonly': True},
         'updated_at': {'type': 'datetime', 'readonly': True},
     })
@@ -183,7 +183,7 @@ class Snippets(resource.Resource):
             },
             'tag': {
                 'type': 'string',
-                'regex': '[\w_-]+',
+                'regex': r'[\w_-]+',
             },
             'syntax': {
                 'type': 'string',
