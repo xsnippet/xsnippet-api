@@ -26,21 +26,7 @@ def create_connection(conf):
     :rtype: :class:`motor.motor_asyncio.AsyncIOMotorDatabase`
     """
     mongo = AsyncIOMotorClient(conf['DATABASE_CONNECTION_URI'])
-
-    # get_default_database returns a database from the connection string
-    db = mongo.get_default_database()
-
-    # ID incrementer is used to auto increment record ID if nothing
-    # is explicitly passed.
-    #
-    # ID processor is used for auto converting domain IDs to and from
-    # database ones (i.e. 'id' -> '_id' and vice versa).
-    #
-    # SON manipulators are applied in reversed order.
-    db.add_son_manipulator(_IdIncrementer())
-    db.add_son_manipulator(_IdProcessor())
-
-    return db
+    return mongo.get_database()
 
 
 async def setup(app, db):
