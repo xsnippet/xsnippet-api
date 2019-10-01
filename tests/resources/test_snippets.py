@@ -51,6 +51,7 @@ class _pytest_link_header:
 async def snippets(testdatabase):
     snippets = [
         {
+            '_id': 1,
             'title': 'snippet #1',
             'changesets': [
                 {'content': 'def foo(): pass'},
@@ -61,6 +62,7 @@ async def snippets(testdatabase):
             'updated_at': datetime.datetime(2018, 1, 24, 22, 26, 35),
         },
         {
+            '_id': 2,
             'title': 'snippet #2',
             'changesets': [
                 {'content': 'int do_something() {}'},
@@ -76,9 +78,9 @@ async def snippets(testdatabase):
     # in-place. However, due to our custom SON manipulators it's not the
     # case in our case, since one of them makes a shallow copy which
     # basically results in no changes in the updated documents.
-    ids = await testdatabase.snippets.insert(snippets)
+    result = await testdatabase.snippets.insert_many(snippets)
 
-    for id_, snippet in zip(ids, snippets):
+    for id_, snippet in zip(result.inserted_ids, snippets):
         # One of SON manipulators we use converts 'id' into '_id' during
         # inserts/updates, and vice versa during reads. That's why we use
         # human readable 'id' and not '_id'.
@@ -288,7 +290,7 @@ async def test_pagination_links(testapp, testdatabase):
     now = datetime.datetime.utcnow().replace(microsecond=0)
     snippets = [
         {
-            'id': i + 1,
+            '_id': i + 1,
             'title': 'snippet #%d' % (i + 1),
             'changesets': [
                 {'content': '(println "Hello, World!")'},
@@ -300,7 +302,7 @@ async def test_pagination_links(testapp, testdatabase):
         }
         for i in range(10)
     ]
-    await testdatabase.snippets.insert(snippets)
+    await testdatabase.snippets.insert_many(snippets)
 
     # We should have seen snippets with ids 10, 9 and 8. No link to the prev
     # page, as we are at the very beginning of the list
@@ -349,7 +351,7 @@ async def test_pagination_links_one_page_larger_than_whole_list(testapp, testdat
     now = datetime.datetime.utcnow().replace(microsecond=0)
     snippets = [
         {
-            'id': i + 1,
+            '_id': i + 1,
             'title': 'snippet #%d' % (i + 1),
             'changesets': [
                 {'content': '(println "Hello, World!")'},
@@ -361,7 +363,7 @@ async def test_pagination_links_one_page_larger_than_whole_list(testapp, testdat
         }
         for i in range(10)
     ]
-    await testdatabase.snippets.insert(snippets)
+    await testdatabase.snippets.insert_many(snippets)
 
     # Default limit is 20 and there no prev/next pages - only the first one
     resp = await _get_next_page(testapp, limit=None)
@@ -395,7 +397,7 @@ async def test_pagination_links_num_of_items_is_multiple_of_pages(testapp, testd
     now = datetime.datetime.utcnow().replace(microsecond=0)
     snippets = [
         {
-            'id': i + 1,
+            '_id': i + 1,
             'title': 'snippet #%d' % (i + 1),
             'changesets': [
                 {'content': '(println "Hello, World!")'},
@@ -407,7 +409,7 @@ async def test_pagination_links_num_of_items_is_multiple_of_pages(testapp, testd
         }
         for i in range(12)
     ]
-    await testdatabase.snippets.insert(snippets)
+    await testdatabase.snippets.insert_many(snippets)
 
     # We should have seen snippets with ids 12, 11, 10 and 9. No link to the
     # prev page, as we are at the very beginning of the list
@@ -445,7 +447,7 @@ async def test_pagination_links_non_consecutive_ids(testapp, testdatabase):
     now = datetime.datetime.utcnow().replace(microsecond=0)
     snippets = [
         {
-            'id': i,
+            '_id': i,
             'title': 'snippet #%d' % i,
             'changesets': [
                 {'content': '(println "Hello, World!")'},
@@ -457,7 +459,7 @@ async def test_pagination_links_non_consecutive_ids(testapp, testdatabase):
         }
         for i in [1, 7, 17, 23, 24, 29, 31, 87, 93, 104]
     ]
-    await testdatabase.snippets.insert(snippets)
+    await testdatabase.snippets.insert_many(snippets)
 
     resp1 = await _get_next_page(testapp, limit=3)
     expected_link1 = (
@@ -514,8 +516,8 @@ async def test_get_snippets_pagination_not_found(testapp):
       'content': 'def foo(): pass',
       'syntax': None,
       'tags': [],
-      'created_at': pytest.regex('\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}'),
-      'updated_at': pytest.regex('\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}')}),
+      'created_at': pytest.regex(r'\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}'),
+      'updated_at': pytest.regex(r'\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}')}),
 
     ({'title': 'snippet #1',
       'content': 'def foo(): pass',
@@ -526,8 +528,8 @@ async def test_get_snippets_pagination_not_found(testapp):
       'content': 'def foo(): pass',
       'syntax': 'python',
       'tags': ['tag_a', 'tag_b'],
-      'created_at': pytest.regex('\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}'),
-      'updated_at': pytest.regex('\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}')}),
+      'created_at': pytest.regex(r'\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}'),
+      'updated_at': pytest.regex(r'\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}')}),
 ])
 async def test_post_snippet(testapp, testconf, snippet, rv):
     testconf['SNIPPET_SYNTAXES'] = ['python', 'clojure']
@@ -654,8 +656,8 @@ async def test_delete_snippet_bad_request(testapp):
       'content': 'def foo(): pass',
       'syntax': None,
       'tags': [],
-      'created_at': pytest.regex('\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}'),
-      'updated_at': pytest.regex('\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}')}),
+      'created_at': pytest.regex(r'\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}'),
+      'updated_at': pytest.regex(r'\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}')}),
 
     ({'title': 'snippet #1',
       'content': 'def foo(): pass',
@@ -666,8 +668,8 @@ async def test_delete_snippet_bad_request(testapp):
       'content': 'def foo(): pass',
       'syntax': 'python',
       'tags': ['tag_a', 'tag_b'],
-      'created_at': pytest.regex('\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}'),
-      'updated_at': pytest.regex('\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}')}),
+      'created_at': pytest.regex(r'\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}'),
+      'updated_at': pytest.regex(r'\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}')}),
 ])
 async def test_put_snippet(testapp, snippets, snippet, rv):
     resp = await testapp.put('/v1/snippets/1', data=json.dumps(snippet))
@@ -750,7 +752,7 @@ async def test_patch_snippet(testapp, snippets):
         'syntax': 'python',
         'tags': ['tag_a', 'tag_b'],
         'created_at': '2018-01-24T22:26:35',
-        'updated_at': pytest.regex('\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}'),
+        'updated_at': pytest.regex(r'\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}'),
     }
 
 

@@ -61,8 +61,15 @@ class Snippet:
         snippet['created_at'] = now
         snippet['updated_at'] = now
 
-        snippet_id = await self.db.snippets.insert(snippet)
-        snippet['id'] = snippet_id
+        resolved = await self.db['_autoincrement_ids'].find_one_and_update(
+            {'_id': 'snippets'},
+            update={'$inc': {'next': 1}},
+            upsert=True,
+            new=True)
+        snippet['_id'] = resolved['next']
+
+        await self.db.snippets.insert_one(snippet)
+        snippet['id'] = snippet.pop('_id')
         snippet['content'] = snippet.pop('changesets', [])[0]['content']
 
         return snippet
@@ -81,12 +88,12 @@ class Snippet:
                 }
             }
 
-        result = await self.db.snippets.update(
+        result = await self.db.snippets.update_one(
             {'_id': snippet['id']},
             parameters,
         )
 
-        if not result['n']:
+        if result.matched_count == 0:
             raise exceptions.SnippetNotFound(
                 'Sorry, cannot find the requested snippet.')
 
@@ -118,7 +125,7 @@ class Snippet:
 
             condition['$and'] = [
                 {'created_at': {filters['created_at']: specimen['created_at']}},
-                {'_id': {filters['_id']: specimen['id']}},
+                {'_id': {filters['_id']: specimen['_id']}},
             ]
 
         # use a compound sorting key (created_at, _id) to avoid the ambiguity
@@ -134,6 +141,7 @@ class Snippet:
 
         snippets = await query.limit(limit).to_list(None)
         for snippet in snippets:
+            snippet['id'] = snippet.pop('_id')
             snippet['content'] = snippet.pop('changesets', [])[-1]['content']
         return snippets
 
@@ -144,12 +152,13 @@ class Snippet:
             raise exceptions.SnippetNotFound(
                 'Sorry, cannot find the requested snippet.')
 
+        snippet['id'] = snippet.pop('_id')
         snippet['content'] = snippet.pop('changesets', [])[-1]['content']
         return snippet
 
     async def delete(self, id):
-        result = await self.db.snippets.remove({'_id': id})
-        if not result['n']:
+        result = await self.db.snippets.delete_one({'_id': id})
+        if result.deleted_count == 0:
             raise exceptions.SnippetNotFound(
                 'Sorry, cannot find the requested snippet.')
 

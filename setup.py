@@ -45,14 +45,14 @@ setup(
     install_requires=[
         'aiohttp >= 3.0.0, < 4',
         'cerberus >= 0.9.2',
-        'motor >= 1.1',
+        'motor >= 2.0',
         'python-jose >= 1.3.2',
         'python-decouple >= 3.1',
         'werkzeug >= 0.11.4',
         'picobox >= 2.0',
     ],
     tests_require=[
-        'pytest >= 2.8.7',
+        'pytest >= 4.0.0',
         'pytest-aiohttp >= 0.3.0',
     ],
     entry_points={
