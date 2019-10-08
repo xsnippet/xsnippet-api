@@ -16,9 +16,12 @@ async def test_deprecated_routes(testapp):
 
     def _extract_path(route):
         info = route.resource.get_info()
-        return info.get('path') or info.get('formatter')
-    routes = {_extract_path(route): route.handler for route in app.router.routes()}
+        return info.get("path") or info.get("formatter")
 
-    assert routes['/snippets'] is routes['/v1/snippets']
-    assert routes['/snippets/{id}'] is routes['/v1/snippets/{id}']
-    assert routes['/syntaxes'] is routes['/v1/syntaxes']
+    routes = {
+        _extract_path(route): route.handler for route in app.router.routes()
+    }
+
+    assert routes["/snippets"] is routes["/v1/snippets"]
+    assert routes["/snippets/{id}"] is routes["/v1/snippets/{id}"]
+    assert routes["/syntaxes"] is routes["/v1/syntaxes"]

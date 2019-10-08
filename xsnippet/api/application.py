@@ -17,8 +17,8 @@ import picobox
 from . import database, routes, middlewares
 
 
-@picobox.pass_('conf')
-@picobox.pass_('database', as_='db')
+@picobox.pass_("conf")
+@picobox.pass_("database", as_="db")
 def create_app(conf, db):
     """Create and return a web application instance.
 
@@ -33,10 +33,7 @@ def create_app(conf, db):
     :rtype: :class:`aiohttp.web.Application`
     """
 
-    app = aiohttp.web.Application(
-        middlewares=[
-            middlewares.auth.auth(conf),
-        ])
+    app = aiohttp.web.Application(middlewares=[middlewares.auth.auth(conf)])
     app.router.add_routes(routes.v1)
     app.on_startup.append(functools.partial(database.setup, db=db))
 

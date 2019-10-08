@@ -13,3 +13,10 @@ repos:
     rev: 3.7.7
     hooks:
       - id: flake8
+        args: [--max-line-length=100]
+
+  - repo: https://github.com/psf/black
+    rev: 19.3b0
+    hooks:
+      - id: black
+        args: [--line-length=79]

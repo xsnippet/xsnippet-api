@@ -9,7 +9,7 @@ from xsnippet.api import __license__ as license
 
 
 here = os.path.dirname(__file__)
-with open(os.path.join(here, 'README.rst'), 'r', encoding='utf-8') as f:
+with open(os.path.join(here, "README.rst"), "r", encoding="utf-8") as f:
     long_description = f.read()
 
 
@@ -17,59 +17,50 @@ with open(os.path.join(here, 'README.rst'), 'r', encoding='utf-8') as f:
 # packages so we need our own implementation that does. All this shit happened
 # due to desperate @ikalnytskyi's desire to use namespace packages.
 def find_packages(namespace):
-    return ['%s.%s' % (namespace, pkg) for pkg in _find_packages(namespace)]
+    return ["%s.%s" % (namespace, pkg) for pkg in _find_packages(namespace)]
 
 
 setup(
-    name='xsnippet-api',
+    name="xsnippet-api",
     version=version,
     description=(
-        'XSnippet is a simple web-service for sharing code snippets on the '
-        'Internet. Written for fun using bleeding edge technologies.'),
+        "XSnippet is a simple web-service for sharing code snippets on the "
+        "Internet. Written for fun using bleeding edge technologies."
+    ),
     long_description=long_description,
     license=license,
-    url='https://github.com/xsnippet/xsnippet-api/',
-    keywords='web-service restful-api snippet storage',
-    author='The XSnippet Team',
-    author_email='dev@xsnippet.org',
-    packages=find_packages('xsnippet'),
+    url="https://github.com/xsnippet/xsnippet-api/",
+    keywords="web-service restful-api snippet storage",
+    author="The XSnippet Team",
+    author_email="dev@xsnippet.org",
+    packages=find_packages("xsnippet"),
     include_package_data=True,
     zip_safe=False,
-    use_scm_version={
-        'root': here,
-    },
-    setup_requires=[
-        'pytest-runner',
-        'setuptools_scm',
-    ],
+    use_scm_version={"root": here},
+    setup_requires=["pytest-runner", "setuptools_scm"],
     install_requires=[
-        'aiohttp >= 3.0.0, < 4',
-        'cerberus >= 0.9.2',
-        'motor >= 2.0',
-        'python-jose >= 1.3.2',
-        'python-decouple >= 3.1',
-        'werkzeug >= 0.11.4',
-        'picobox >= 2.0',
+        "aiohttp >= 3.0.0, < 4",
+        "cerberus >= 0.9.2",
+        "motor >= 2.0",
+        "python-jose >= 1.3.2",
+        "python-decouple >= 3.1",
+        "werkzeug >= 0.11.4",
+        "picobox >= 2.0",
     ],
-    tests_require=[
-        'pytest >= 4.0.0',
-        'pytest-aiohttp >= 0.3.0',
-    ],
+    tests_require=["pytest >= 4.0.0", "pytest-aiohttp >= 0.3.0"],
     entry_points={
-        'console_scripts': [
-            'xsnippet-api = xsnippet.api.__main__:main',
-        ],
+        "console_scripts": ["xsnippet-api = xsnippet.api.__main__:main"]
     },
     classifiers=[
-        'Environment :: Web Environment',
-        'License :: OSI Approved :: MIT License',
-        'Operating System :: OS Independent',
-        'Intended Audience :: End Users/Desktop',
-        'Intended Audience :: Information Technology',
-        'Topic :: Internet :: WWW/HTTP',
-        'Programming Language :: Python',
-        'Programming Language :: Python :: 3',
-        'Programming Language :: Python :: 3.5',
-        'Programming Language :: Python :: 3.6',
+        "Environment :: Web Environment",
+        "License :: OSI Approved :: MIT License",
+        "Operating System :: OS Independent",
+        "Intended Audience :: End Users/Desktop",
+        "Intended Audience :: Information Technology",
+        "Topic :: Internet :: WWW/HTTP",
+        "Programming Language :: Python",
+        "Programming Language :: Python :: 3",
+        "Programming Language :: Python :: 3.5",
+        "Programming Language :: Python :: 3.6",
     ],
 )

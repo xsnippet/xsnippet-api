@@ -26,18 +26,15 @@ def get_conf():
         # That's why no requests from outer world will be handled. If you
         # want to accept any incoming request on any interface, please
         # change that value to '0.0.0.0'.
-        'SERVER_HOST': decouple.config(
-            'XSNIPPET_SERVER_HOST',
-            default='127.0.0.1'
+        "SERVER_HOST": decouple.config(
+            "XSNIPPET_SERVER_HOST", default="127.0.0.1"
         ),
         # PORT TO LISTEN ON
         #
         # In production you probably will choose a default HTTP port -
         # '80'.  If you want to pick any random free port, just pass '0'.
-        'SERVER_PORT': decouple.config(
-            'XSNIPPET_SERVER_PORT',
-            default=8000,
-            cast=int
+        "SERVER_PORT": decouple.config(
+            "XSNIPPET_SERVER_PORT", default=8000, cast=int
         ),
         # ACCESS LOG FORMAT
         #
@@ -52,25 +49,22 @@ def get_conf():
         #
         # When deployed behind a reverse proxy, consider using the value of
         # headers like X-Real-IP or X-Forwarded-For instead of %a
-        'SERVER_ACCESS_LOG_FORMAT': decouple.config(
-            'XSNIPPET_SERVER_ACCESS_LOG_FORMAT',
+        "SERVER_ACCESS_LOG_FORMAT": decouple.config(
+            "XSNIPPET_SERVER_ACCESS_LOG_FORMAT",
             default='%t %a "%r" %s %b %{User-Agent}i" %Tf',
         ),
         # DATABASE CONNECTION URI
         #
         # Supported backends: MongoDB only
-        'DATABASE_CONNECTION_URI': decouple.config(
-            'XSNIPPET_DATABASE_CONNECTION_URI',
-            default='mongodb://localhost:27017/xsnippet'
+        "DATABASE_CONNECTION_URI": decouple.config(
+            "XSNIPPET_DATABASE_CONNECTION_URI",
+            default="mongodb://localhost:27017/xsnippet",
         ),
-        'SNIPPET_SYNTAXES': decouple.config(
-            'XSNIPPET_SNIPPET_SYNTAXES',
-            default='',
+        "SNIPPET_SYNTAXES": decouple.config(
+            "XSNIPPET_SNIPPET_SYNTAXES",
+            default="",
             # parse a comma separated list retrieved from env variable
-            cast=lambda value: [v for v in value.split(',') if v]
+            cast=lambda value: [v for v in value.split(",") if v],
         ),
-        'AUTH_SECRET': decouple.config(
-            'XSNIPPET_AUTH_SECRET',
-            default=''
-        ),
+        "AUTH_SECRET": decouple.config("XSNIPPET_AUTH_SECRET", default=""),
     }

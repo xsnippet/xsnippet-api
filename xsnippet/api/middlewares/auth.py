@@ -27,25 +27,26 @@ def auth(conf):
 
     @web.middleware
     async def _auth(request, handler):
-        secret = conf['AUTH_SECRET']
-        authorization = request.headers.get('Authorization')
+        secret = conf["AUTH_SECRET"]
+        authorization = request.headers.get("Authorization")
 
         if authorization is not None:
             parts = authorization.strip().split()
 
-            if parts[0].lower() != 'bearer':
-                raise web.HTTPUnauthorized(reason='Unsupported auth type.')
+            if parts[0].lower() != "bearer":
+                raise web.HTTPUnauthorized(reason="Unsupported auth type.")
             elif len(parts) == 1:
-                raise web.HTTPUnauthorized(reason='Token missing.')
+                raise web.HTTPUnauthorized(reason="Token missing.")
             elif len(parts) > 2:
-                raise web.HTTPUnauthorized(reason='Token contains spaces.')
+                raise web.HTTPUnauthorized(reason="Token contains spaces.")
 
             try:
-                request['auth'] = jwt.decode(parts[1], secret)
+                request["auth"] = jwt.decode(parts[1], secret)
             except jwt.JWTError:
-                raise web.HTTPUnauthorized(reason='passed token is invalid')
+                raise web.HTTPUnauthorized(reason="passed token is invalid")
         else:
-            request['auth'] = None
+            request["auth"] = None
 
         return await handler(request)
+
     return _auth

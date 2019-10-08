@@ -18,9 +18,8 @@ from xsnippet.api import resource
 
 
 class _TestResource(resource.Resource):
-
     async def get(self):
-        return {'who': 'batman'}, 299
+        return {"who": "batman"}, 299
 
     async def post(self):
         data = await self.request.get_data()
@@ -29,11 +28,13 @@ class _TestResource(resource.Resource):
 
 class _TestEncodersResource(resource.Resource):
 
-    _encoders = collections.OrderedDict([
-        ('application/json', lambda _: 'application/json'),
-        ('text/csv', lambda _: 'text/csv'),
-        ('image/png', lambda _: 'image/png'),
-    ])
+    _encoders = collections.OrderedDict(
+        [
+            ("application/json", lambda _: "application/json"),
+            ("text/csv", lambda _: "text/csv"),
+            ("image/png", lambda _: "image/png"),
+        ]
+    )
 
     async def get(self):
         return {}
@@ -41,53 +42,55 @@ class _TestEncodersResource(resource.Resource):
 
 class _TestDecodersResource(resource.Resource):
 
-    _encoders = collections.OrderedDict([
-        ('text/plain', lambda text: text),
-    ])
+    _encoders = collections.OrderedDict([("text/plain", lambda text: text)])
 
-    _decoders = collections.OrderedDict([
-        ('application/json', lambda _: 'application/json'),
-        ('text/plain', lambda _: 'text/plain'),
-    ])
+    _decoders = collections.OrderedDict(
+        [
+            ("application/json", lambda _: "application/json"),
+            ("text/plain", lambda _: "text/plain"),
+        ]
+    )
 
     async def post(self):
         return await self.request.get_data()
 
 
-@pytest.fixture(scope='function')
+@pytest.fixture(scope="function")
 async def testapp(aiohttp_client):
     app = web.Application()
-    app.router.add_route('*', '/test', _TestResource)
-    app.router.add_route('*', '/test-encoders', _TestEncodersResource)
-    app.router.add_route('*', '/test-decoders', _TestDecodersResource)
+    app.router.add_route("*", "/test", _TestResource)
+    app.router.add_route("*", "/test-encoders", _TestEncodersResource)
+    app.router.add_route("*", "/test-decoders", _TestDecodersResource)
 
     # If 'Content-Type' is not passed to HTTP request, aiohttp client will
     # report 'Content-Type: text/plain' to server. This is completely
     # ridiculous because in case of RESTful API this is completely wrong
     # and APIs usually have their own defaults. So turn off this feature,
     # and do not set 'Content-Type' for us if it wasn't passed.
-    return await aiohttp_client(app, skip_auto_headers={'Content-Type'})
+    return await aiohttp_client(app, skip_auto_headers={"Content-Type"})
 
 
-@pytest.mark.parametrize('headers,', [
-    {'Accept': 'application/json'},
-    {'Accept': 'application/*'},
-    {'Accept': '*/*'},
-    {},
-])
+@pytest.mark.parametrize(
+    "headers,",
+    [
+        {"Accept": "application/json"},
+        {"Accept": "application/*"},
+        {"Accept": "*/*"},
+        {},
+    ],
+)
 async def test_get_json(testapp, headers):
-    resp = await testapp.get('/test', headers=headers)
+    resp = await testapp.get("/test", headers=headers)
 
     assert resp.status == 299
-    assert await resp.json() == {'who': 'batman'}
+    assert await resp.json() == {"who": "batman"}
 
 
-@pytest.mark.parametrize('headers', [
-    {'Accept': 'application/mytype'},
-    {'Accept': 'foobar/json'},
-])
+@pytest.mark.parametrize(
+    "headers", [{"Accept": "application/mytype"}, {"Accept": "foobar/json"}]
+)
 async def test_get_unsupported_media_type(testapp, headers):
-    resp = await testapp.get('/test', headers=headers)
+    resp = await testapp.get("/test", headers=headers)
 
     # NOTE: Do not check response context, since it's not clear
     # whether should we respond with JSON or plain/text or something
@@ -96,78 +99,89 @@ async def test_get_unsupported_media_type(testapp, headers):
         assert resp.status == 406
 
 
-@pytest.mark.parametrize('accept, best_match', [
-    ('text/csv; q=0.9, application/json',
-     'application/json'),
-    ('application/json; q=0.9, text/csv',
-     'text/csv'),
-    ('application/json; q=0.9, image/png, text/csv',
-     'text/csv'),
-    ('application/json; q=0.9, image/png; q=0.8, text/csv',
-     'text/csv'),
-    ('application/json; q=0.9, image/png; q=0.8, text/csv; q=1',
-     'text/csv'),
-    ('application/json; q=1, image/png; q=0.8, text/csv',
-     'application/json'),
-    ('application/json; q=0.4, image/png; q=0.3, text/csv; q=0.45',
-     'text/csv'),
-    ('text/plain, application/json; q=0.8',
-     'application/json'),
-    ('application/*, text/csv',
-     'text/csv'),
-    ('application/*, text/csv; q=0.9',
-     'application/json'),
-    ('text/*, application/yaml',
-     'text/csv')
-])
+@pytest.mark.parametrize(
+    "accept, best_match",
+    [
+        ("text/csv; q=0.9, application/json", "application/json"),
+        ("application/json; q=0.9, text/csv", "text/csv"),
+        ("application/json; q=0.9, image/png, text/csv", "text/csv"),
+        ("application/json; q=0.9, image/png; q=0.8, text/csv", "text/csv"),
+        (
+            "application/json; q=0.9, image/png; q=0.8, text/csv; q=1",
+            "text/csv",
+        ),
+        (
+            "application/json; q=1, image/png; q=0.8, text/csv",
+            "application/json",
+        ),
+        (
+            "application/json; q=0.4, image/png; q=0.3, text/csv; q=0.45",
+            "text/csv",
+        ),
+        ("text/plain, application/json; q=0.8", "application/json"),
+        ("application/*, text/csv", "text/csv"),
+        ("application/*, text/csv; q=0.9", "application/json"),
+        ("text/*, application/yaml", "text/csv"),
+    ],
+)
 async def test_get_best_mimetype(testapp, accept, best_match):
-    resp = await testapp.get('/test-encoders', headers={'Accept': accept})
+    resp = await testapp.get("/test-encoders", headers={"Accept": accept})
 
     assert resp.status == 200
     assert await resp.text() == best_match
 
 
-@pytest.mark.parametrize('content_type, best_match', [
-    ('application/json', 'application/json'),
-    ('text/plain', 'text/plain'),
-    ('text/plain; format=fixed', 'text/plain'),
-])
+@pytest.mark.parametrize(
+    "content_type, best_match",
+    [
+        ("application/json", "application/json"),
+        ("text/plain", "text/plain"),
+        ("text/plain; format=fixed", "text/plain"),
+    ],
+)
 async def test_get_decoders(testapp, content_type, best_match):
-    resp = await testapp.post('/test-decoders', headers={'Content-Type': content_type})
+    resp = await testapp.post(
+        "/test-decoders", headers={"Content-Type": content_type}
+    )
 
     assert resp.status == 200
     assert await resp.text() == best_match
 
 
-@pytest.mark.parametrize('headers', [
-    {'Accept': 'application/json', 'Content-Type': 'application/json'},
-    {'Accept': 'application/json'},
-    {},
-])
+@pytest.mark.parametrize(
+    "headers",
+    [
+        {"Accept": "application/json", "Content-Type": "application/json"},
+        {"Accept": "application/json"},
+        {},
+    ],
+)
 async def test_post_json(testapp, headers):
-    resp = await testapp.post('/test', data=json.dumps({'who': 'batman'}), headers=headers)
+    resp = await testapp.post(
+        "/test", data=json.dumps({"who": "batman"}), headers=headers
+    )
 
     assert resp.status == 298
-    assert await resp.json() == {'who': 'batman'}
+    assert await resp.json() == {"who": "batman"}
 
 
 async def test_post_malformed_payload(testapp):
-    resp = await testapp.post('/test', data='malformed')
+    resp = await testapp.post("/test", data="malformed")
 
     assert resp.status == 400
     assert await resp.json() == {
-        'message': pytest.regex('^Malformed application/json payload:.*'),
+        "message": pytest.regex("^Malformed application/json payload:.*")
     }
 
 
 async def test_post_unsupported_media_type(testapp):
     resp = await testapp.post(
-        '/test',
-        data=json.dumps({'who': 'batman'}),
+        "/test",
+        data=json.dumps({"who": "batman"}),
         headers={
-            'Accept': 'application/json',
-            'Content-Type': 'application/mytype',
-        }
+            "Accept": "application/json",
+            "Content-Type": "application/mytype",
+        },
     )
 
     async with resp:
@@ -176,12 +190,12 @@ async def test_post_unsupported_media_type(testapp):
 
 async def test_post_json_expect_unsupported_media_type(testapp):
     resp = await testapp.post(
-        '/test',
-        data=json.dumps({'who': 'batman'}),
+        "/test",
+        data=json.dumps({"who": "batman"}),
         headers={
-            'Accept': 'application/mytype',
-            'Content-Type': 'application/json',
-        }
+            "Accept": "application/mytype",
+            "Content-Type": "application/json",
+        },
     )
 
     # NOTE: Do not check response context, since it's not clear
