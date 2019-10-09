@@ -47,12 +47,10 @@ class Resource(web.View):
     """
 
     _encoders = {
-        'application/json': functools.partial(json.dumps, cls=_JSONEncoder),
+        "application/json": functools.partial(json.dumps, cls=_JSONEncoder)
     }
 
-    _decoders = {
-        'application/json': json.loads,
-    }
+    _decoders = {"application/json": json.loads}
 
     def __await__(self):
         return self._poor_asyncio_api().__await__()
@@ -63,18 +61,18 @@ class Resource(web.View):
         # of this middleware. Hence, we monkey patch the instance and add a new
         # async method that would de-serialize income payload according to HTTP
         # content negotiation rules.
-        setattr(self.request.__class__, 'get_data', self._get_data())
+        setattr(self.request.__class__, "get_data", self._get_data())
 
         try:
             # TODO: do not access internal method of parent class
             response = await super(Resource, self)._iter()
 
         except exceptions.SnippetNotFound as exc:
-            error = {'message': str(exc)}
+            error = {"message": str(exc)}
             return self._make_response(error, None, 404)
 
         except web.HTTPError as exc:
-            error = {'message': str(exc)}
+            error = {"message": str(exc)}
             return self._make_response(error, None, exc.status_code)
 
         status_code = 200
@@ -111,8 +109,7 @@ class Resource(web.View):
             # According to HTTP standard, 'Accept' header may show up multiple
             # times in the request. So let's join them before passing to parser
             # so we call parser only once.
-            ','.join(self.request.headers.getall(hdrs.ACCEPT, ['*/*'])),
-
+            ",".join(self.request.headers.getall(hdrs.ACCEPT, ["*/*"])),
             # A handful wrapper to choose a best match with one method.
             werkzeug.MIMEAccept,
         )
@@ -143,7 +140,8 @@ class Resource(web.View):
             # to parse headers, as some mime types may contain parameters and
             # we need to strip them out.
             content_type, _ = cgi.parse_header(
-                self.headers.get(hdrs.CONTENT_TYPE, next(iter(decoders))))
+                self.headers.get(hdrs.CONTENT_TYPE, next(iter(decoders)))
+            )
 
             if content_type in decoders:
                 decode = decoders[content_type]
@@ -153,7 +151,9 @@ class Resource(web.View):
                     return decode(text)
                 except Exception as exc:
                     raise web.HTTPBadRequest(
-                        reason='Malformed %s payload: %s' % (content_type, exc))
+                        reason="Malformed %s payload: %s" % (content_type, exc)
+                    )
 
             raise web.HTTPUnsupportedMediaType()
+
         return impl

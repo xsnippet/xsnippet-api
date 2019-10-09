@@ -15,77 +15,74 @@ import pytest
 from xsnippet.api import middlewares
 
 
-@pytest.fixture(scope='function')
+@pytest.fixture(scope="function")
 async def testapp(aiohttp_client):
-    app = web.Application(middlewares=[
-        middlewares.auth.auth({'AUTH_SECRET': 'SWORDFISH'}),
-    ])
+    app = web.Application(
+        middlewares=[middlewares.auth.auth({"AUTH_SECRET": "SWORDFISH"})]
+    )
 
     async def handler(request):
-        return web.Response(text='success')
-    app.router.add_get('/', handler)
+        return web.Response(text="success")
+
+    app.router.add_get("/", handler)
 
     async def handler(request):
-        assert request['auth']['user'] == 'john'
-        return web.Response(text='success')
-    app.router.add_get('/success', handler)
+        assert request["auth"]["user"] == "john"
+        return web.Response(text="success")
+
+    app.router.add_get("/success", handler)
 
     async def handler(request):
-        assert request['auth'] is None
-        return web.Response(text='success')
-    app.router.add_get('/success-no-token', handler)
+        assert request["auth"] is None
+        return web.Response(text="success")
+
+    app.router.add_get("/success-no-token", handler)
 
     return await aiohttp_client(app)
 
 
-@pytest.mark.parametrize('token', [
-    'malformed_token_value',
-    jwt.encode({'valid': 'token'}, 'wrong secret')
-])
+@pytest.mark.parametrize(
+    "token",
+    ["malformed_token_value", jwt.encode({"valid": "token"}, "wrong secret")],
+)
 async def test_unauthorized_is_raised_for_invalid_tokens(token, testapp):
-    resp = await testapp.get('/', headers={
-        'Authorization': 'bearer ' + token
-    })
+    resp = await testapp.get("/", headers={"Authorization": "bearer " + token})
 
     assert resp.status == 401
-    assert 'passed token is invalid' in await resp.text()
+    assert "passed token is invalid" in await resp.text()
 
 
 async def test_authentication_succeeds(testapp):
-    token = jwt.encode({'user': 'john'}, 'SWORDFISH')
-    resp = await testapp.get('/success', headers={
-        'Authorization': 'bearer ' + token
-    })
+    token = jwt.encode({"user": "john"}, "SWORDFISH")
+    resp = await testapp.get(
+        "/success", headers={"Authorization": "bearer " + token}
+    )
 
     async with resp:
         assert resp.status == 200
 
 
 async def test_authentication_token_not_passed(testapp):
-    resp = await testapp.get('/success-no-token')
+    resp = await testapp.get("/success-no-token")
 
     async with resp:
         assert resp.status == 200
 
 
 async def test_unauthorized_is_raised_for_invalid_type(testapp):
-    token = jwt.encode({'user': 'john'}, 'SWORDFISH')
-    resp = await testapp.get('/', headers={
-        'Authorization': 'token ' + token
-    })
+    token = jwt.encode({"user": "john"}, "SWORDFISH")
+    resp = await testapp.get("/", headers={"Authorization": "token " + token})
 
     assert resp.status == 401
-    assert 'Unsupported auth type' in await resp.text()
+    assert "Unsupported auth type" in await resp.text()
 
 
-@pytest.mark.parametrize('header, error', [
-    ('bearer', 'Token missing'),
-    ('bearer t oken', 'Token contains spaces'),
-])
+@pytest.mark.parametrize(
+    "header, error",
+    [("bearer", "Token missing"), ("bearer t oken", "Token contains spaces")],
+)
 async def test_unauthorized_for_invalid_header(header, error, testapp):
-    resp = await testapp.get('/', headers={
-        'Authorization': header
-    })
+    resp = await testapp.get("/", headers={"Authorization": header})
 
     assert resp.status == 401
     assert error in await resp.text()

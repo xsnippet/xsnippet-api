@@ -27,8 +27,8 @@ def cerberus_errors_to_str(errors):
     parts = []
     for name, reasons in errors.items():
         for reason in reasons:
-            parts.append('`%s` - %s' % (name, reason))
-    return ', '.join(parts)
+            parts.append("`%s` - %s" % (name, reason))
+    return ", ".join(parts)
 
 
 def try_int(value, base=10):

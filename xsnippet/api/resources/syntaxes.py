@@ -15,7 +15,6 @@ from .. import resource
 
 
 class Syntaxes(resource.Resource):
-
-    @picobox.pass_('conf')
+    @picobox.pass_("conf")
     async def get(self, conf):
-        return conf['SNIPPET_SYNTAXES']
+        return conf["SNIPPET_SYNTAXES"]
