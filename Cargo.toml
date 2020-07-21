@@ -1,0 +1,20 @@
+[package]
+name = "xsnippet-api"
+version = "5.0.0"
+authors = ["XSnippet Team <dev@xsnippet.org>"]
+edition = "2018"
+description = "XSnippet is a simple web-service for sharing code snippets on the Internet."
+readme = "README.md"
+homepage = "https://xsnippet.org/"
+repository = "https://github.com/xsnippet/xsnippet-api/"
+license = "MIT"
+keywords = ["snippets", "snippet", "code", "storage", "api"]
+categories = [
+    "web-programming",
+    "web-programming::http-server",
+]
+publish = false
+
+[dependencies]
+rocket = "0.4.5"
+rocket_contrib = {version = "0.4.5", features = ["json"]}
