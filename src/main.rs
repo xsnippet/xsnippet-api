@@ -14,6 +14,12 @@ mod application;
 mod routes;
 
 fn main() {
-    let app = application::create_app();
+    let app = match application::create_app() {
+        Ok(app) => app,
+        Err(err) => {
+            eprintln!("error: {}", err);
+            std::process::exit(1);
+        }
+    };
     app.launch();
 }
