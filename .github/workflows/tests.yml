@@ -27,6 +27,23 @@ jobs:
           command: fmt
           args: --all -- --check
 
+  cargo-clippy:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+
+      - uses: actions-rs/toolchain@v1
+        with:
+          toolchain: nightly
+          profile: minimal
+          components: clippy
+          override: true
+
+      - uses: actions-rs/cargo@v1
+        with:
+          command: clippy
+          args: -- -D warnings
+
   cargo-test:
     strategy:
       matrix:
