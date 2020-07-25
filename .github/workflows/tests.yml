@@ -48,6 +48,14 @@ jobs:
           toolchain: ${{ matrix.rust-version }}
           override: true
 
+      - name: Install libpq (Windows)
+        if: matrix.os == 'windows-latest'
+        shell: bash
+        run: |
+          choco install postgresql12 --force --params '/Password:root'
+          echo '::add-path::C:\Program Files\PostgreSQL\12\bin'
+          echo '::add-path::C:\Program Files\PostgreSQL\12\lib'
+
       - uses: actions-rs/cargo@v1
         with:
           command: test
