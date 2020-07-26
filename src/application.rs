@@ -35,6 +35,6 @@ pub fn create_app() -> Result<rocket::Rocket, Box<dyn Error>> {
     };
 
     Ok(app
-        .manage(Config { syntaxes: syntaxes })
+        .manage(Config { syntaxes })
         .mount("/v1", routes![routes::syntaxes::get_syntaxes]))
 }
