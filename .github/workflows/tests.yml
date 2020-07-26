@@ -65,13 +65,46 @@ jobs:
           toolchain: ${{ matrix.rust-version }}
           override: true
 
-      - name: Install libpq (Windows)
-        if: matrix.os == 'windows-latest'
+      - name: Start PostgreSQL and create a database  (Linux)
+        if: runner.os == 'Linux'
+        run: |
+          sudo service postgresql start
+          sudo -u postgres createuser -s devel
+          sudo -u postgres createdb -O devel devel
+          sudo -u postgres psql -c "ALTER USER devel PASSWORD 'devel';" devel
+          echo '::set-env name=DATABASE_URL::postgres://devel:devel@localhost/devel'
+
+      - name: Start PostgreSQL and create a database (MacOS)
+        if: runner.os == 'macOS'
+        run: |
+          /usr/local/opt/postgres/bin/pg_ctl -D /usr/local/var/postgres start
+          /usr/local/opt/postgres/bin/createuser -s devel
+          /usr/local/opt/postgres/bin/createdb -O devel devel
+          /usr/local/opt/postgres/bin/psql -c "ALTER USER devel PASSWORD 'devel';" devel
+          echo '::set-env name=DATABASE_URL::postgres://devel:devel@localhost/devel'
+
+      - name: Start PostgreSQL and create a database (Windows)
+        if: runner.os == 'Windows'
         shell: bash
         run: |
-          choco install postgresql12 --force --params '/Password:root'
           echo '::add-path::C:\Program Files\PostgreSQL\12\bin'
           echo '::add-path::C:\Program Files\PostgreSQL\12\lib'
+          echo '::set-env name=PQ_LIB_DIR::C:\Program Files\PostgreSQL\12\lib'
+          sc config postgresql-x64-12 start= demand
+          net start postgresql-x64-12
+          "C:\Program Files\PostgreSQL\12\bin\createuser" -s devel
+          "C:\Program Files\PostgreSQL\12\bin\createdb" -O devel devel
+          "C:\Program Files\PostgreSQL\12\bin\psql" -c "ALTER USER devel PASSWORD 'devel';" devel
+          echo '::set-env name=DATABASE_URL::postgres://devel:devel@localhost/devel'
+
+      - name: Install Alembic and psycopg2
+        run: |
+          python -m pip install --upgrade wheel
+          python -m pip install --upgrade alembic psycopg2
+
+      - name: Run database migrations
+        run: |
+          python -m alembic.config upgrade head
 
       - uses: actions-rs/cargo@v1
         with:
