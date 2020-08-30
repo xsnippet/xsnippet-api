@@ -2,6 +2,7 @@ use std::collections::HashSet;
 use std::error::Error;
 
 use super::routes;
+use super::storage::{SqlStorage, Storage};
 
 #[derive(Debug)]
 pub struct Config {
@@ -34,7 +35,14 @@ pub fn create_app() -> Result<rocket::Rocket, Box<dyn Error>> {
         Err(err) => return Err(Box::new(err)),
     };
 
+    let database_url = match app.config().get_string("database_url") {
+        Ok(database_url) => database_url,
+        Err(err) => return Err(Box::new(err)),
+    };
+    let storage: Box<dyn Storage> = Box::new(SqlStorage::new(&database_url)?);
+
     Ok(app
         .manage(Config { syntaxes })
+        .manage(storage)
         .mount("/v1", routes![routes::syntaxes::get_syntaxes]))
 }

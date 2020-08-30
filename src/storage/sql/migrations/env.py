@@ -19,7 +19,7 @@ def run_migrations_offline():
     """
 
     context.configure(
-        url=os.environ['DATABASE_URL'],
+        url=os.environ['ROCKET_DATABASE_URL'],
         literal_binds=True,
         dialect_opts={"paramstyle": "named"},
     )
@@ -37,7 +37,7 @@ def run_migrations_online():
     """
 
     connectable = create_engine(
-        os.environ['DATABASE_URL'],
+        os.environ['ROCKET_DATABASE_URL'],
         poolclass=pool.NullPool,
     )
     with connectable.connect() as connection:

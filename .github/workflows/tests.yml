@@ -72,7 +72,7 @@ jobs:
           sudo -u postgres createuser -s devel
           sudo -u postgres createdb -O devel devel
           sudo -u postgres psql -c "ALTER USER devel PASSWORD 'devel';" devel
-          echo '::set-env name=DATABASE_URL::postgres://devel:devel@localhost/devel'
+          echo '::set-env name=ROCKET_DATABASE_URL::postgres://devel:devel@localhost/devel'
 
       - name: Start PostgreSQL and create a database (MacOS)
         if: runner.os == 'macOS'
@@ -81,7 +81,7 @@ jobs:
           /usr/local/opt/postgres/bin/createuser -s devel
           /usr/local/opt/postgres/bin/createdb -O devel devel
           /usr/local/opt/postgres/bin/psql -c "ALTER USER devel PASSWORD 'devel';" devel
-          echo '::set-env name=DATABASE_URL::postgres://devel:devel@localhost/devel'
+          echo '::set-env name=ROCKET_DATABASE_URL::postgres://devel:devel@localhost/devel'
 
       - name: Start PostgreSQL and create a database (Windows)
         if: runner.os == 'Windows'
@@ -95,7 +95,7 @@ jobs:
           "C:\Program Files\PostgreSQL\12\bin\createuser" -s devel
           "C:\Program Files\PostgreSQL\12\bin\createdb" -O devel devel
           "C:\Program Files\PostgreSQL\12\bin\psql" -c "ALTER USER devel PASSWORD 'devel';" devel
-          echo '::set-env name=DATABASE_URL::postgres://devel:devel@localhost/devel'
+          echo '::set-env name=ROCKET_DATABASE_URL::postgres://devel:devel@localhost/devel'
 
       - name: Install Alembic and psycopg2
         run: |
