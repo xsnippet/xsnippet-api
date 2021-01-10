@@ -125,3 +125,27 @@ jobs:
         with:
           command: rustdoc
           args: -- -D intra-doc-link-resolution-failure
+
+  tests:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+      - uses: actions/setup-python@v2
+      - uses: actions-rs/toolchain@v1
+        with:
+          profile: minimal
+          toolchain: nightly
+          override: true
+
+      - name: Start PostgreSQL and create a database  (Linux)
+        run: |
+          sudo systemctl start postgresql.service
+          sudo -u postgres createuser -s devel
+          sudo -u postgres createdb -O devel devel
+          sudo -u postgres psql -c "ALTER USER devel PASSWORD 'devel';" devel
+          echo "ROCKET_DATABASE_URL=postgres://devel:devel@localhost/devel" >> $GITHUB_ENV
+
+      - run: cargo build
+      - run: python -m venv testvenv
+      - run: ./testvenv/bin/python -m pip install -r tests/requirements.txt
+      - run: ./testvenv/bin/python -m pytest -vv tests/

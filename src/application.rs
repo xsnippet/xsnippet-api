@@ -1,4 +1,4 @@
-use std::collections::HashSet;
+use std::collections::BTreeSet;
 use std::error::Error;
 
 use super::routes;
@@ -11,7 +11,7 @@ pub struct Config {
     /// kept in sync with a set of supported syntaxes in XSnippet Web in
     /// order to ensure that the web part can properly syntax-highlight
     /// snippets.
-    pub syntaxes: Option<HashSet<String>>,
+    pub syntaxes: Option<BTreeSet<String>>,
 }
 
 /// Create and return a Rocket application instance.
@@ -29,7 +29,7 @@ pub fn create_app() -> Result<rocket::Rocket, Box<dyn Error>> {
             syntaxes
                 .iter()
                 .map(|v| v.clone().try_into::<String>())
-                .collect::<Result<HashSet<_>, _>>()?,
+                .collect::<Result<BTreeSet<_>, _>>()?,
         ),
         Err(rocket::config::ConfigError::Missing(_)) => None,
         Err(err) => return Err(Box::new(err)),

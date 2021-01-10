@@ -1,0 +1,14 @@
+fixtures:
+  - XSnippetApi
+
+tests:
+  - name: test /syntaxes
+    GET: /v1/syntaxes
+    status: 200
+    response_json_paths:
+      $:
+        - clojure
+        - json
+        - lua
+        - python
+        - rust
