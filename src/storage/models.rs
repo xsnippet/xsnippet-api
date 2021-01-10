@@ -3,6 +3,7 @@ use std::iter;
 use chrono::{DateTime, Utc};
 use rand::Rng;
 
+const DEFAULT_LIMIT_SIZE: usize = 20;
 const DEFAULT_SLUG_LENGTH: usize = 8;
 
 /// A code snippet
@@ -53,6 +54,38 @@ impl Snippet {
         iter::repeat_with(|| rng.sample(rand::distributions::Alphanumeric))
             .take(length)
             .collect()
+    }
+}
+
+#[derive(Debug)]
+pub struct ListSnippetsQuery {
+    /// If set, only the snippets with the specified title will be returned.
+    pub title: Option<String>,
+    /// If set, only the snippets with the specified syntax will be returned.
+    pub syntax: Option<String>,
+    /// If set, only the snippets that have *one of* the specified tags attached
+    /// will be returned.
+    pub tags: Option<Vec<String>>,
+    /// If set, up to this number of snippets will be returned.
+    pub limit: Option<usize>,
+    /// If set, this number of snippets will be skipped (snippets are sorted in
+    /// the reverse chronological order) before the limit is applied.
+    pub offset: Option<usize>,
+}
+
+impl Default for ListSnippetsQuery {
+    fn default() -> Self {
+        // default filters should match all snippets. The only constraint we want
+        // to enforce is the maximum number of snippets in the response. Here it
+        // is set to a fairly small value; API users are expected to use pagination
+        // to retrieve more snippets if needed.
+        ListSnippetsQuery {
+            title: None,
+            syntax: None,
+            tags: None,
+            limit: Some(DEFAULT_LIMIT_SIZE),
+            offset: None,
+        }
     }
 }
 

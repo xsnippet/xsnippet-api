@@ -8,7 +8,7 @@ use diesel::prelude::*;
 use diesel::r2d2::{ConnectionManager, Pool, PoolError};
 use diesel::result::{DatabaseErrorKind, Error::DatabaseError, Error::NotFound};
 
-use super::{errors::StorageError, Snippet, Storage};
+use super::{errors::StorageError, ListSnippetsQuery, Snippet, Storage};
 use schema::{changesets, snippets, tags};
 
 /// A Storage implementation which persists snippets' data in a SQL database.
@@ -155,6 +155,49 @@ impl Storage for SqlStorage {
         self.get(&snippet.id)
     }
 
+    fn list(&self, criteria: ListSnippetsQuery) -> Result<Vec<Snippet>, StorageError> {
+        let conn = self.pool.get()?;
+        conn.transaction::<_, StorageError, _>(|| {
+            let mut query = snippets::table.into_boxed();
+
+            if let Some(title) = criteria.title {
+                query = query.filter(snippets::title.eq(title));
+            }
+            if let Some(syntax) = criteria.syntax {
+                query = query.filter(snippets::syntax.eq(syntax));
+            }
+            if let Some(tags) = criteria.tags {
+                let snippet_ids = tags::table
+                    .select(tags::snippet_id)
+                    .filter(tags::value.eq_any(tags));
+
+                query = query.filter(snippets::id.eq_any(snippet_ids));
+            }
+            if let Some(limit) = criteria.limit {
+                query = query.limit(limit as i64);
+            }
+            if let Some(offset) = criteria.offset {
+                query = query.offset(offset as i64);
+            }
+
+            let snippets = query
+                .order(snippets::created_at.desc())
+                .get_results::<models::SnippetRow>(&conn)?;
+            let snippet_ids = snippets
+                .iter()
+                .map(|snippet| snippet.id)
+                .collect::<Vec<i32>>();
+            let changesets = changesets::table
+                .filter(changesets::snippet_id.eq_any(&snippet_ids))
+                .get_results::<models::ChangesetRow>(&conn)?;
+            let tags = tags::table
+                .filter(tags::snippet_id.eq_any(&snippet_ids))
+                .get_results::<models::TagRow>(&conn)?;
+
+            Ok(models::combine_rows(snippets, changesets, tags))
+        })
+    }
+
     fn get(&self, id: &str) -> Result<Snippet, StorageError> {
         let conn = self.pool.get()?;
         conn.transaction::<_, StorageError, _>(|| {
@@ -244,6 +287,33 @@ mod tests {
 
     use super::super::Changeset;
 
+    /// Cleans up the DB state when an instance goes out of scope.
+    struct DbCleanupGuard {
+        conn: PgConnection,
+    }
+
+    impl DbCleanupGuard {
+        fn new(database_url: &str) -> Self {
+            DbCleanupGuard {
+                conn: PgConnection::establish(&database_url).expect("could not connect to the db"),
+            }
+        }
+    }
+
+    impl Drop for DbCleanupGuard {
+        fn drop(&mut self) {
+            diesel::delete(tags::table)
+                .execute(&self.conn)
+                .expect("could not delete tags");
+            diesel::delete(changesets::table)
+                .execute(&self.conn)
+                .expect("could not delete changesets");
+            diesel::delete(snippets::table)
+                .execute(&self.conn)
+                .expect("could not delete snippets");
+        }
+    }
+
     /// Compare snippets for equality excluding fields with generated values
     /// (created_at, updated_at)
     fn compare_snippets(expected: &Snippet, actual: &Snippet) {
@@ -260,72 +330,166 @@ mod tests {
         }
     }
 
+    /// A fixture that creates a DB connection when ROCKET_DATABASE_URL is set.
+    /// The connection is then passed to the given test function, and the DB
+    /// state is cleaned up after the test finishes. If the url is not set,
+    /// the test is skipped.
+    fn with_storage<F: FnOnce(Box<dyn Storage>)>(test_function: F) {
+        if let Ok(database_url) = std::env::var("ROCKET_DATABASE_URL") {
+            let storage: Box<dyn Storage> = Box::new(
+                SqlStorage::new(&database_url).expect("Failed to create a SqlStorage instance"),
+            );
+
+            let _cleanup = DbCleanupGuard::new(&database_url);
+            test_function(storage);
+        } else {
+            eprintln!("ROCKET_DATABASE_URL is not set, skipping the test");
+        }
+    }
+
+    fn reference_snippets() -> Vec<Snippet> {
+        vec![
+            Snippet::new(
+                Some("Hello world".to_string()),
+                Some("python".to_string()),
+                vec![
+                    Changeset::new(1, "print('Hello')".to_string()),
+                    Changeset::new(2, "print('Hello, World!')".to_string()),
+                ],
+                vec!["spam".to_string(), "eggs".to_string()],
+            ),
+            Snippet::new(
+                Some("Foo".to_string()),
+                Some("cpp".to_string()),
+                vec![Changeset::new(1, "std::cout << 42.".to_string())],
+                vec!["foo".to_string()],
+            ),
+            Snippet::new(
+                Some("Bar".to_string()),
+                Some("rust".to_string()),
+                vec![Changeset::new(1, "println!(42);".to_string())],
+                vec![],
+            ),
+        ]
+    }
+
     #[test]
     fn smoke() {
-        // This will be properly covered by the higher level tests, so we just want to
-        // do a basic smoke test here. If ROCKET_DATABASE_URL is not set, the
-        // test should be skipped.
+        // This will be properly covered by higher level tests, so we just
+        // want to perform a basic smoke check here.
+        with_storage(|storage| {
+            let reference = reference_snippets().into_iter().next().unwrap();
+            let mut updated_reference = Snippet::new(
+                Some("Hello world!".to_string()),
+                Some("python".to_string()),
+                vec![
+                    Changeset::new(1, "print('Hello')".to_string()),
+                    Changeset::new(2, "print('Hello, World!')".to_string()),
+                    Changeset::new(3, "print('Hello!')".to_string()),
+                ],
+                vec!["spam".to_string(), "foo".to_string(), "bar".to_string()],
+            );
+            updated_reference.id = reference.id.clone();
 
-        let database_url = match std::env::var("ROCKET_DATABASE_URL") {
-            Ok(database_url) => database_url,
-            Err(_) => return,
-        };
+            // create a new snippet from the reference value
+            let new_snippet = storage
+                .create(&reference)
+                .expect("Failed to create a snippet");
+            compare_snippets(&reference, &new_snippet);
 
-        let reference = Snippet::new(
-            Some("Hello world".to_string()),
-            Some("python".to_string()),
-            vec![
-                Changeset::new(1, "print('Hello')".to_string()),
-                Changeset::new(2, "print('Hello, World!')".to_string()),
-            ],
-            vec!["spam".to_string(), "eggs".to_string()],
-        );
-        let mut updated_reference = Snippet::new(
-            Some("Hello world!".to_string()),
-            Some("python".to_string()),
-            vec![
-                Changeset::new(1, "print('Hello')".to_string()),
-                Changeset::new(2, "print('Hello, World!')".to_string()),
-                Changeset::new(3, "print('Hello!')".to_string()),
-            ],
-            vec!["spam".to_string(), "foo".to_string(), "bar".to_string()],
-        );
-        updated_reference.id = reference.id.clone();
+            // retrieve the state of the snippet that was just persisted
+            let retrieved_snippet = storage
+                .get(&new_snippet.id)
+                .expect("Failed to retrieve a snippet");
+            // the snippet's state must be exactly the same as the one returned
+            // by create() above, including the value of created_at/updated_at
+            // fields
+            assert_eq!(new_snippet, retrieved_snippet);
 
-        // create a new SqlStorage instance (creates a DB connection pool internally)
-        let storage: Box<dyn Storage> = Box::new(
-            SqlStorage::new(&database_url).expect("Failed to create a SqlStorage instance"),
-        );
+            // try to update the snippet state somehow
+            let updated_snippet = storage
+                .update(&updated_reference)
+                .expect("Failed to update a snippet");
+            compare_snippets(&updated_reference, &updated_snippet);
 
-        // create a new snippet from the reference value
-        let new_snippet = storage
-            .create(&reference)
-            .expect("Failed to create a snippet");
-        compare_snippets(&reference, &new_snippet);
+            // finally, delete the snippet
+            storage
+                .delete(&new_snippet.id)
+                .expect("Failed to delete a snippet");
 
-        // retrieve the state of the snippet that was just persisted
-        let retrieved_snippet = storage
-            .get(&new_snippet.id)
-            .expect("Failed to retrieve a snippet");
-        // the snippet's state must be exactly the same as the one returned by create()
-        // above, including the value of created_at/updated_at fields
-        assert_eq!(new_snippet, retrieved_snippet);
+            // and verify that it can't be found in the database anymore
+            assert!(match storage.get(&new_snippet.id) {
+                Err(StorageError::NotFound { id }) => id == new_snippet.id,
+                _ => false,
+            });
 
-        // try to update the snippet state somehow
-        let updated_snippet = storage
-            .update(&updated_reference)
-            .expect("Failed to update a snippet");
-        compare_snippets(&updated_reference, &updated_snippet);
+            // at this point, listing of snippets should return an empty result
+            assert_eq!(
+                storage
+                    .list(ListSnippetsQuery::default())
+                    .expect("Failed to list snippets"),
+                vec![]
+            );
 
-        // finally, delete the snippet
-        storage
-            .delete(&new_snippet.id)
-            .expect("Failed to delete a snippet");
+            // now insert reference snippets and try some queries
+            let reference = reference_snippets();
+            for snippet in reference.iter() {
+                storage.create(snippet).expect("Failed to create a snippet");
+            }
 
-        // and verify that it can't be found in the database anymore
-        assert!(match storage.get(&new_snippet.id) {
-            Err(StorageError::NotFound { id }) => id == new_snippet.id,
-            _ => false,
+            let default_filters = ListSnippetsQuery::default();
+            let result = storage
+                .list(default_filters)
+                .expect("Failed to list snippets");
+            for (actual, expected) in result.iter().rev().zip(reference.iter()) {
+                compare_snippets(expected, actual);
+            }
+
+            let mut by_tag = ListSnippetsQuery::default();
+            by_tag.tags = Some(vec!["spam".to_string(), "foo".to_string()]);
+            let result = storage.list(by_tag).expect("Failed to list snippets");
+            assert_eq!(result.len(), 2);
+            for (actual, expected) in result.iter().rev().zip(reference.iter()) {
+                compare_snippets(expected, actual);
+            }
+
+            let mut by_title = ListSnippetsQuery::default();
+            by_title.title = Some("Hello world".to_string());
+            let result = storage.list(by_title).expect("Failed to list snippets");
+            assert_eq!(result.len(), 1);
+            compare_snippets(
+                reference
+                    .iter()
+                    .filter(|s| s.title == Some("Hello world".to_string()))
+                    .next()
+                    .unwrap(),
+                &result[0],
+            );
+
+            let mut by_syntax = ListSnippetsQuery::default();
+            by_syntax.syntax = Some("rust".to_string());
+            let result = storage.list(by_syntax).expect("Failed to list snippets");
+            assert_eq!(result.len(), 1);
+            compare_snippets(
+                reference
+                    .iter()
+                    .filter(|s| s.syntax == Some("rust".to_string()))
+                    .next()
+                    .unwrap(),
+                &result[0],
+            );
+
+            let mut with_limit_offset = ListSnippetsQuery::default();
+            with_limit_offset.offset = Some(1);
+            with_limit_offset.limit = Some(1);
+            let result = storage
+                .list(with_limit_offset)
+                .expect("Failed to list snippets");
+            assert_eq!(result.len(), 1);
+            compare_snippets(
+                reference.iter().rev().skip(1).take(1).next().unwrap(),
+                &result[0],
+            );
         });
     }
 }
