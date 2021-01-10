@@ -72,7 +72,7 @@ jobs:
           sudo -u postgres createuser -s devel
           sudo -u postgres createdb -O devel devel
           sudo -u postgres psql -c "ALTER USER devel PASSWORD 'devel';" devel
-          echo '::set-env name=ROCKET_DATABASE_URL::postgres://devel:devel@localhost/devel'
+          echo "ROCKET_DATABASE_URL=postgres://devel:devel@localhost/devel" >> $GITHUB_ENV
 
       - name: Start PostgreSQL and create a database (MacOS)
         if: runner.os == 'macOS'
@@ -81,21 +81,21 @@ jobs:
           /usr/local/opt/postgres/bin/createuser -s devel
           /usr/local/opt/postgres/bin/createdb -O devel devel
           /usr/local/opt/postgres/bin/psql -c "ALTER USER devel PASSWORD 'devel';" devel
-          echo '::set-env name=ROCKET_DATABASE_URL::postgres://devel:devel@localhost/devel'
+          echo "ROCKET_DATABASE_URL=postgres://devel:devel@localhost/devel" >> $GITHUB_ENV
 
       - name: Start PostgreSQL and create a database (Windows)
         if: runner.os == 'Windows'
         shell: bash
         run: |
-          echo '::add-path::C:\Program Files\PostgreSQL\12\bin'
-          echo '::add-path::C:\Program Files\PostgreSQL\12\lib'
-          echo '::set-env name=PQ_LIB_DIR::C:\Program Files\PostgreSQL\12\lib'
+          echo 'C:\Program Files\PostgreSQL\12\bin' >> $GITHUB_PATH
+          echo 'C:\Program Files\PostgreSQL\12\lib' >> $GITHUB_PATH
+          echo "PQ_LIB_DIR=C:\Program Files\PostgreSQL\12\lib" >> $GITHUB_ENV
           sc config postgresql-x64-12 start= demand
           net start postgresql-x64-12
           "C:\Program Files\PostgreSQL\12\bin\createuser" -s devel
           "C:\Program Files\PostgreSQL\12\bin\createdb" -O devel devel
           "C:\Program Files\PostgreSQL\12\bin\psql" -c "ALTER USER devel PASSWORD 'devel';" devel
-          echo '::set-env name=ROCKET_DATABASE_URL::postgres://devel:devel@localhost/devel'
+          echo "ROCKET_DATABASE_URL=postgres://devel:devel@localhost/devel" >> $GITHUB_ENV
 
       - name: Install Alembic and psycopg2
         run: |
