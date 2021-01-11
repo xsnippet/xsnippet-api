@@ -37,14 +37,14 @@ impl Snippet {
         changesets: Vec<Changeset>,
         tags: Vec<String>,
     ) -> Self {
-        let mut snippet = Snippet::default();
-        snippet.id = Snippet::random_id(DEFAULT_SLUG_LENGTH);
-        snippet.title = title;
-        snippet.syntax = syntax;
-        snippet.changesets = changesets;
-        snippet.tags = tags;
-
-        snippet
+        Snippet {
+            id: Snippet::random_id(DEFAULT_SLUG_LENGTH),
+            title,
+            syntax,
+            changesets,
+            tags,
+            ..Default::default()
+        }
     }
 
     /// Generate a random unique snippet identifier (slug).
@@ -73,11 +73,11 @@ pub struct Changeset {
 impl Changeset {
     /// Create a new Changeset.
     pub fn new(version: usize, content: String) -> Self {
-        let mut changeset = Changeset::default();
-        changeset.version = version;
-        changeset.content = content;
-
-        changeset
+        Changeset {
+            version,
+            content,
+            ..Default::default()
+        }
     }
 }
 
