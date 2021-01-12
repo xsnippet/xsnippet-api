@@ -1,0 +1,9 @@
+fixtures:
+  - XSnippetApiWithNoSyntaxes
+
+tests:
+  - name: test /syntaxes with no syntaxes configured
+    GET: /v1/syntaxes
+    status: 200
+    response_json_paths:
+      $: null
