@@ -3,7 +3,7 @@ mod models;
 mod sql;
 
 pub use errors::StorageError;
-pub use models::{Changeset, Snippet};
+pub use models::{Changeset, ListSnippetsQuery, Snippet};
 pub use sql::SqlStorage;
 
 /// CRUD interface for storing/loading snippets from a persistent storage.
@@ -13,6 +13,9 @@ pub use sql::SqlStorage;
 pub trait Storage: Send + Sync {
     /// Save the state of the given snippet to the persistent storage.
     fn create(&self, snippet: &Snippet) -> Result<Snippet, StorageError>;
+
+    /// Returns a list of snippets that satisfy the given criteria.
+    fn list(&self, criteria: ListSnippetsQuery) -> Result<Vec<Snippet>, StorageError>;
 
     /// Returns the snippet uniquely identified by a given id (a slug or a
     /// legacy numeric id)
