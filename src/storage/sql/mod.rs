@@ -8,7 +8,7 @@ use diesel::prelude::*;
 use diesel::r2d2::{ConnectionManager, Pool, PoolError};
 use diesel::result::{DatabaseErrorKind, Error::DatabaseError, Error::NotFound};
 
-use super::{errors::StorageError, ListSnippetsQuery, Snippet, Storage};
+use super::{errors::StorageError, Direction, ListSnippetsQuery, Snippet, Storage};
 use schema::{changesets, snippets, tags};
 
 /// A Storage implementation which persists snippets' data in a SQL database.
@@ -160,6 +160,7 @@ impl Storage for SqlStorage {
         conn.transaction::<_, StorageError, _>(|| {
             let mut query = snippets::table.into_boxed();
 
+            // filters
             if let Some(title) = criteria.title {
                 query = query.filter(snippets::title.eq(title));
             }
@@ -173,16 +174,37 @@ impl Storage for SqlStorage {
 
                 query = query.filter(snippets::id.eq_any(snippet_ids));
             }
-            if let Some(limit) = criteria.limit {
-                query = query.limit(limit as i64);
-            }
-            if let Some(offset) = criteria.offset {
-                query = query.offset(offset as i64);
-            }
 
-            let snippets = query
-                .order(snippets::created_at.desc())
-                .get_results::<models::SnippetRow>(&conn)?;
+            // pagination
+            if let Some(marker) = criteria.pagination.marker {
+                let marker = self.get(&marker)?;
+                if let Some(created_at) = marker.created_at {
+                    query = match criteria.pagination.direction {
+                        Direction::Desc => query
+                            .filter(
+                                snippets::created_at
+                                    .le(chrono::DateTime::from(created_at))
+                                    .and(snippets::slug.ne(marker.id)),
+                            )
+                            .order_by(snippets::created_at.desc()),
+                        Direction::Asc => query
+                            .filter(
+                                snippets::created_at
+                                    .ge(chrono::DateTime::from(created_at))
+                                    .and(snippets::slug.ne(marker.id)),
+                            )
+                            .order_by(snippets::created_at.asc()),
+                    };
+                }
+            } else {
+                query = match criteria.pagination.direction {
+                    Direction::Desc => query.order_by(snippets::created_at.desc()),
+                    Direction::Asc => query.order_by(snippets::created_at.asc()),
+                };
+            }
+            query = query.limit(criteria.pagination.limit as i64);
+
+            let snippets = query.get_results::<models::SnippetRow>(&conn)?;
             let snippet_ids = snippets
                 .iter()
                 .map(|snippet| snippet.id)
@@ -283,6 +305,8 @@ impl From<PoolError> for StorageError {
 
 #[cfg(test)]
 mod tests {
+    use std::collections::HashSet;
+
     use super::*;
 
     use super::super::Changeset;
@@ -320,7 +344,10 @@ mod tests {
         assert_eq!(expected.id, actual.id);
         assert_eq!(expected.title, actual.title);
         assert_eq!(expected.syntax, actual.syntax);
-        assert_eq!(expected.tags, actual.tags);
+
+        let expected_tags: HashSet<_> = expected.tags.iter().map(|t| t.to_owned()).collect();
+        let actual_tags: HashSet<_> = actual.tags.iter().map(|t| t.to_owned()).collect();
+        assert_eq!(expected_tags, actual_tags);
 
         for (expected_changeset, actual_changeset) in
             expected.changesets.iter().zip(actual.changesets.iter())
@@ -479,17 +506,35 @@ mod tests {
                 &result[0],
             );
 
-            let mut with_limit_offset = ListSnippetsQuery::default();
-            with_limit_offset.offset = Some(1);
-            with_limit_offset.limit = Some(1);
-            let result = storage
-                .list(with_limit_offset)
-                .expect("Failed to list snippets");
+            let mut pagination = ListSnippetsQuery::default();
+            pagination.pagination.direction = Direction::Asc;
+            pagination.pagination.limit = 2;
+            let result = storage.list(pagination).expect("Failed to list snippets");
+            assert_eq!(result.len(), 2);
+            for (actual, expected) in result.iter().zip(reference.iter()) {
+                compare_snippets(expected, actual);
+            }
+
+            let mut with_marker = ListSnippetsQuery::default();
+            with_marker.pagination.direction = Direction::Asc;
+            with_marker.pagination.marker = Some(result.last().unwrap().id.clone());
+            let result = storage.list(with_marker).expect("Failed to list snippets");
             assert_eq!(result.len(), 1);
-            compare_snippets(
-                reference.iter().rev().skip(1).take(1).next().unwrap(),
-                &result[0],
-            );
+            for (actual, expected) in result.iter().skip(1).zip(reference.iter()) {
+                compare_snippets(expected, actual);
+            }
+
+            let mut with_marker_backward = ListSnippetsQuery::default();
+            with_marker_backward.pagination.direction = Direction::Desc;
+            with_marker_backward.pagination.limit = 2;
+            with_marker_backward.pagination.marker = Some(result.last().unwrap().id.clone());
+            let result = storage
+                .list(with_marker_backward)
+                .expect("Failed to list snippets");
+            assert_eq!(result.len(), 2);
+            for (actual, expected) in result.iter().skip(1).take(2).zip(reference.iter()) {
+                compare_snippets(expected, actual);
+            }
         });
     }
 }
