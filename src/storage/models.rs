@@ -1,13 +1,15 @@
 use std::iter;
 
-use chrono::{DateTime, Utc};
 use rand::Rng;
+use serde::Serialize;
+
+use crate::storage::DateTime;
 
 const DEFAULT_LIMIT_SIZE: usize = 20;
 const DEFAULT_SLUG_LENGTH: usize = 8;
 
 /// A code snippet
-#[derive(Debug, Default, Eq, PartialEq)]
+#[derive(Debug, Default, Eq, PartialEq, Serialize)]
 pub struct Snippet {
     /// Slug that uniquely identifies the snippet
     pub id: String,
@@ -24,10 +26,10 @@ pub struct Snippet {
     /// List of tags attached to the snippet
     pub tags: Vec<String>,
     /// Timestamp of when the snippet was created
-    pub created_at: Option<DateTime<Utc>>,
+    pub created_at: Option<DateTime>,
     /// Timestamp of when the snippet was last modified. Defaults to creation
     /// time
-    pub updated_at: Option<DateTime<Utc>>,
+    pub updated_at: Option<DateTime>,
 }
 
 impl Snippet {
@@ -90,17 +92,17 @@ impl Default for ListSnippetsQuery {
 }
 
 /// A particular snippet revision
-#[derive(Debug, Default, Eq, Ord, PartialEq, PartialOrd)]
+#[derive(Debug, Default, Eq, Ord, PartialEq, PartialOrd, Serialize)]
 pub struct Changeset {
     /// Changeset index. Version numbers start from 0 and are incremented by 1
     pub version: usize,
     /// Changeset content
     pub content: String,
     /// Timestamp of when the changeset was created
-    pub created_at: Option<DateTime<Utc>>,
+    pub created_at: Option<DateTime>,
     /// Timestamp of when the changeset was last modified. Defaults to creation
     /// time
-    pub updated_at: Option<DateTime<Utc>>,
+    pub updated_at: Option<DateTime>,
 }
 
 impl Changeset {
@@ -290,5 +292,40 @@ mod tests {
         assert_ne!(reference, different_content);
         assert_ne!(different_version, reference);
         assert_ne!(different_content, reference);
+    }
+
+    #[test]
+    fn test_serialization() {
+        let dt = chrono::DateTime::parse_from_rfc3339("2020-08-09T10:39:57+00:00")
+            .unwrap()
+            .with_timezone(&chrono::Utc);
+        let reference = Snippet {
+            id: "spam".to_string(),
+            title: Some("Hello".to_string()),
+            syntax: Some("python".to_string()),
+            changesets: vec![Changeset::new(0, "print('Hello, World!')".to_string())],
+            tags: vec!["foo".to_string(), "bar".to_string()],
+            created_at: Some(dt.into()),
+            updated_at: None,
+        };
+
+        let expected = "{\
+            \"id\":\"spam\",\
+            \"title\":\"Hello\",\
+            \"syntax\":\"python\",\
+            \"changesets\":[\
+                {\
+                    \"version\":0,\
+                    \"content\":\"print(\'Hello, World!\')\",\
+                    \"created_at\":null,\
+                    \"updated_at\":null\
+                }\
+            ],\
+            \"tags\":[\"foo\",\"bar\"],\
+            \"created_at\":\"2020-08-09T10:39:57+00:00\",\
+            \"updated_at\":null\
+        }";
+        let actual = serde_json::to_string(&reference).expect("failed to serialize snippet");
+        assert_eq!(actual, expected);
     }
 }

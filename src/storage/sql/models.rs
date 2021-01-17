@@ -49,8 +49,8 @@ impl From<(SnippetRow, Vec<ChangesetRow>, Vec<TagRow>)> for Snippet {
                      updated_at,
                  }| {
                     let mut changeset = Changeset::new(version as usize, content);
-                    changeset.updated_at = Some(updated_at);
-                    changeset.created_at = Some(created_at);
+                    changeset.updated_at = Some(updated_at.into());
+                    changeset.created_at = Some(created_at.into());
 
                     changeset
                 },
@@ -60,8 +60,8 @@ impl From<(SnippetRow, Vec<ChangesetRow>, Vec<TagRow>)> for Snippet {
 
         let mut snippet = Snippet::new(snippet_row.title, snippet_row.syntax, changesets, tags);
         snippet.id = snippet_row.slug;
-        snippet.created_at = Some(snippet_row.created_at);
-        snippet.updated_at = Some(snippet_row.updated_at);
+        snippet.created_at = Some(snippet_row.created_at.into());
+        snippet.updated_at = Some(snippet_row.updated_at.into());
 
         snippet
     }
@@ -166,19 +166,19 @@ mod tests {
                 Changeset {
                     version: 1,
                     content: "print('Hello!')".to_string(),
-                    created_at: Some(dt1),
-                    updated_at: Some(dt1),
+                    created_at: Some(dt1.into()),
+                    updated_at: Some(dt1.into()),
                 },
                 Changeset {
                     version: 2,
                     content: "print('Hello, World!')".to_string(),
-                    created_at: Some(dt2),
-                    updated_at: Some(dt2),
+                    created_at: Some(dt2.into()),
+                    updated_at: Some(dt2.into()),
                 },
             ],
             tags: vec!["spam".to_string(), "eggs".to_string()],
-            created_at: Some(dt1),
-            updated_at: Some(dt2),
+            created_at: Some(dt1.into()),
+            updated_at: Some(dt2.into()),
         };
 
         assert_eq!(actual, expected);
@@ -281,19 +281,19 @@ mod tests {
                     Changeset {
                         version: 1,
                         content: "print('Hello!')".to_string(),
-                        created_at: Some(dt1),
-                        updated_at: Some(dt1),
+                        created_at: Some(dt1.into()),
+                        updated_at: Some(dt1.into()),
                     },
                     Changeset {
                         version: 2,
                         content: "print('Hello, World!')".to_string(),
-                        created_at: Some(dt2),
-                        updated_at: Some(dt2),
+                        created_at: Some(dt2.into()),
+                        updated_at: Some(dt2.into()),
                     },
                 ],
                 tags: vec!["spam".to_string(), "eggs".to_string()],
-                created_at: Some(dt1),
-                updated_at: Some(dt2),
+                created_at: Some(dt1.into()),
+                updated_at: Some(dt2.into()),
             },
             Snippet {
                 id: "eggs".to_string(),
@@ -302,12 +302,12 @@ mod tests {
                 changesets: vec![Changeset {
                     version: 1,
                     content: "println!(42);".to_string(),
-                    created_at: Some(dt1),
-                    updated_at: Some(dt1),
+                    created_at: Some(dt1.into()),
+                    updated_at: Some(dt1.into()),
                 }],
                 tags: vec![],
-                created_at: Some(dt1),
-                updated_at: Some(dt2),
+                created_at: Some(dt1.into()),
+                updated_at: Some(dt2.into()),
             },
             Snippet {
                 id: "bar".to_string(),
@@ -316,12 +316,12 @@ mod tests {
                 changesets: vec![Changeset {
                     version: 1,
                     content: "std::cout << 42;".to_string(),
-                    created_at: Some(dt1),
-                    updated_at: Some(dt1),
+                    created_at: Some(dt1.into()),
+                    updated_at: Some(dt1.into()),
                 }],
                 tags: vec!["bar".to_string()],
-                created_at: Some(dt1),
-                updated_at: Some(dt2),
+                created_at: Some(dt1.into()),
+                updated_at: Some(dt2.into()),
             },
         ];
         assert_eq!(actual, expected);
