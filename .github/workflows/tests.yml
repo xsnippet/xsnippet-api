@@ -9,6 +9,10 @@ env:
   RUSTFLAGS: -Dwarnings
   RUST_BACKTRACE: 1
 
+defaults:
+  run:
+    shell: bash
+
 jobs:
   cargo-fmt:
     runs-on: ubuntu-latest
@@ -65,37 +69,12 @@ jobs:
           toolchain: ${{ matrix.rust-version }}
           override: true
 
-      - name: Start PostgreSQL and create a database  (Linux)
-        if: runner.os == 'Linux'
-        run: |
-          sudo systemctl start postgresql.service
-          sudo -u postgres createuser -s devel
-          sudo -u postgres createdb -O devel devel
-          sudo -u postgres psql -c "ALTER USER devel PASSWORD 'devel';" devel
-          echo "ROCKET_DATABASE_URL=postgres://devel:devel@localhost/devel" >> $GITHUB_ENV
+      - name: Start PostgreSQL
+        uses: ./.github/actions/setup-postgres
 
-      - name: Start PostgreSQL and create a database (MacOS)
-        if: runner.os == 'macOS'
+      - name: Set ROCKET_DATABASE_URL
         run: |
-          /usr/local/opt/postgres/bin/pg_ctl -D /usr/local/var/postgres start
-          /usr/local/opt/postgres/bin/createuser -s devel
-          /usr/local/opt/postgres/bin/createdb -O devel devel
-          /usr/local/opt/postgres/bin/psql -c "ALTER USER devel PASSWORD 'devel';" devel
-          echo "ROCKET_DATABASE_URL=postgres://devel:devel@localhost/devel" >> $GITHUB_ENV
-
-      - name: Start PostgreSQL and create a database (Windows)
-        if: runner.os == 'Windows'
-        shell: bash
-        run: |
-          echo '$PGROOT\bin' >> $GITHUB_PATH
-          echo '$PGROOT\lib' >> $GITHUB_PATH
-          echo "PQ_LIB_DIR=$PGROOT\lib" >> $GITHUB_ENV
-          sc config postgresql-x64-13 start=demand
-          net start postgresql-x64-13
-          "$PGROOT\bin\createuser" -s devel
-          "$PGROOT\bin\createdb" -O devel devel
-          "$PGROOT\bin\psql" -c "ALTER USER devel PASSWORD 'devel';" devel
-          echo "ROCKET_DATABASE_URL=postgres://devel:devel@localhost/devel" >> $GITHUB_ENV
+          echo "ROCKET_DATABASE_URL=postgres://postgres:postgres@localhost/postgres" >> $GITHUB_ENV
 
       - name: Install Alembic and psycopg2
         run: |
@@ -137,13 +116,11 @@ jobs:
           toolchain: nightly
           override: true
 
-      - name: Start PostgreSQL and create a database  (Linux)
-        run: |
-          sudo systemctl start postgresql.service
-          sudo -u postgres createuser -s devel
-          sudo -u postgres createdb -O devel devel
-          sudo -u postgres psql -c "ALTER USER devel PASSWORD 'devel';" devel
-          echo "ROCKET_DATABASE_URL=postgres://devel:devel@localhost/devel" >> $GITHUB_ENV
+      - name: Start PostgreSQL
+        uses: ./.github/actions/setup-postgres
+
+      - run: |
+          echo "ROCKET_DATABASE_URL=postgres://postgres:postgres@localhost/postgres" >> $GITHUB_ENV
 
       - run: cargo build
       - run: python -m venv testvenv
