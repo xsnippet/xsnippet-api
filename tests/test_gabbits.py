@@ -4,6 +4,7 @@ import random
 import socket
 import subprocess
 import sys
+import tempfile
 import time
 
 import gabbi.driver
@@ -47,7 +48,16 @@ class XSnippetApi(gabbi.fixture.GabbiFixture):
         environ = os.environ.copy()
         environ.update(self.environ)
 
-        self.process = subprocess.Popen(self._launch_command, env=environ)
+        # capture stdout/stderr of xsnippet-api process to a temporary file.
+        # Alternatively, we could either connect the child process to our
+        # file descriptors (in which case, log messages from both processes
+        # would interleave), or connect them to a pipe (this is also not great,
+        # because the child process can easily fill up the pipe buffer if we do
+        # not regularly read from it in a separate thread).
+        self.application_log = tempfile.TemporaryFile()
+        self.process = subprocess.Popen(self._launch_command, env=environ,
+                                        stdout=self.application_log,
+                                        stderr=subprocess.STDOUT)
         _wait_for_socket(XSNIPPET_API_HOST, XSNIPPET_API_PORT, self._launch_timeout)
 
     def stop_fixture(self):
@@ -60,6 +70,11 @@ class XSnippetApi(gabbi.fixture.GabbiFixture):
             except TimeoutError:
                 self.process.kill()
             finally:
+                self.application_log.seek(0)
+                print('xsnippet-api log:')
+                print(self.application_log.read().decode())
+                self.application_log.close()
+
                 self.process = None
 
 
