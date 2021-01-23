@@ -183,14 +183,14 @@ impl Storage for SqlStorage {
                         Direction::Desc => query
                             .filter(
                                 snippets::created_at
-                                    .le(chrono::DateTime::from(created_at))
+                                    .le(created_at)
                                     .and(snippets::slug.ne(marker.id)),
                             )
                             .order_by(snippets::created_at.desc()),
                         Direction::Asc => query
                             .filter(
                                 snippets::created_at
-                                    .ge(chrono::DateTime::from(created_at))
+                                    .ge(created_at)
                                     .and(snippets::slug.ne(marker.id)),
                             )
                             .order_by(snippets::created_at.asc()),
