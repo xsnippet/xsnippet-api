@@ -41,8 +41,12 @@ pub fn create_app() -> Result<rocket::Rocket, Box<dyn Error>> {
     };
     let storage: Box<dyn Storage> = Box::new(SqlStorage::new(&database_url)?);
 
+    let routes = routes![
+        routes::snippets::create_snippet,
+        routes::syntaxes::get_syntaxes,
+    ];
     Ok(app
         .manage(Config { syntaxes })
         .manage(storage)
-        .mount("/v1", routes![routes::syntaxes::get_syntaxes]))
+        .mount("/v1", routes))
 }

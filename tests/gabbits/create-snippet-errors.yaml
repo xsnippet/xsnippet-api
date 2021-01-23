@@ -1,0 +1,109 @@
+fixtures:
+  - XSnippetApi
+
+tests:
+  - name: create a new snippet (unsupported content type)
+    POST: /v1/snippets
+    request_headers:
+      content-type: text/html
+    data: spam
+    status: 415
+    response_headers:
+      content-type: application/json
+    response_json_paths:
+      $:
+        message: "Support media types: application/json"
+
+  - name: create a new snippet (invalid HTTP method)
+    PUT: /v1/snippets
+    request_headers:
+      content-type: application/json
+    data:
+      title: Hello, World!
+      syntax: python
+      content: print('Hello, World!')
+      tags:
+        - spam
+        - eggs
+    status: 404
+
+  - name: create a new snippet (invalid JSON)
+    POST: /v1/snippets
+    request_headers:
+      content-type: application/json
+    data: spam
+    status: 400
+    response_headers:
+      content-type: application/json
+    response_json_paths:
+      $:
+        message: "Invalid JSON"
+
+  - name: create a new snippet (empty content)
+    POST: /v1/snippets
+    request_headers:
+      content-type: application/json
+    data:
+      title: Hello, World!
+      syntax: python
+      content: ""
+      tags:
+        - spam
+        - eggs
+    status: 400
+    response_headers:
+      content-type: application/json
+    response_json_paths:
+      $:
+        message: "`content` - empty values not allowed."
+
+  - name: create a new snippet (unallowed syntax)
+    POST: /v1/snippets
+    request_headers:
+      content-type: application/json
+    data:
+      title: Hello, World!
+      syntax: cpp
+      content: std::cout << "Hello, World!"
+      tags:
+        - spam
+        - eggs
+    status: 400
+    response_headers:
+      content-type: application/json
+    response_json_paths:
+      $:
+        message: "`syntax` - unallowed value cpp."
+
+  - name: create a new snippet (tags is not a list)
+    POST: /v1/snippets
+    request_headers:
+      content-type: application/json
+    data:
+      title: Hello, World!
+      syntax: python
+      content: print('Hello, World!')
+      tags: spam
+    status: 400
+    response_headers:
+      content-type: application/json
+    response_json_paths:
+      $.message: "/invalid type: string \"spam\"/"
+
+  - name: create a new snippet (unexpected property)
+    POST: /v1/snippets
+    request_headers:
+      content-type: application/json
+    data:
+      title: Hello, World!
+      syntax: python
+      syntax1: python
+      content: print('Hello, World!')
+      tags:
+        - spam
+        - eggs
+    status: 400
+    response_headers:
+      content-type: application/json
+    response_json_paths:
+      $.message: "/unknown field `syntax1`/"
