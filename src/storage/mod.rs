@@ -4,7 +4,7 @@ mod sql;
 mod util;
 
 pub use errors::StorageError;
-pub use models::{Changeset, ListSnippetsQuery, Snippet};
+pub use models::{Changeset, Direction, ListSnippetsQuery, Snippet};
 pub use sql::SqlStorage;
 pub use util::DateTime;
 

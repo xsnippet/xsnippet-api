@@ -60,6 +60,38 @@ impl Snippet {
 }
 
 #[derive(Debug)]
+pub enum Direction {
+    /// From older to newer snippets.
+    #[allow(dead_code)]
+    Asc,
+    /// From newer to older snippets.
+    Desc,
+}
+
+#[derive(Debug)]
+pub struct Pagination {
+    /// Pagination direction.
+    pub direction: Direction,
+    /// The maximum number of snippets per page.
+    pub limit: usize,
+    /// The id (slug) of the last snippet on the previous page. Used to identify
+    /// the first snippet on the next page. If not set, pagination starts
+    /// from the newest or the oldest snippet, depending on the chosen
+    /// diretion.
+    pub marker: Option<String>,
+}
+
+impl Default for Pagination {
+    fn default() -> Self {
+        Pagination {
+            direction: Direction::Desc,
+            limit: DEFAULT_LIMIT_SIZE,
+            marker: None,
+        }
+    }
+}
+
+#[derive(Debug, Default)]
 pub struct ListSnippetsQuery {
     /// If set, only the snippets with the specified title will be returned.
     pub title: Option<String>,
@@ -68,27 +100,8 @@ pub struct ListSnippetsQuery {
     /// If set, only the snippets that have *one of* the specified tags attached
     /// will be returned.
     pub tags: Option<Vec<String>>,
-    /// If set, up to this number of snippets will be returned.
-    pub limit: Option<usize>,
-    /// If set, this number of snippets will be skipped (snippets are sorted in
-    /// the reverse chronological order) before the limit is applied.
-    pub offset: Option<usize>,
-}
-
-impl Default for ListSnippetsQuery {
-    fn default() -> Self {
-        // default filters should match all snippets. The only constraint we want
-        // to enforce is the maximum number of snippets in the response. Here it
-        // is set to a fairly small value; API users are expected to use pagination
-        // to retrieve more snippets if needed.
-        ListSnippetsQuery {
-            title: None,
-            syntax: None,
-            tags: None,
-            limit: Some(DEFAULT_LIMIT_SIZE),
-            offset: None,
-        }
-    }
+    /// Pagination parameters.
+    pub pagination: Pagination,
 }
 
 /// A particular snippet revision
