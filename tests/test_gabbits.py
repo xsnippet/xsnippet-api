@@ -1,3 +1,4 @@
+import alembic.config
 import json
 import os
 import random
@@ -47,6 +48,9 @@ class XSnippetApi(gabbi.fixture.GabbiFixture):
 
         environ = os.environ.copy()
         environ.update(self.environ)
+
+        # run database migrations (requires ROCKET_DATABASE_URL to be set)
+        alembic.config.main(['upgrade', 'head'])
 
         # capture stdout/stderr of xsnippet-api process to a temporary file.
         # Alternatively, we could either connect the child process to our

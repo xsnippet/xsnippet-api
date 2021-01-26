@@ -76,7 +76,7 @@ jobs:
 
       - name: Set ROCKET_DATABASE_URL
         run: |
-          echo "ROCKET_DATABASE_URL=postgres://postgres:postgres@localhost/postgres" >> $GITHUB_ENV
+          echo "ROCKET_DATABASE_URL=postgresql://postgres:postgres@localhost/postgres" >> $GITHUB_ENV
 
       - name: Install Alembic and psycopg2
         run: |
@@ -122,7 +122,7 @@ jobs:
         uses: ./.github/actions/setup-postgres
 
       - run: |
-          echo "ROCKET_DATABASE_URL=postgres://postgres:postgres@localhost/postgres" >> $GITHUB_ENV
+          echo "ROCKET_DATABASE_URL=postgresql://postgres:postgres@localhost/postgres" >> $GITHUB_ENV
 
       - run: cargo build
       - run: python -m venv testvenv
