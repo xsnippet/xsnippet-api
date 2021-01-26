@@ -1,15 +1,15 @@
 use std::iter;
 
 use rand::Rng;
-use serde::Serialize;
-
-use crate::storage::DateTime;
+use serde::{ser::SerializeStruct, Serialize, Serializer};
 
 const DEFAULT_LIMIT_SIZE: usize = 20;
 const DEFAULT_SLUG_LENGTH: usize = 8;
 
+type DateTime = chrono::DateTime<chrono::Utc>;
+
 /// A code snippet
-#[derive(Debug, Default, Eq, PartialEq, Serialize)]
+#[derive(Debug, Default, Eq, PartialEq)]
 pub struct Snippet {
     /// Slug that uniquely identifies the snippet
     pub id: String,
@@ -59,6 +59,29 @@ impl Snippet {
     }
 }
 
+// We could have just derived the implementation of Serializable instead, but
+// implementing this trait by hand allows us to detach the in-memory state of
+// the struct from what we want to expose via the API (e.g. instead of showing
+// all changesets here, we just want to show content of the most recent one).
+// Also, this allows us to work around the annoying nuisance of chrono::DateTime
+// not implementing Serializable.
+impl Serialize for Snippet {
+    fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
+    where
+        S: Serializer,
+    {
+        let mut s = serializer.serialize_struct("Snippet", 7)?;
+        s.serialize_field("id", &self.id)?;
+        s.serialize_field("title", &self.title)?;
+        s.serialize_field("syntax", &self.syntax)?;
+        s.serialize_field("content", &self.changesets.last().map(|v| &v.content))?;
+        s.serialize_field("tags", &self.tags)?;
+        s.serialize_field("created_at", &self.created_at.map(|v| v.to_rfc3339()))?;
+        s.serialize_field("updated_at", &self.updated_at.map(|v| v.to_rfc3339()))?;
+        s.end()
+    }
+}
+
 #[derive(Debug)]
 pub enum Direction {
     /// From older to newer snippets.
@@ -105,7 +128,7 @@ pub struct ListSnippetsQuery {
 }
 
 /// A particular snippet revision
-#[derive(Debug, Default, Eq, Ord, PartialEq, PartialOrd, Serialize)]
+#[derive(Debug, Default, Eq, Ord, PartialEq, PartialOrd)]
 pub struct Changeset {
     /// Changeset index. Version numbers start from 0 and are incremented by 1
     pub version: usize,
@@ -316,9 +339,22 @@ mod tests {
             id: "spam".to_string(),
             title: Some("Hello".to_string()),
             syntax: Some("python".to_string()),
-            changesets: vec![Changeset::new(0, "print('Hello, World!')".to_string())],
+            changesets: vec![
+                Changeset {
+                    version: 0,
+                    content: "print('Hello, World!')".to_string(),
+                    created_at: Some(dt),
+                    updated_at: Some(dt),
+                },
+                Changeset {
+                    version: 1,
+                    content: "print(42)".to_string(),
+                    created_at: Some(dt),
+                    updated_at: Some(dt),
+                },
+            ],
             tags: vec!["foo".to_string(), "bar".to_string()],
-            created_at: Some(dt.into()),
+            created_at: Some(dt),
             updated_at: None,
         };
 
@@ -326,14 +362,7 @@ mod tests {
             \"id\":\"spam\",\
             \"title\":\"Hello\",\
             \"syntax\":\"python\",\
-            \"changesets\":[\
-                {\
-                    \"version\":0,\
-                    \"content\":\"print(\'Hello, World!\')\",\
-                    \"created_at\":null,\
-                    \"updated_at\":null\
-                }\
-            ],\
+            \"content\":\"print(42)\",\
             \"tags\":[\"foo\",\"bar\"],\
             \"created_at\":\"2020-08-09T10:39:57+00:00\",\
             \"updated_at\":null\
