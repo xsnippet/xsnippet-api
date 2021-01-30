@@ -12,3 +12,41 @@ tests:
         - lua
         - python
         - rust
+
+
+  - name: test /syntaxes (explicitly accept json)
+    GET: /v1/syntaxes
+    request_headers:
+      accept: "application/json"
+    status: 200
+    response_json_paths:
+      $:
+        - clojure
+        - json
+        - lua
+        - python
+        - rust
+
+  - name: test /syntaxes (explicitly accept any content type)
+    GET: /v1/syntaxes
+    request_headers:
+      accept: "*/*"
+    status: 200
+    response_json_paths:
+      $:
+        - clojure
+        - json
+        - lua
+        - python
+        - rust
+
+  - name: test /syntaxes (unsupported accept type)
+    GET: /v1/syntaxes
+    request_headers:
+      accept: "application/xml"
+    status: 406
+    response_headers:
+      content-type: application/json
+    response_json_paths:
+      $:
+        message: "Support media types: application/json"

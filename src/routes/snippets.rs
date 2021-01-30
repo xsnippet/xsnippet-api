@@ -4,13 +4,12 @@ use std::path::PathBuf;
 use rocket::http::uri::Origin;
 use rocket::response::status::Created;
 use rocket::State;
-use rocket_contrib::json::JsonValue;
 use serde::Deserialize;
 
 use crate::application::Config;
 use crate::errors::ApiError;
 use crate::storage::{Changeset, Snippet, Storage};
-use crate::util::Input;
+use crate::web::{Input, NegotiatedContentType, Output};
 
 #[derive(Deserialize)]
 #[serde(deny_unknown_fields)]
@@ -69,15 +68,16 @@ fn build_location(origin: &Origin, relative_path: &str) -> Result<String, ApiErr
 
 #[post("/snippets", data = "<body>")]
 pub fn create_snippet(
-    origin: &Origin,
     config: State<Config>,
     storage: State<Box<dyn Storage>>,
+    origin: &Origin,
+    requested_content_type: Result<NegotiatedContentType, ApiError>,
     body: Result<Input<NewSnippet>, ApiError>,
-) -> Result<Created<JsonValue>, ApiError> {
+) -> Result<Created<Output<Snippet>>, ApiError> {
+    let NegotiatedContentType(content_type) = requested_content_type?;
+
     let new_snippet = storage.create(&body?.0.validate(config.syntaxes.as_ref())?)?;
 
     let location = build_location(origin, &new_snippet.id)?;
-    let response = json!(new_snippet);
-
-    Ok(Created(location, Some(response)))
+    Ok(Created(location, Some(Output(content_type, new_snippet))))
 }
