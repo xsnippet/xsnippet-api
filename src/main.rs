@@ -13,8 +13,10 @@ extern crate rocket;
 extern crate rocket_contrib;
 
 mod application;
+mod errors;
 mod routes;
 mod storage;
+mod util;
 
 fn main() {
     let app = match application::create_app() {

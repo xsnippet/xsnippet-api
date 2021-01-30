@@ -1,0 +1,124 @@
+common:
+  - &datetime_regex /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d+\+\d{2}:\d{2}$/
+  - &slug_regex /^[a-zA-Z0-9]+$/
+  - &location_regex /^/v1/snippets/[a-zA-Z0-9]+$/
+
+fixtures:
+  - XSnippetApi
+
+tests:
+  - name: create a new snippet
+    POST: /v1/snippets
+    request_headers:
+      content-type: application/json
+    data:
+      title: Hello, World!
+      syntax: python
+      content: print('Hello, World!')
+      tags:
+        - spam
+        - eggs
+    status: 201
+    response_headers:
+      content-type: application/json
+      location: *location_regex
+    response_json_paths:
+      $.id: *slug_regex
+      $.title: Hello, World!
+      $.syntax: python
+      $.content: print('Hello, World!')
+      $.created_at: *datetime_regex
+      $.updated_at: *datetime_regex
+      $.tags.`sorted`:
+        - eggs
+        - spam
+
+  - name: create a new snippet (no tags)
+    POST: /v1/snippets
+    request_headers:
+      content-type: application/json
+    data:
+      title: Hello, World!
+      syntax: python
+      content: print('Hello, World!')
+    status: 201
+    response_headers:
+      content-type: application/json
+      location: *location_regex
+    response_json_paths:
+      $.id: *slug_regex
+      $.title: Hello, World!
+      $.syntax: python
+      $.content: print('Hello, World!')
+      $.created_at: *datetime_regex
+      $.updated_at: *datetime_regex
+      $.tags: []
+
+  - name: create a new snippet (no title)
+    POST: /v1/snippets
+    request_headers:
+      content-type: application/json
+    data:
+      content: print('Hello, World!')
+      syntax: python
+      tags:
+        - spam
+        - eggs
+    status: 201
+    response_headers:
+      content-type: application/json
+      location: *location_regex
+    response_json_paths:
+      $.id: *slug_regex
+      $.title:
+      $.syntax: python
+      $.content: print('Hello, World!')
+      $.created_at: *datetime_regex
+      $.updated_at: *datetime_regex
+      $.tags.`sorted`:
+        - eggs
+        - spam
+
+  - name: create a new snippet (no syntax)
+    POST: /v1/snippets
+    request_headers:
+      content-type: application/json
+    data:
+      title: Hello, World!
+      content: print('Hello, World!')
+      tags:
+        - spam
+        - eggs
+    status: 201
+    response_headers:
+      content-type: application/json
+      location: *location_regex
+    response_json_paths:
+      $.id: *slug_regex
+      $.title: Hello, World!
+      $.syntax:
+      $.content: print('Hello, World!')
+      $.created_at: *datetime_regex
+      $.updated_at: *datetime_regex
+      $.tags.`sorted`:
+        - eggs
+        - spam
+
+  - name: create a new snippet (only the required fields)
+    POST: /v1/snippets
+    request_headers:
+      content-type: application/json
+    data:
+      content: print('Hello, World!')
+    status: 201
+    response_headers:
+      content-type: application/json
+      location: *location_regex
+    response_json_paths:
+      $.id: *slug_regex
+      $.title:
+      $.syntax:
+      $.content: print('Hello, World!')
+      $.created_at: *datetime_regex
+      $.updated_at: *datetime_regex
+      $.tags: []
