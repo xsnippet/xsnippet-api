@@ -16,10 +16,7 @@ tests:
     GET: $LOCATION
     request_headers:
       accept: text/html
-    response_headers:
-      content-type: application/json
     status: 406
-    skip: content negotiation is not implemented yet
 
   - name: retrieve snippet (not found)
     GET: /v1/snippets/foobar
