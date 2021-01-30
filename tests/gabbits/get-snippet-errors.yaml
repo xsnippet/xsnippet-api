@@ -19,7 +19,9 @@ tests:
     response_headers:
       content-type: application/json
     status: 406
-    skip: content negotiation is not implemented yet
+    response_json_paths:
+      $:
+        message: "Support media types: application/json"
 
   - name: retrieve snippet (not found)
     GET: /v1/snippets/foobar

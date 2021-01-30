@@ -9,14 +9,12 @@
 extern crate diesel;
 #[macro_use]
 extern crate rocket;
-#[macro_use]
-extern crate rocket_contrib;
 
 mod application;
 mod errors;
 mod routes;
 mod storage;
-mod util;
+mod web;
 
 fn main() {
     let app = match application::create_app() {

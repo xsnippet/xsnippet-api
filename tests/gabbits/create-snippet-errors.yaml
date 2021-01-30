@@ -14,6 +14,25 @@ tests:
       $:
         message: "Support media types: application/json"
 
+  - name: create a new snippet (unsupported accept type)
+    POST: /v1/snippets
+    request_headers:
+      content-type: application/json
+      accept: application/xml
+    data:
+      title: Hello, World!
+      syntax: python
+      content: print('Hello, World!')
+      tags:
+        - spam
+        - eggs
+    status: 406
+    response_headers:
+      content-type: application/json
+    response_json_paths:
+      $:
+        message: "Support media types: application/json"
+
   - name: create a new snippet (invalid HTTP method)
     PUT: /v1/snippets
     request_headers:

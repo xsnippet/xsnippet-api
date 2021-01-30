@@ -1,5 +1,4 @@
 use std::convert::From;
-use std::io::Cursor;
 
 use rocket::http;
 use rocket::request::Request;
@@ -7,22 +6,24 @@ use rocket::response::{self, Responder, Response};
 use serde::{ser::SerializeStruct, Serialize, Serializer};
 
 use crate::storage::StorageError;
+use crate::web::{NegotiatedContentType, Output};
 
 /// All possible unsuccessful outcomes of an API request.
 ///
 /// Allows to handle application errors in the unified manner:
 ///
-/// 1) all errors are serialized to JSON messages like {"message": "..."};
+/// 1) all errors are serialized to the requested content type
 ///    the HTTP status code is set accordingly
 ///
 /// 2) implements conversions from internal errors types (e.g. the errors
 ///    returned by the Storage trait)
 #[derive(Debug)]
 pub enum ApiError {
-    BadRequest(String),
-    NotFound(String),
-    InternalError(String),
-    UnsupportedMediaType(String),
+    BadRequest(String),                 // ==> HTTP 400 Bad Request
+    NotFound(String),                   // ==> HTTP 404 Not Found
+    NotAcceptable(&'static str),        // ==> HTTP 406 Not Acceptable
+    UnsupportedMediaType(&'static str), // ==> HTTP 415 Unsupported Media Type
+    InternalError(String),              // ==> HTTP 500 Internal Server Error
 }
 
 impl ApiError {
@@ -30,6 +31,7 @@ impl ApiError {
     pub fn reason(&self) -> &str {
         match self {
             ApiError::BadRequest(msg) => &msg,
+            ApiError::NotAcceptable(msg) => &msg,
             ApiError::NotFound(msg) => &msg,
             ApiError::InternalError(msg) => &msg,
             ApiError::UnsupportedMediaType(msg) => &msg,
@@ -40,6 +42,7 @@ impl ApiError {
     pub fn status(&self) -> http::Status {
         match self {
             ApiError::BadRequest(_) => http::Status::BadRequest,
+            ApiError::NotAcceptable(_) => http::Status::NotAcceptable,
             ApiError::NotFound(_) => http::Status::NotFound,
             ApiError::UnsupportedMediaType(_) => http::Status::UnsupportedMediaType,
             ApiError::InternalError(_) => http::Status::InternalServerError,
@@ -68,20 +71,23 @@ impl Serialize for ApiError {
 }
 
 impl<'r> Responder<'r> for ApiError {
-    fn respond_to(self, _request: &Request) -> response::Result<'r> {
-        let mut response = Response::build();
+    fn respond_to(self, request: &Request) -> response::Result<'r> {
+        // figure out the content type we should serialize the error message to. If
+        // content negotiation itself has failed, we just use our preferred one instead
+        let NegotiatedContentType(content_type) = request.guard().succeeded().unwrap_or_default();
 
         if let ApiError::InternalError(_) = self {
             // do not give away any details for internal server errors
             // TODO: integrate with Rocket contextual logging when 0.5 is released
             eprintln!("Internal server error: {}", self.reason());
-            response.status(http::Status::InternalServerError).ok()
+            Response::build()
+                .status(http::Status::InternalServerError)
+                .ok()
         } else {
-            // otherwise, present the error as JSON and set the status code accordingly
-            response
-                .status(self.status())
-                .header(http::ContentType::JSON)
-                .sized_body(Cursor::new(json!(self).to_string()))
+            // otherwise, present the error in the requested data format
+            let http_status = self.status();
+            Response::build_from(Output(content_type, self).respond_to(request)?)
+                .status(http_status)
                 .ok()
         }
     }
