@@ -43,6 +43,7 @@ pub fn create_app() -> Result<rocket::Rocket, Box<dyn Error>> {
 
     let routes = routes![
         routes::snippets::create_snippet,
+        routes::snippets::get_snippet,
         routes::syntaxes::get_syntaxes,
     ];
     Ok(app
