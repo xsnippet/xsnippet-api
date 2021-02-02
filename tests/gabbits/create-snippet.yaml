@@ -1,5 +1,5 @@
 common:
-  - &datetime_regex /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d+\+\d{2}:\d{2}$/
+  - &datetime_regex /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d+(\+\d{2}:\d{2})|Z$/
   - &slug_regex /^[a-zA-Z0-9]+$/
   - &location_regex /^/v1/snippets/[a-zA-Z0-9]+$/
 

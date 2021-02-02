@@ -76,8 +76,8 @@ impl Serialize for Snippet {
         s.serialize_field("syntax", &self.syntax)?;
         s.serialize_field("content", &self.changesets.last().map(|v| &v.content))?;
         s.serialize_field("tags", &self.tags)?;
-        s.serialize_field("created_at", &self.created_at.map(|v| v.to_rfc3339()))?;
-        s.serialize_field("updated_at", &self.updated_at.map(|v| v.to_rfc3339()))?;
+        s.serialize_field("created_at", &self.created_at)?;
+        s.serialize_field("updated_at", &self.updated_at)?;
         s.end()
     }
 }
@@ -364,7 +364,7 @@ mod tests {
             \"syntax\":\"python\",\
             \"content\":\"print(42)\",\
             \"tags\":[\"foo\",\"bar\"],\
-            \"created_at\":\"2020-08-09T10:39:57+00:00\",\
+            \"created_at\":\"2020-08-09T10:39:57Z\",\
             \"updated_at\":null\
         }";
         let actual = serde_json::to_string(&reference).expect("failed to serialize snippet");
