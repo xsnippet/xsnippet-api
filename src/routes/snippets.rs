@@ -1,5 +1,4 @@
 use std::collections::BTreeSet;
-use std::path::PathBuf;
 
 use rocket::http::uri::Origin;
 use rocket::response::status::Created;
@@ -56,17 +55,6 @@ impl NewSnippet {
     }
 }
 
-fn build_location(origin: &Origin, relative_path: &str) -> Result<String, ApiError> {
-    // TODO(malor): verify that this works correctly on other systems
-    let new_path = PathBuf::from(origin.path()).join(relative_path);
-    Ok(new_path
-        .to_str()
-        .ok_or_else(|| {
-            ApiError::InternalError(format!("Could not construct Location from: {:?}", new_path))
-        })?
-        .to_owned())
-}
-
 #[post("/snippets", data = "<body>")]
 pub fn create_snippet(
     origin: &Origin,
@@ -76,7 +64,7 @@ pub fn create_snippet(
 ) -> Result<Created<JsonValue>, ApiError> {
     let new_snippet = storage.create(&body?.0.validate(config.syntaxes.as_ref())?)?;
 
-    let location = build_location(origin, &new_snippet.id)?;
+    let location = vec![origin.path().to_string(), new_snippet.id.to_string()].join("/");
     let response = json!(new_snippet);
 
     Ok(Created(location, Some(response)))
