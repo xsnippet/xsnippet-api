@@ -69,3 +69,8 @@ pub fn create_snippet(
 
     Ok(Created(location, Some(response)))
 }
+
+#[get("/snippets/<id>")]
+pub fn get_snippet(storage: State<Box<dyn Storage>>, id: String) -> Result<JsonValue, ApiError> {
+    Ok(json!(storage.get(&id)?))
+}
