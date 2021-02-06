@@ -128,3 +128,38 @@ jobs:
       - run: python -m venv testvenv
       - run: ./testvenv/bin/python -m pip install -r tests/requirements.txt
       - run: ./testvenv/bin/python -m pytest -vv tests/
+
+  docker:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v1
+
+      - name: Build a Docker image (deploy)
+        uses: docker/build-push-action@v2
+        with:
+          context: .
+          file: ./Dockerfile
+          target: deploy
+          push: false
+          tags: xsnippet-api:deploy
+
+      - name: Build a Docker image (debug)
+        uses: docker/build-push-action@v2
+        with:
+          context: .
+          file: ./Dockerfile
+          target: debug
+          push: false
+          tags: xsnippet-api:debug
+
+      - name: Build a Docker image (release)
+        uses: docker/build-push-action@v2
+        with:
+          context: .
+          file: ./Dockerfile
+          target: release
+          push: false
+          tags: xsnippet-api:latest
