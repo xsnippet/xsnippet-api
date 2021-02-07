@@ -278,6 +278,7 @@ mod tests {
             assert_eq!(id.len(), length);
             assert!(
                 id.chars().all(|c| c.is_ascii_alphanumeric()),
+                "is_ascii_alphanumeric() returned false: {}",
                 id.to_string()
             );
         }
