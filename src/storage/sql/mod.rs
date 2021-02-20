@@ -24,6 +24,26 @@ impl SqlStorage {
         Ok(Self { pool })
     }
 
+    fn get_snippet(&self, conn: &PgConnection, id: &str) -> Result<(i32, Snippet), StorageError> {
+        let result = snippets::table
+            .filter(snippets::slug.eq(id))
+            .get_result::<models::SnippetRow>(conn);
+        let snippet = match result {
+            Ok(snippet) => snippet,
+            Err(diesel::NotFound) => return Err(StorageError::NotFound { id: id.to_owned() }),
+            Err(e) => return Err(StorageError::from(e)),
+        };
+
+        let changesets = changesets::table
+            .filter(changesets::snippet_id.eq(snippet.id))
+            .get_results::<models::ChangesetRow>(conn)?;
+        let tags = tags::table
+            .filter(tags::snippet_id.eq(snippet.id))
+            .get_results::<models::TagRow>(conn)?;
+
+        Ok((snippet.id, Snippet::from((snippet, changesets, tags))))
+    }
+
     fn insert_snippet(&self, conn: &PgConnection, snippet: &Snippet) -> Result<i32, StorageError> {
         let result = diesel::insert_into(snippets::table)
             .values((
@@ -152,7 +172,8 @@ impl Storage for SqlStorage {
         })?;
 
         // reconstruct the created snippet from the state persisted to the database
-        self.get(&snippet.id)
+        let (_, created) = self.get_snippet(&conn, &snippet.id)?;
+        Ok(created)
     }
 
     fn list(&self, criteria: ListSnippetsQuery) -> Result<Vec<Snippet>, StorageError> {
@@ -177,29 +198,35 @@ impl Storage for SqlStorage {
 
             // pagination
             if let Some(marker) = criteria.pagination.marker {
-                let marker = self.get(&marker)?;
-                if let Some(created_at) = marker.created_at {
+                let (marker_internal_id, marker) = self.get_snippet(&conn, &marker)?;
+                if let Some(marker_created_at) = marker.created_at {
                     query = match criteria.pagination.direction {
                         Direction::Desc => query
                             .filter(
                                 snippets::created_at
-                                    .le(created_at)
-                                    .and(snippets::slug.ne(marker.id)),
+                                    .le(marker_created_at)
+                                    .and(snippets::id.lt(marker_internal_id)),
                             )
-                            .order_by(snippets::created_at.desc()),
+                            .order_by(snippets::created_at.desc())
+                            .then_order_by(snippets::id.desc()),
                         Direction::Asc => query
                             .filter(
                                 snippets::created_at
-                                    .ge(created_at)
-                                    .and(snippets::slug.ne(marker.id)),
+                                    .ge(marker_created_at)
+                                    .and(snippets::id.gt(marker_internal_id)),
                             )
-                            .order_by(snippets::created_at.asc()),
+                            .order_by(snippets::created_at.asc())
+                            .then_order_by(snippets::id.asc()),
                     };
                 }
             } else {
                 query = match criteria.pagination.direction {
-                    Direction::Desc => query.order_by(snippets::created_at.desc()),
-                    Direction::Asc => query.order_by(snippets::created_at.asc()),
+                    Direction::Desc => query
+                        .order_by(snippets::created_at.desc())
+                        .then_order_by(snippets::id.desc()),
+                    Direction::Asc => query
+                        .order_by(snippets::created_at.asc())
+                        .then_order_by(snippets::id.asc()),
                 };
             }
             query = query.limit(criteria.pagination.limit as i64);
@@ -222,25 +249,8 @@ impl Storage for SqlStorage {
 
     fn get(&self, id: &str) -> Result<Snippet, StorageError> {
         let conn = self.pool.get()?;
-        conn.transaction::<_, StorageError, _>(|| {
-            let result = snippets::table
-                .filter(snippets::slug.eq(id))
-                .get_result::<models::SnippetRow>(&conn);
-            let snippet = match result {
-                Ok(snippet) => snippet,
-                Err(diesel::NotFound) => return Err(StorageError::NotFound { id: id.to_owned() }),
-                Err(e) => return Err(StorageError::from(e)),
-            };
-
-            let changesets = changesets::table
-                .filter(changesets::snippet_id.eq(snippet.id))
-                .get_results::<models::ChangesetRow>(&conn)?;
-            let tags = tags::table
-                .filter(tags::snippet_id.eq(snippet.id))
-                .get_results::<models::TagRow>(&conn)?;
-
-            Ok(Snippet::from((snippet, changesets, tags)))
-        })
+        let (_, snippet) = self.get_snippet(&conn, id)?;
+        Ok(snippet)
     }
 
     fn update(&self, snippet: &Snippet) -> Result<Snippet, StorageError> {
@@ -263,9 +273,10 @@ impl Storage for SqlStorage {
                 Ok(())
             })?;
 
-            // reconstruct the created snippet from the state persisted to the database
+            // reconstruct the updated snippet from the state persisted to the database
             // (e.g. so that updated_at fields are correctly populated)
-            self.get(&snippet.id)
+            let (_, updated) = self.get_snippet(&conn, &snippet.id)?;
+            Ok(updated)
         }
     }
 
@@ -307,36 +318,10 @@ impl From<PoolError> for StorageError {
 mod tests {
     use std::collections::HashSet;
 
-    use super::*;
+    use diesel::r2d2::PooledConnection;
 
     use super::super::Changeset;
-
-    /// Cleans up the DB state when an instance goes out of scope.
-    struct DbCleanupGuard {
-        conn: PgConnection,
-    }
-
-    impl DbCleanupGuard {
-        fn new(database_url: &str) -> Self {
-            DbCleanupGuard {
-                conn: PgConnection::establish(&database_url).expect("could not connect to the db"),
-            }
-        }
-    }
-
-    impl Drop for DbCleanupGuard {
-        fn drop(&mut self) {
-            diesel::delete(tags::table)
-                .execute(&self.conn)
-                .expect("could not delete tags");
-            diesel::delete(changesets::table)
-                .execute(&self.conn)
-                .expect("could not delete changesets");
-            diesel::delete(snippets::table)
-                .execute(&self.conn)
-                .expect("could not delete snippets");
-        }
-    }
+    use super::*;
 
     /// Compare snippets for equality excluding fields with generated values
     /// (created_at, updated_at)
@@ -358,17 +343,52 @@ mod tests {
     }
 
     /// A fixture that creates a DB connection when ROCKET_DATABASE_URL is set.
-    /// The connection is then passed to the given test function, and the DB
-    /// state is cleaned up after the test finishes. If the url is not set,
-    /// the test is skipped.
+    /// The connection is then passed to the given test function. If the url is
+    /// not set, the test is skipped.
+    ///
+    /// The test function is run within a database transaction that is never
+    /// committed. This is equivalent to discarding all modifications at the
+    /// very end of the test. Because the changes are never committed, they
+    /// are never seen by other transactions, so multiple tests can operate
+    /// on the same tables in parallel, as if they had exclusive access to
+    /// the database.
     fn with_storage<F: FnOnce(Box<dyn Storage>)>(test_function: F) {
         if let Ok(database_url) = std::env::var("ROCKET_DATABASE_URL") {
-            let storage: Box<dyn Storage> = Box::new(
-                SqlStorage::new(&database_url).expect("Failed to create a SqlStorage instance"),
-            );
+            let pool = Pool::builder()
+                .max_size(1)
+                .build(ConnectionManager::new(database_url))
+                .expect("Failed to build a db connection pool");
 
-            let _cleanup = DbCleanupGuard::new(&database_url);
-            test_function(storage);
+            {
+                let conn: PooledConnection<ConnectionManager<PgConnection>> =
+                    pool.get().expect("Failed to establish a db connection");
+
+                // start a db transaction that will never be committed. All
+                // modifications will be automatically rolled back when the
+                // test completes. Any updates will only be seen by this
+                // transaction (connection) and no one else
+                conn.begin_test_transaction()
+                    .expect("Failed to start a test transaction");
+
+                // drop all existing rows in the very beginning of the
+                // transaction, so that tests always start with an empty db
+                diesel::delete(tags::table)
+                    .execute(&conn)
+                    .expect("could not delete tags");
+                diesel::delete(changesets::table)
+                    .execute(&conn)
+                    .expect("could not delete changesets");
+                diesel::delete(snippets::table)
+                    .execute(&conn)
+                    .expect("could not delete snippets");
+
+                // return the connection with an open transaction back to the
+                // pool. Because the pool has size 1, the very same connection
+                // (and thus, the very same open transaction) will be used by
+                // the test function below
+            }
+
+            test_function(Box::new(SqlStorage { pool }));
         } else {
             eprintln!("ROCKET_DATABASE_URL is not set, skipping the test");
         }
@@ -401,7 +421,7 @@ mod tests {
     }
 
     #[test]
-    fn smoke() {
+    fn crud() {
         // This will be properly covered by higher level tests, so we just
         // want to perform a basic smoke check here.
         with_storage(|storage| {
@@ -449,7 +469,12 @@ mod tests {
                 Err(StorageError::NotFound { id }) => id == new_snippet.id,
                 _ => false,
             });
+        });
+    }
 
+    #[test]
+    fn list() {
+        with_storage(|storage| {
             // at this point, listing of snippets should return an empty result
             assert_eq!(
                 storage
@@ -505,6 +530,16 @@ mod tests {
                     .unwrap(),
                 &result[0],
             );
+        });
+    }
+
+    #[test]
+    fn pagination() {
+        with_storage(|storage| {
+            let reference = reference_snippets();
+            for snippet in reference.iter() {
+                storage.create(snippet).expect("Failed to create a snippet");
+            }
 
             let mut pagination = ListSnippetsQuery::default();
             pagination.pagination.direction = Direction::Asc;
