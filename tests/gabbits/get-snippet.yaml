@@ -38,6 +38,65 @@ tests:
 
   - name: retrieve previously created snippet by ID
     GET: /v1/snippets/$HISTORY['create a new snippet'].$RESPONSE['id']
+    request_headers:
+      accept: application/json
+    response_headers:
+      content-type: application/json
+    response_json_paths:
+      $.id: *slug_regex
+      $.title: Hello, World!
+      $.syntax: python
+      $.content: print('Hello, World!')
+      $.created_at: *datetime_regex
+      $.updated_at: *datetime_regex
+      $.tags.`sorted`:
+        - eggs
+        - spam
+      $.`len`: 7
+    status: 200
+
+  - name: retrieve previously created snippet by ID (accept anything)
+    GET: /v1/snippets/$HISTORY['create a new snippet'].$RESPONSE['id']
+    request_headers:
+      accept: "*/*"
+    response_headers:
+      content-type: application/json
+    response_json_paths:
+      $.id: *slug_regex
+      $.title: Hello, World!
+      $.syntax: python
+      $.content: print('Hello, World!')
+      $.created_at: *datetime_regex
+      $.updated_at: *datetime_regex
+      $.tags.`sorted`:
+        - eggs
+        - spam
+      $.`len`: 7
+    status: 200
+
+  - name: retrieve previously created snippet by ID (multiple accept types)
+    GET: /v1/snippets/$HISTORY['create a new snippet'].$RESPONSE['id']
+    request_headers:
+      accept: "application/xml, application/json"
+    response_headers:
+      content-type: application/json
+    response_json_paths:
+      $.id: *slug_regex
+      $.title: Hello, World!
+      $.syntax: python
+      $.content: print('Hello, World!')
+      $.created_at: *datetime_regex
+      $.updated_at: *datetime_regex
+      $.tags.`sorted`:
+        - eggs
+        - spam
+      $.`len`: 7
+    status: 200
+
+  - name: retrieve previously created snippet by ID (multiple weighted accept types)
+    GET: /v1/snippets/$HISTORY['create a new snippet'].$RESPONSE['id']
+    request_headers:
+      accept: "application/xml; q=0.9, application/json"
     response_headers:
       content-type: application/json
     response_json_paths:
