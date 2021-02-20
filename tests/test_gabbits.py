@@ -1,22 +1,27 @@
-import alembic.config
 import json
 import os
 import random
 import socket
+import string
 import subprocess
 import sys
 import tempfile
 import time
 
+import alembic.config
 import gabbi.driver
 import gabbi.fixture
+import sqlalchemy
 
 from gabbi.driver import test_pytest
 
 
 XSNIPPET_API_HOST = "127.0.0.1"
 XSNIPPET_API_PORT = 8000
-XSNIPPET_API_DATABASE_URL = os.getenv("ROCKET_DATABASE_URL")
+
+
+def _random_name(length=8):
+    return ''.join(random.choice(string.ascii_lowercase) for _ in range(length))
 
 
 class XSnippetApi(gabbi.fixture.GabbiFixture):
@@ -31,7 +36,6 @@ class XSnippetApi(gabbi.fixture.GabbiFixture):
         self.environ = {
             "ROCKET_ADDRESS": XSNIPPET_API_HOST,
             "ROCKET_PORT": str(XSNIPPET_API_PORT),
-            "ROCKET_DATABASE_URL": XSNIPPET_API_DATABASE_URL,
         }
 
         if self._syntaxes:
@@ -43,14 +47,52 @@ class XSnippetApi(gabbi.fixture.GabbiFixture):
 
         self.process = None
 
+    def setup_db(self):
+        """Create a temporary database and apply schema migrations."""
+
+        # admin connection that allows creation of new databases
+        self.management_db = sqlalchemy.create_engine(
+            os.getenv("ROCKET_DATABASE_URL"),
+            execution_options={
+                # required for CREATE/DROP DATABASE which are not transactional
+                "isolation_level": "AUTOCOMMIT",
+            },
+        )
+
+        # create a temporary database with a random name
+        self.test_db_url = sqlalchemy.engine.url.make_url(str(self.management_db.url))
+        self.test_db_url.database = _random_name()
+
+        with self.management_db.connect() as conn:
+            conn.execute(
+                "CREATE DATABASE {database} OWNER {username};".format(
+                    **self.test_db_url.translate_connect_args()))
+
+        # apply schema migrations to the temporary database. Both
+        # Alembic and XSnippet API expect the connection string to be
+        # passed via the ROCKET_DATABASE_URL environment variable, so
+        # we update the variable to point to the temporary database for
+        # the duration of the test
+        os.environ["ROCKET_DATABASE_URL"] = str(self.test_db_url)
+        alembic.config.main(["upgrade", "head"])
+
+    def teardown_db(self):
+        """Clean up the temporary database."""
+
+        with self.management_db.connect() as conn:
+            conn.execute("DROP DATABASE IF EXISTS {};".format(self.test_db_url.database))
+
+        # restore the original value of ROCKET_DATABASE_URL, so that
+        # it can be used by the fixture to create new databases again
+        os.environ["ROCKET_DATABASE_URL"] = str(self.management_db.url)
+
     def start_fixture(self):
         """Start the live server."""
 
+        self.setup_db()
+
         environ = os.environ.copy()
         environ.update(self.environ)
-
-        # run database migrations (requires ROCKET_DATABASE_URL to be set)
-        alembic.config.main(['upgrade', 'head'])
 
         # capture stdout/stderr of xsnippet-api process to a temporary file.
         # Alternatively, we could either connect the child process to our
@@ -67,19 +109,22 @@ class XSnippetApi(gabbi.fixture.GabbiFixture):
     def stop_fixture(self):
         """Stop the live server."""
 
-        if self.process:
-            self.process.terminate()
-            try:
-                self.process.wait(timeout=self._shutdown_timeout)
-            except TimeoutError:
-                self.process.kill()
-            finally:
-                self.application_log.seek(0)
-                print('xsnippet-api log:')
-                print(self.application_log.read().decode())
-                self.application_log.close()
+        try:
+            if self.process:
+                self.process.terminate()
+                try:
+                    self.process.wait(timeout=self._shutdown_timeout)
+                except TimeoutError:
+                    self.process.kill()
+                finally:
+                    self.application_log.seek(0)
+                    print('xsnippet-api log:')
+                    print(self.application_log.read().decode())
+                    self.application_log.close()
 
-                self.process = None
+                    self.process = None
+        finally:
+            self.teardown_db()
 
 
 class XSnippetApiWithShuffledSyntaxes(XSnippetApi):
