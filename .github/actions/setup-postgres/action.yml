@@ -59,4 +59,5 @@ runs:
         fi
 
         psql -c "ALTER USER ${{ inputs.username }} PASSWORD '${{ inputs.password }}';" ${{ inputs.database }}
+        psql -c "ALTER ROLE ${{ inputs.username }} CREATEDB;" ${{ inputs.database }}
       shell: bash
