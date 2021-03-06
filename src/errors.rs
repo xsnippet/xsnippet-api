@@ -74,14 +74,14 @@ impl<'r> Responder<'r> for ApiError {
     fn respond_to(self, request: &Request) -> response::Result<'r> {
         if let ApiError::InternalError(_) = self {
             // do not give away any details for internal server errors
-            // TODO: integrate with Rocket contextual logging when 0.5 is released
-            eprintln!("Internal server error: {}", self.reason());
+            error!("Internal server error: {}", self.reason());
             Response::build()
                 .status(http::Status::InternalServerError)
                 .ok()
         } else {
             // otherwise, present the error in the requested data format
             let http_status = self.status();
+            debug!("ApiError: {:?}", self);
             Response::build_from(Output(self).respond_to(request)?)
                 .status(http_status)
                 .ok()

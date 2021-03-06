@@ -102,7 +102,7 @@ impl<'a, T: Serialize> Responder<'a> for Output<T> {
                 } else {
                     // this shouldn't be possible as by this point content negotiation has already
                     // succeded
-                    eprintln!("Failed to serialize data to {}", content_type);
+                    error!("Failed to serialize data to {}", content_type);
                     Err(Status::InternalServerError)
                 }
             }
