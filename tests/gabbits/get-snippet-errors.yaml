@@ -1,3 +1,6 @@
+common:
+  - &request_id_regex /^[0-9a-fA-F]{8}-([0-9a-fA-F]{4}-){3}[0-9a-fA-F]{12}$/
+
 fixtures:
   - XSnippetApi
 
@@ -11,12 +14,16 @@ tests:
       syntax: python
       content: print('Hello, World!')
     status: 201
+    response_headers:
+      x-request-id: *request_id_regex
 
   - name: retrieve snippet (unsupported accept)
     GET: $LOCATION
     request_headers:
       accept: text/html
     status: 406
+    response_headers:
+      x-request-id: *request_id_regex
 
   - name: retrieve snippet (not found)
     GET: /v1/snippets/foobar
@@ -26,3 +33,5 @@ tests:
       $.message: Snippet with id `foobar` is not found
       $.`len`: 1
     status: 404
+    response_headers:
+      x-request-id: *request_id_regex

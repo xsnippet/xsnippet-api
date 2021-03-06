@@ -1,3 +1,6 @@
+common:
+  - &request_id_regex /^[0-9a-fA-F]{8}-([0-9a-fA-F]{4}-){3}[0-9a-fA-F]{12}$/
+
 fixtures:
   - XSnippetApi
 
@@ -10,6 +13,7 @@ tests:
     status: 415
     response_headers:
       content-type: application/json
+      x-request-id: *request_id_regex
     response_json_paths:
       $:
         message: "Support media types: application/json"
@@ -27,6 +31,8 @@ tests:
         - spam
         - eggs
     status: 406
+    response_headers:
+      x-request-id: *request_id_regex
 
   - name: create a new snippet (invalid HTTP method)
     PUT: /v1/snippets
@@ -40,6 +46,8 @@ tests:
         - spam
         - eggs
     status: 404
+    response_headers:
+      x-request-id: *request_id_regex
 
   - name: create a new snippet (invalid JSON)
     POST: /v1/snippets
@@ -49,6 +57,7 @@ tests:
     status: 400
     response_headers:
       content-type: application/json
+      x-request-id: *request_id_regex
     response_json_paths:
       $:
         message: "Invalid JSON"
@@ -67,6 +76,7 @@ tests:
     status: 400
     response_headers:
       content-type: application/json
+      x-request-id: *request_id_regex
     response_json_paths:
       $:
         message: "`content` - empty values not allowed."
@@ -85,6 +95,7 @@ tests:
     status: 400
     response_headers:
       content-type: application/json
+      x-request-id: *request_id_regex
     response_json_paths:
       $:
         message: "`syntax` - unallowed value cpp."
@@ -101,6 +112,7 @@ tests:
     status: 400
     response_headers:
       content-type: application/json
+      x-request-id: *request_id_regex
     response_json_paths:
       $.message: "/invalid type: string \"spam\"/"
 
@@ -119,5 +131,6 @@ tests:
     status: 400
     response_headers:
       content-type: application/json
+      x-request-id: *request_id_regex
     response_json_paths:
       $.message: "/unknown field `syntax1`/"
