@@ -3,7 +3,7 @@ use std::error::Error;
 
 use super::routes;
 use super::storage::{SqlStorage, Storage};
-use super::web::{RequestIdHeader, RequestSpan};
+use super::web::{AuthValidator, JwtValidator, RequestIdHeader, RequestSpan};
 
 #[derive(Debug)]
 pub struct Config {
@@ -13,6 +13,13 @@ pub struct Config {
     /// order to ensure that the web part can properly syntax-highlight
     /// snippets.
     pub syntaxes: Option<BTreeSet<String>>,
+
+    /// The intended recipient of the tokens (e.g. "https://api.xsnippet.org")
+    pub jwt_audience: String,
+    /// The principal that issues the tokens (e.g. "https://xsnippet.eu.auth0.com/")
+    pub jwt_issuer: String,
+    /// The location of JWT Key Set with keys used to validate the tokens (e.g. "https://xsnippet.eu.auth0.com/.well-known/jwks.json")
+    pub jwt_jwks_uri: String,
 }
 
 /// Create and return a Rocket application instance.
@@ -40,7 +47,24 @@ pub fn create_app() -> Result<rocket::Rocket, Box<dyn Error>> {
         Ok(database_url) => database_url,
         Err(err) => return Err(Box::new(err)),
     };
+
+    let config = Config {
+        syntaxes,
+        jwt_audience: app
+            .config()
+            .get_string("jwt_audience")
+            .unwrap_or_else(|_| String::from("https://api.xsnippet.org")),
+        jwt_issuer: app
+            .config()
+            .get_string("jwt_issuer")
+            .unwrap_or_else(|_| String::from("https://xsnippet.eu.auth0.com/")),
+        jwt_jwks_uri: app.config().get_string("jwt_jwks_uri").unwrap_or_else(|_| {
+            String::from("https://xsnippet.eu.auth0.com/.well-known/jwks.json")
+        }),
+    };
+
     let storage: Box<dyn Storage> = Box::new(SqlStorage::new(&database_url)?);
+    let token_validator: Box<dyn AuthValidator> = Box::new(JwtValidator::from_config(&config)?);
 
     let routes = routes![
         routes::snippets::create_snippet,
@@ -48,8 +72,9 @@ pub fn create_app() -> Result<rocket::Rocket, Box<dyn Error>> {
         routes::syntaxes::get_syntaxes,
     ];
     Ok(app
-        .manage(Config { syntaxes })
+        .manage(config)
         .manage(storage)
+        .manage(token_validator)
         .attach(RequestIdHeader)
         .attach(RequestSpan)
         .mount("/v1", routes))
