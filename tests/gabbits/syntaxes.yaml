@@ -1,3 +1,6 @@
+common:
+  - &request_id_regex /^[0-9a-fA-F]{8}-([0-9a-fA-F]{4}-){3}[0-9a-fA-F]{12}$/
+
 fixtures:
   - XSnippetApi
 
@@ -12,7 +15,8 @@ tests:
         - lua
         - python
         - rust
-
+    response_headers:
+      x-request-id: *request_id_regex
 
   - name: test /syntaxes (explicitly accept json)
     GET: /v1/syntaxes
@@ -26,6 +30,8 @@ tests:
         - lua
         - python
         - rust
+    response_headers:
+      x-request-id: *request_id_regex
 
   - name: test /syntaxes (explicitly accept any content type)
     GET: /v1/syntaxes
@@ -39,6 +45,8 @@ tests:
         - lua
         - python
         - rust
+    response_headers:
+      x-request-id: *request_id_regex
 
   - name: test /syntaxes (multiple accept types)
     GET: /v1/syntaxes
@@ -52,6 +60,8 @@ tests:
         - lua
         - python
         - rust
+    response_headers:
+      x-request-id: *request_id_regex
 
   - name: test /syntaxes (multiple weighted accept types)
     GET: /v1/syntaxes
@@ -65,9 +75,13 @@ tests:
         - lua
         - python
         - rust
+    response_headers:
+      x-request-id: *request_id_regex
 
   - name: test /syntaxes (unsupported accept type)
     GET: /v1/syntaxes
     request_headers:
       accept: "application/xml"
     status: 406
+    response_headers:
+      x-request-id: *request_id_regex

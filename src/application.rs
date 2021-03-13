@@ -3,6 +3,7 @@ use std::error::Error;
 
 use super::routes;
 use super::storage::{SqlStorage, Storage};
+use super::web::RequestIdHeader;
 
 #[derive(Debug)]
 pub struct Config {
@@ -49,5 +50,6 @@ pub fn create_app() -> Result<rocket::Rocket, Box<dyn Error>> {
     Ok(app
         .manage(Config { syntaxes })
         .manage(storage)
+        .attach(RequestIdHeader)
         .mount("/v1", routes))
 }

@@ -1,5 +1,6 @@
 common:
   - &datetime_regex /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d+(\+\d{2}:\d{2})|Z$/
+  - &request_id_regex /^[0-9a-fA-F]{8}-([0-9a-fA-F]{4}-){3}[0-9a-fA-F]{12}$/
   - &slug_regex /^[a-zA-Z0-9]+$/
 
 fixtures:
@@ -18,11 +19,14 @@ tests:
         - spam
         - eggs
     status: 201
+    response_headers:
+      x-request-id: *request_id_regex
 
   - name: retrieve previously created snippet via Location header
     GET: $LOCATION
     response_headers:
       content-type: application/json
+      x-request-id: *request_id_regex
     response_json_paths:
       $.id: *slug_regex
       $.title: Hello, World!
@@ -42,6 +46,7 @@ tests:
       accept: application/json
     response_headers:
       content-type: application/json
+      x-request-id: *request_id_regex
     response_json_paths:
       $.id: *slug_regex
       $.title: Hello, World!
@@ -61,6 +66,7 @@ tests:
       accept: "*/*"
     response_headers:
       content-type: application/json
+      x-request-id: *request_id_regex
     response_json_paths:
       $.id: *slug_regex
       $.title: Hello, World!
@@ -80,6 +86,7 @@ tests:
       accept: "application/xml, application/json"
     response_headers:
       content-type: application/json
+      x-request-id: *request_id_regex
     response_json_paths:
       $.id: *slug_regex
       $.title: Hello, World!
@@ -99,6 +106,7 @@ tests:
       accept: "application/xml; q=0.9, application/json"
     response_headers:
       content-type: application/json
+      x-request-id: *request_id_regex
     response_json_paths:
       $.id: *slug_regex
       $.title: Hello, World!

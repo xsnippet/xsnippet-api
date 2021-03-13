@@ -1,7 +1,8 @@
 common:
   - &datetime_regex /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d+(\+\d{2}:\d{2})|Z$/
-  - &slug_regex /^[a-zA-Z0-9]+$/
   - &location_regex /^/v1/snippets/[a-zA-Z0-9]+$/
+  - &request_id_regex /^[0-9a-fA-F]{8}-([0-9a-fA-F]{4}-){3}[0-9a-fA-F]{12}$/
+  - &slug_regex /^[a-zA-Z0-9]+$/
 
 fixtures:
   - XSnippetApi
@@ -22,6 +23,7 @@ tests:
     response_headers:
       content-type: application/json
       location: *location_regex
+      x-request-id: *request_id_regex
     response_json_paths:
       $.id: *slug_regex
       $.title: Hello, World!
@@ -49,6 +51,7 @@ tests:
     response_headers:
       content-type: application/json
       location: *location_regex
+      x-request-id: *request_id_regex
     response_json_paths:
       $.id: *slug_regex
       $.title: Hello, World!
@@ -76,6 +79,7 @@ tests:
     response_headers:
       content-type: application/json
       location: *location_regex
+      x-request-id: *request_id_regex
     response_json_paths:
       $.id: *slug_regex
       $.title: Hello, World!
@@ -103,6 +107,7 @@ tests:
     response_headers:
       content-type: application/json
       location: *location_regex
+      x-request-id: *request_id_regex
     response_json_paths:
       $.id: *slug_regex
       $.title: Hello, World!
@@ -130,6 +135,7 @@ tests:
     response_headers:
       content-type: application/json
       location: *location_regex
+      x-request-id: *request_id_regex
     response_json_paths:
       $.id: *slug_regex
       $.title: Hello, World!
@@ -153,6 +159,7 @@ tests:
     response_headers:
       content-type: application/json
       location: *location_regex
+      x-request-id: *request_id_regex
     response_json_paths:
       $.id: *slug_regex
       $.title: Hello, World!
@@ -176,6 +183,7 @@ tests:
     response_headers:
       content-type: application/json
       location: *location_regex
+      x-request-id: *request_id_regex
     response_json_paths:
       $.id: *slug_regex
       $.title:
@@ -201,6 +209,7 @@ tests:
     response_headers:
       content-type: application/json
       location: *location_regex
+      x-request-id: *request_id_regex
     response_json_paths:
       $.id: *slug_regex
       $.title: Hello, World!
@@ -222,6 +231,7 @@ tests:
     response_headers:
       content-type: application/json
       location: *location_regex
+      x-request-id: *request_id_regex
     response_json_paths:
       $.id: *slug_regex
       $.title:
