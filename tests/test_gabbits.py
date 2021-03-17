@@ -60,8 +60,7 @@ class XSnippetApi(gabbi.fixture.GabbiFixture):
         )
 
         # create a temporary database with a random name
-        self.test_db_url = sqlalchemy.engine.url.make_url(str(self.management_db.url))
-        self.test_db_url.database = _random_name()
+        self.test_db_url = self.management_db.url.set(database=_random_name())
 
         with self.management_db.connect() as conn:
             conn.execute(
