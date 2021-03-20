@@ -390,7 +390,7 @@ mod tests {
 
             test_function(Box::new(SqlStorage { pool }));
         } else {
-            eprintln!("ROCKET_DATABASE_URL is not set, skipping the test");
+            error!("ROCKET_DATABASE_URL is not set, skipping the test");
         }
     }
 

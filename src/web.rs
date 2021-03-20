@@ -1,5 +1,5 @@
 mod content;
 mod tracing;
 
-pub use content::{Input, NegotiatedContentType, Output};
-pub use tracing::{RequestId, RequestIdHeader};
+pub use crate::web::content::{Input, NegotiatedContentType, Output};
+pub use crate::web::tracing::{RequestId, RequestIdHeader, RequestSpan};
