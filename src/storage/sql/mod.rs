@@ -45,13 +45,14 @@ impl SqlStorage {
     }
 
     fn insert_snippet(&self, conn: &PgConnection, snippet: &Snippet) -> Result<i32, StorageError> {
+        let now = chrono::Utc::now();
         let result = diesel::insert_into(snippets::table)
             .values((
                 snippets::slug.eq(&snippet.id),
                 snippets::title.eq(&snippet.title),
                 snippets::syntax.eq(&snippet.syntax),
-                snippets::created_at.eq(diesel::dsl::now),
-                snippets::updated_at.eq(diesel::dsl::now),
+                snippets::created_at.eq(snippet.created_at.unwrap_or(now)),
+                snippets::updated_at.eq(snippet.updated_at.unwrap_or(now)),
             ))
             .returning(snippets::id)
             .get_result::<i32>(conn);
@@ -68,11 +69,12 @@ impl SqlStorage {
     }
 
     fn update_snippet(&self, conn: &PgConnection, snippet: &Snippet) -> Result<i32, StorageError> {
+        let now = chrono::Utc::now();
         let result = diesel::update(snippets::table.filter(snippets::slug.eq(&snippet.id)))
             .set((
                 snippets::title.eq(&snippet.title),
                 snippets::syntax.eq(&snippet.syntax),
-                snippets::updated_at.eq(diesel::dsl::now),
+                snippets::updated_at.eq(snippet.updated_at.unwrap_or(now)),
             ))
             .returning(snippets::id)
             .get_result::<i32>(conn);
@@ -92,6 +94,7 @@ impl SqlStorage {
         snippet_id: i32,
         snippet: &Snippet,
     ) -> Result<(), StorageError> {
+        let now = chrono::Utc::now();
         diesel::insert_into(changesets::table)
             .values(
                 snippet
@@ -102,7 +105,7 @@ impl SqlStorage {
                             changesets::snippet_id.eq(snippet_id),
                             changesets::version.eq(c.version as i32),
                             changesets::content.eq(&c.content),
-                            changesets::created_at.eq(diesel::dsl::now),
+                            changesets::created_at.eq(snippet.created_at.unwrap_or(now)),
                         )
                     })
                     .collect::<Vec<_>>(),
@@ -111,7 +114,7 @@ impl SqlStorage {
             .do_update()
             .set((
                 changesets::content.eq(upsert::excluded(changesets::content)),
-                changesets::updated_at.eq(diesel::dsl::now),
+                changesets::updated_at.eq(snippet.updated_at.unwrap_or(now)),
             ))
             .execute(conn)?;
 

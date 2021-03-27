@@ -44,7 +44,7 @@ struct Claims {
     sub: String,
     /// Expiration time (seconds since Unix epoch).
     exp: usize,
-    /// Subject permissions (e.g. vec!["admin"])
+    /// Subject permissions (e.g. vec!["import"])
     permissions: Vec<Permission>,
 }
 
@@ -165,7 +165,6 @@ mod tests {
     const E: &str = "AQAB";
 
     const USER_TOKEN: &str = "eyJ0eXAiOiJKV1QiLCJhbGciOiJSUzI1NiIsImtpZCI6InRlc3Qta2V5In0.eyJzdWIiOiJ1c2VyIiwiYXVkIjoieHNuaXBwZXQtYXBpLXRlc3RzLWF1ZCIsImlzcyI6InhzbmlwcGV0LWFwaS10ZXN0cy1pc3MiLCJleHAiOjQ3NzAzNzU1NDQsInBlcm1pc3Npb25zIjpbXX0.doA6EeVLnp-MLNRTRUzg03rw9oUn5vDGv59zNysrcFfvkEiiYAtZMu-YW_N3YtE0qv2FTaGAXHryMqsEk8rsFv4uepDuOpzutnRoB4JDFTpvJkKYE4HZjsd8eHSAjFEuCvDjm7wnxoW0zDXH_zj1FITht-c3ua6KbgeevvDjpUgaR52Zou9HRyNa6ns5OKO7yJofA32IZaO7QH69iQiZ4o9WA8PfFNyuVqyQVkvZwpr68JLgl4qTTX4NIWV4wU4OWbIGN6-p4QSkS_Ljkau9sRKjnx4NYPbICMGWVThn_MKOfg26DjGZlI_0HFYDBLogJkTmmyT-5IIIWUqBgUKWYA";
-    const ADMIN_TOKEN: &str = "eyJ0eXAiOiJKV1QiLCJhbGciOiJSUzI1NiIsImtpZCI6InRlc3Qta2V5In0.eyJzdWIiOiJhZG1pbiIsImF1ZCI6InhzbmlwcGV0LWFwaS10ZXN0cy1hdWQiLCJpc3MiOiJ4c25pcHBldC1hcGktdGVzdHMtaXNzIiwiZXhwIjo0NzcwMzc1NTc3LCJwZXJtaXNzaW9ucyI6WyJhZG1pbiJdfQ.UzzepZLy3T-FDFYFmViKeKzWD1KFMQmHvlmr3tmc7XGCaqfB4TauXopnbqHJj7SbLe2oiP-8kePuu9_Sc_9AXNz2G1vbc9nrwAwqDv7RllG64iXMLPe2I9eooNrS-Vs70Jy40G5UjfFmqjAl2Qs8mpJnvkpj-EtLEAIertyW6VX7iv6ssMEAZzvC-6TwlJ70R6ntEq6jjQIIgNBVMdZphysX7DXUQvT1WJMlw7axCtIiBfTf5a9wasW3qX51k2Nn0oLnn9fBrayK0DJcRGKIcDy2clnXaz2vjLQlkKtHj-LFgTai6xkInEaEdnqsVJflJFzcLMvhmOWHmmcVgMirTQ";
     const EXPIRED_TOKEN: &str = "eyJ0eXAiOiJKV1QiLCJhbGciOiJSUzI1NiIsImtpZCI6InRlc3Qta2V5In0.eyJzdWIiOiJ1c2VyIiwiYXVkIjoieHNuaXBwZXQtYXBpLXRlc3RzLWF1ZCIsImlzcyI6InhzbmlwcGV0LWFwaS10ZXN0cy1pc3MiLCJleHAiOjE2MTY3NzIwMDYsInBlcm1pc3Npb25zIjpbXX0.AkC-xzeJ7OXi5fN-DXs43vKAjgsep5Cwx2e1c3hbv1jPpJVnwTD2M_A8Bphd8-mzMsuO017a_rZQIj30dzt3I5Z730Z4zHA_xPV4nl_6zsGzCYTwecT1qmOhTuiyP1PhdgveVQz-ImNDbAzD80PTUwW8Bv-r4R1wyrc5lRtj2ofF1h2_rqxWtRbQwvqmm_J4K8oklYWOrBPNFXJVOGVcji97LelBY6llWbfVUO2unNZBA7MbJLDMtuQHMIRSHn1PXSLA4MJbxOzT-kZC01OlpQWtGstxnITHc34ZDVe5M0v092PSe5J0o3_OBVCR405-rPK_EjLD8saPE3SK7X0Cfw";
     const INVALID_TOKEN: &str = "eyJ0eXAiOiJKV1QiLCJhbGciOiJSUzI1NiIsImtpZCI6InRlc3Qta2V5In0.eyJzdWIiOiJ1c2VyIiwiYXVkIjoieHNuaXBwZXQtYXBpLXRlc3RzLWF1ZCIsImlzcyI6InhzbmlwcGV0LWFwaS10ZXN0cy1pc3MiLCJleHAiOjQ3NzAzNzU1NDQsInBlcm1pc3Npb25zIjpbXX0.doA6EeVLnp-MLNRTRUzg03rw9oUn5vDGv59zNysrcFfvkEiiYAtZMu-YW_N3YtE0qv2FTaGAXHryMqsEk8rsFv4uepDuOpzutnRoB4JDFTpvJkKYE4HZjsd8eHSAjFEuCvDjm7wnxoW0zDXH_zj1FITht-c3ua6KbgeevvDjpUgaR52Zou9HRyNa6ns5OKO7yJofA32IZaO7QH69iQiZ4o9WA8PfFNyuVqyQVkvZwpr68JLgl4qTTX4NIWV4wU4OWbIGN6-p3QSkS_Ljkau9sRKjnx4NYPbICMGWVThn_MKOfg26DjGZlI_0HFYDBLogJkTmmyT-5IIIWUqBgUKWYA";
     const INVALID_HEADER_TOKEN: &str = "eyJ0eXAiOiJKV1QiLCJraWQiOiJ0ZXN0LWtleSJ9.eyJzdWIiOiJ1c2VyIiwiYXVkIjoieHNuaXBwZXQtYXBpLXRlc3RzLWF1ZCIsImlzcyI6InhzbmlwcGV0LWFwaS10ZXN0cy1pc3MiLCJleHAiOjQ3NzAzNzU1NDQsInBlcm1pc3Npb25zIjpbXX0.doA6EeVLnp-MLNRTRUzg03rw9oUn5vDGv59zNysrcFfvkEiiYAtZMu-YW_N3YtE0qv2FTaGAXHryMqsEk8rsFv4uepDuOpzutnRoB4JDFTpvJkKYE4HZjsd8eHSAjFEuCvDjm7wnxoW0zDXH_zj1FITht-c3ua6KbgeevvDjpUgaR52Zou9HRyNa6ns5OKO7yJofA32IZaO7QH69iQiZ4o9WA8PfFNyuVqyQVkvZwpr68JLgl4qTTX4NIWV4wU4OWbIGN6-p4QSkS_Ljkau9sRKjnx4NYPbICMGWVThn_MKOfg26DjGZlI_0HFYDBLogJkTmmyT-5IIIWUqBgUKWYA";
@@ -285,13 +284,6 @@ mod tests {
                 User::Authenticated {
                     name: String::from("user"),
                     permissions: Vec::new()
-                }
-            );
-            assert_eq!(
-                validator.validate(ADMIN_TOKEN).unwrap(),
-                User::Authenticated {
-                    name: String::from("admin"),
-                    permissions: vec![Permission::Admin],
                 }
             );
             match validator.validate(EXPIRED_TOKEN) {

@@ -1,0 +1,143 @@
+common:
+  - &created_at "2020-08-09T10:39:57Z"
+  - &updated_at "2020-12-03T13:08:28Z"
+  - &forbidden_msg "User is not allowed to import snippets"
+
+fixtures:
+  - XSnippetApiWithCustomAuthProvider
+
+tests:
+  - name: try to import a new snippet as a guest user (doesn't have permissions)
+    POST: /v1/snippets/import
+    request_headers:
+      content-type: application/json
+    data:
+      id: spam
+      title: Hello, World!
+      syntax: python
+      content: print('Hello, World!')
+      tags:
+        - spam
+        - eggs
+      created_at: *created_at
+      updated_at: *updated_at
+    status: 403
+    response_headers:
+      content-type: application/json
+    response_json_paths:
+      $:
+        message: *forbidden_msg
+
+  - name: try to import a new snippet as an authenticated user (doesn't have permissions)
+    POST: /v1/snippets/import
+    request_headers:
+      authorization: Bearer $ENVIRON['TOKEN_VALID']
+      content-type: application/json
+    data:
+      id: spam
+      title: Hello, World!
+      syntax: python
+      content: print('Hello, World!')
+      tags:
+        - spam
+        - eggs
+      created_at: *created_at
+      updated_at: *updated_at
+    status: 403
+    response_headers:
+      content-type: application/json
+    response_json_paths:
+      $:
+        message: *forbidden_msg
+
+  - name: import a new snippet as an authenticated user (importer)
+    POST: /v1/snippets/import
+    request_headers:
+      authorization: Bearer $ENVIRON['TOKEN_IMPORT']
+      content-type: application/json
+    data:
+      id: foo
+      title: Hello, World!
+      syntax: python
+      content: print('Hello, World!')
+      tags:
+        - spam
+        - eggs
+      created_at: *created_at
+      updated_at: *updated_at
+    status: 201
+    response_headers:
+      location: /v1/snippets/foo
+
+  - name: retrieve previously created snippet by ID
+    GET: /v1/snippets/foo
+    response_headers:
+      content-type: application/json
+    response_json_paths:
+      $.id: foo
+      $.title: Hello, World!
+      $.syntax: python
+      $.content: print('Hello, World!')
+      $.created_at: *created_at
+      $.updated_at: *updated_at
+      $.tags.`sorted`:
+        - eggs
+        - spam
+      $.`len`: 7
+    status: 200
+
+  - name: import a new snippet with ID that already exists
+    POST: /v1/snippets/import
+    request_headers:
+      authorization: Bearer $ENVIRON['TOKEN_IMPORT']
+      content-type: application/json
+    data:
+      id: foo
+      title: Hello, World!
+      syntax: python
+      content: print('Hello, World!')
+      tags:
+        - spam
+        - eggs
+      created_at: *created_at
+      updated_at: *updated_at
+    status: 409
+    response_headers:
+      content-type: application/json
+    response_json_paths:
+      $:
+        message: "Snippet with id `foo` already exists"
+
+  - name: import a new snippet with malformed creation date
+    POST: /v1/snippets/import
+    request_headers:
+      authorization: Bearer $ENVIRON['TOKEN_IMPORT']
+      content-type: application/json
+    data:
+      id: foo
+      title: Hello, World!
+      syntax: python
+      content: print('Hello, World!')
+      tags:
+        - spam
+        - eggs
+      created_at: "2020/08/09 10:39:57"
+      updated_at: *updated_at
+    status: 400
+
+  - name: import a new snippet with malformed modification date
+    POST: /v1/snippets/import
+    request_headers:
+      authorization: Bearer $ENVIRON['TOKEN_IMPORT']
+      content-type: application/json
+    data:
+      id: foo
+      title: Hello, World!
+      syntax: python
+      content: print('Hello, World!')
+      tags:
+        - spam
+        - eggs
+      created_at: *created_at
+      updated_at: "2020/08/09 10:39:57"
+    status: 400
