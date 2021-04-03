@@ -8,7 +8,7 @@ use serde::Deserialize;
 use crate::application::Config;
 use crate::errors::ApiError;
 use crate::storage::{Changeset, Snippet, Storage};
-use crate::web::{Input, NegotiatedContentType, Output};
+use crate::web::{BearerAuth, Input, NegotiatedContentType, Output};
 
 #[derive(Deserialize)]
 #[serde(deny_unknown_fields)]
@@ -61,6 +61,7 @@ pub fn create_snippet(
     origin: &Origin,
     body: Result<Input<NewSnippet>, ApiError>,
     _content_type: NegotiatedContentType,
+    _user: BearerAuth,
 ) -> Result<Created<Output<Snippet>>, ApiError> {
     let new_snippet = storage.create(&body?.0.validate(config.syntaxes.as_ref())?)?;
 
@@ -72,6 +73,7 @@ pub fn create_snippet(
 pub fn get_snippet(
     storage: State<Box<dyn Storage>>,
     id: String,
+    _user: BearerAuth,
 ) -> Result<Output<Snippet>, ApiError> {
     Ok(Output(storage.get(&id)?))
 }
