@@ -6,7 +6,7 @@ use serde::{ser::SerializeStruct, Serialize, Serializer};
 const DEFAULT_LIMIT_SIZE: usize = 20;
 const DEFAULT_SLUG_LENGTH: usize = 8;
 
-type DateTime = chrono::DateTime<chrono::Utc>;
+pub type DateTime = chrono::DateTime<chrono::Utc>;
 
 /// A code snippet
 #[derive(Debug, Default, Eq, PartialEq)]

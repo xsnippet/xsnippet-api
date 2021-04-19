@@ -29,20 +29,6 @@ tests:
         - eggs
     status: 201
 
-  - name: create a new snippet as an authorized user (admin)
-    POST: /v1/snippets
-    request_headers:
-      authorization: Bearer $ENVIRON['TOKEN_ADMIN']
-      content-type: application/json
-    data:
-      title: Hello, World!
-      syntax: python
-      content: print('Hello, World!')
-      tags:
-        - spam
-        - eggs
-    status: 201
-
   - name: try to pass an empty Authorization header
     POST: /v1/snippets
     request_headers:

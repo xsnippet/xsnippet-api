@@ -70,6 +70,7 @@ pub fn create_app() -> Result<rocket::Rocket, Box<dyn Error>> {
         routes::snippets::create_snippet,
         routes::snippets::get_snippet,
         routes::syntaxes::get_syntaxes,
+        routes::snippets::import_snippet,
     ];
     Ok(app
         .manage(config)

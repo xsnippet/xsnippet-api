@@ -20,8 +20,10 @@ use crate::web::Output;
 #[derive(Debug)]
 pub enum ApiError {
     BadRequest(String),                 // ==> HTTP 400 Bad Request
+    Forbidden(String),                  // ==> HTTP 403 Forbidden
     NotFound(String),                   // ==> HTTP 404 Not Found
     NotAcceptable(&'static str),        // ==> HTTP 406 Not Acceptable
+    Conflict(String),                   // ==> HTTP 409 Conflict
     UnsupportedMediaType(&'static str), // ==> HTTP 415 Unsupported Media Type
     InternalError(String),              // ==> HTTP 500 Internal Server Error
 }
@@ -31,7 +33,9 @@ impl ApiError {
     pub fn reason(&self) -> &str {
         match self {
             ApiError::BadRequest(msg) => &msg,
+            ApiError::Forbidden(msg) => &msg,
             ApiError::NotAcceptable(msg) => &msg,
+            ApiError::Conflict(msg) => &msg,
             ApiError::NotFound(msg) => &msg,
             ApiError::InternalError(msg) => &msg,
             ApiError::UnsupportedMediaType(msg) => &msg,
@@ -42,7 +46,9 @@ impl ApiError {
     pub fn status(&self) -> http::Status {
         match self {
             ApiError::BadRequest(_) => http::Status::BadRequest,
+            ApiError::Forbidden(_) => http::Status::Forbidden,
             ApiError::NotAcceptable(_) => http::Status::NotAcceptable,
+            ApiError::Conflict(_) => http::Status::Conflict,
             ApiError::NotFound(_) => http::Status::NotFound,
             ApiError::UnsupportedMediaType(_) => http::Status::UnsupportedMediaType,
             ApiError::InternalError(_) => http::Status::InternalServerError,
@@ -53,6 +59,7 @@ impl ApiError {
 impl From<StorageError> for ApiError {
     fn from(value: StorageError) -> Self {
         match value {
+            StorageError::Duplicate { id: _ } => ApiError::Conflict(value.to_string()),
             StorageError::NotFound { id: _ } => ApiError::NotFound(value.to_string()),
             _ => ApiError::InternalError(value.to_string()),
         }

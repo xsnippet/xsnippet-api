@@ -11,16 +11,16 @@ pub use jwt::JwtValidator;
 
 #[derive(Debug, PartialEq, Deserialize)]
 pub enum Permission {
-    /// Allows superusers to perform any actions.
-    #[serde(rename(deserialize = "admin"))]
-    Admin,
+    /// Allows users to import snippets (i.e. to create new snippets and set
+    /// the values of some protected Snippet fields like `id` or `created_at`).
+    #[serde(rename(deserialize = "import"))]
+    Import,
 }
 
 #[derive(Debug, PartialEq)]
 pub enum User {
     /// Authenticated user. Can create, retrieve, update, and delete private
-    /// snippets. May have additional permissions (e.g. if this is an admin
-    /// user).
+    /// snippets. May have additional permissions.
     Authenticated {
         name: String,
         permissions: Vec<Permission>,
@@ -28,6 +28,19 @@ pub enum User {
 
     /// Anonymous user. Can create and retrieve publicly available snippets.
     Guest,
+}
+
+impl User {
+    /// Returns true if the user is allowed to import snippets (i.e. set values
+    /// of the fields that normally are automatically generated, e.g. `id`
+    /// or `created_at`).
+    pub fn can_import_snippets(&self) -> bool {
+        if let User::Authenticated { permissions, .. } = self {
+            permissions.contains(&Permission::Import)
+        } else {
+            false
+        }
+    }
 }
 
 #[derive(Debug)]
@@ -102,5 +115,27 @@ impl<'a, 'r> FromRequest<'a, 'r> for BearerAuth {
             },
             None => Outcome::Success(BearerAuth(User::Guest)),
         }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn can_import_snippets() {
+        let guest = User::Guest;
+        let user = User::Authenticated {
+            name: String::from("user"),
+            permissions: vec![],
+        };
+        let importer = User::Authenticated {
+            name: String::from("importer"),
+            permissions: vec![Permission::Import],
+        };
+
+        assert!(!guest.can_import_snippets());
+        assert!(!user.can_import_snippets());
+        assert!(importer.can_import_snippets());
     }
 }

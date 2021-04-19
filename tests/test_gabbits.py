@@ -236,7 +236,7 @@ class XSnippetApiWithCustomAuthProvider(XSnippetApi):
 
         return {
             "TOKEN_VALID": generate("user"),
-            "TOKEN_ADMIN": generate("admin", permissions=("admin", )),
+            "TOKEN_IMPORT": generate("importer", permissions=("import", )),
             "TOKEN_EXPIRED": generate("user", expires_in=-3600),
             "TOKEN_UNKNOWN_KEY": generate("user", key_id="spam"),
             "TOKEN_UNSUPPORTED_ALGORITHM": generate("user", algorithm="PS256"),
