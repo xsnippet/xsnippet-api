@@ -74,13 +74,20 @@ jobs:
           args: --release
 
       - run: |
+          rustc --print cfg | grep = > rustc.vars
+          source rustc.vars
+
+          pushd target/release
           if [ "$RUNNER_OS" == "Windows" ]; then
-            echo "ASSET_NAME=xsnippet-api-${{ matrix.os }}.exe" >> $GITHUB_ENV
-            echo "ASSET_PATH=./target/release/xsnippet-api.exe" >> $GITHUB_ENV
+            echo "ASSET_NAME=xsnippet-api-${target_arch}-${target_os}.exe.7z" >> $GITHUB_ENV
+            echo "ASSET_PATH=./target/release/xsnippet-api.exe.7z" >> $GITHUB_ENV
+            7z a xsnippet-api.exe.7z xsnippet-api.exe
           else
-            echo "ASSET_NAME=xsnippet-api-${{ matrix.os }}" >> $GITHUB_ENV
-            echo "ASSET_PATH=./target/release/xsnippet-api" >> $GITHUB_ENV
+            echo "ASSET_NAME=xsnippet-api-${target_arch}-${target_os}.gz" >> $GITHUB_ENV
+            echo "ASSET_PATH=./target/release/xsnippet-api.gz" >> $GITHUB_ENV
+            tar cvzf xsnippet-api.gz xsnippet-api
           fi
+          popd
 
       - uses: actions/upload-release-asset@v1
         env:
