@@ -1,0 +1,131 @@
+common:
+  - &datetime_regex /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d+(\+\d{2}:\d{2})|Z$/
+  - &request_id_regex /^[0-9a-fA-F]{8}-([0-9a-fA-F]{4}-){3}[0-9a-fA-F]{12}$/
+  - &slug_regex /^[a-zA-Z0-9]+$/
+
+fixtures:
+  - XSnippetApiWithSnippets
+
+tests:
+  - name: get recent snippets with tag=decorator
+    GET: /v1/snippets
+    query_parameters:
+      tag: decorator
+    response_headers:
+      content-type: application/json
+      x-request-id: *request_id_regex
+    response_json_paths:
+      $.[0].id: *slug_regex
+      $.[0].content: "01"
+      $.[0].title: "caching decorator"
+      $.[0].syntax: "python"
+      $.[0].tags: ["decorator", "caching"]
+      $.[0].created_at: *datetime_regex
+      $.[0].updated_at: *datetime_regex
+      $.[0].`len`: 7
+
+      $.[1].id: *slug_regex
+      $.[1].content: "03"
+      $.[1].title: "auth decorator"
+      $.[1].syntax: "python"
+      $.[1].tags: ["decorator"]
+      $.[1].created_at: *datetime_regex
+      $.[1].updated_at: *datetime_regex
+      $.[1].`len`: 7
+
+      $.`len`: 2
+    status: 200
+
+  - name: get recent snippets with tag=rocket (no matches)
+    GET: /v1/snippets
+    query_parameters:
+      tag: rocket
+    response_headers:
+      content-type: application/json
+      x-request-id: *request_id_regex
+    response_json_paths:
+      $: []
+    status: 200
+
+  - name: get recent snippets with syntax=rust
+    GET: /v1/snippets
+    query_parameters:
+      syntax: rust
+    response_headers:
+      content-type: application/json
+      x-request-id: *request_id_regex
+    response_json_paths:
+      $.[0].id: *slug_regex
+      $.[0].content: "02"
+      $.[0].title: "rocket content negotiation guard"
+      $.[0].syntax: "rust"
+      $.[0].tags: []
+      $.[0].created_at: *datetime_regex
+      $.[0].updated_at: *datetime_regex
+      $.[0].`len`: 7
+
+      $.`len`: 1
+    status: 200
+
+  - name: get recent snippets with syntax=clojure (no matches)
+    GET: /v1/snippets
+    query_parameters:
+      syntax: clojure
+    response_headers:
+      content-type: application/json
+      x-request-id: *request_id_regex
+    response_json_paths:
+      $: []
+    status: 200
+
+  - name: get recent snippets with title="caching decorator"
+    GET: /v1/snippets
+    query_parameters:
+      title: caching decorator
+    response_headers:
+      content-type: application/json
+      x-request-id: *request_id_regex
+    response_json_paths:
+      $.[0].id: *slug_regex
+      $.[0].content: "01"
+      $.[0].title: "caching decorator"
+      $.[0].syntax: "python"
+      $.[0].tags: ["decorator", "caching"]
+      $.[0].created_at: *datetime_regex
+      $.[0].updated_at: *datetime_regex
+      $.[0].`len`: 7
+
+      $.`len`: 1
+    status: 200
+
+  - name: get recent snippets with title=rocket example (no matches)
+    GET: /v1/snippets
+    query_parameters:
+      title: rocket example
+    response_headers:
+      content-type: application/json
+      x-request-id: *request_id_regex
+    response_json_paths:
+      $: []
+    status: 200
+
+  - name: get recent snippets with syntax=python and tag=caching
+    GET: /v1/snippets
+    query_parameters:
+      syntax: python
+      tag: caching
+    response_headers:
+      content-type: application/json
+      x-request-id: *request_id_regex
+    response_json_paths:
+      $.[0].id: *slug_regex
+      $.[0].content: "01"
+      $.[0].title: "caching decorator"
+      $.[0].syntax: "python"
+      $.[0].tags: ["decorator", "caching"]
+      $.[0].created_at: *datetime_regex
+      $.[0].updated_at: *datetime_regex
+      $.[0].`len`: 7
+
+      $.`len`: 1
+    status: 200

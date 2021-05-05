@@ -3,7 +3,6 @@ use std::iter;
 use rand::Rng;
 use serde::{ser::SerializeStruct, Serialize, Serializer};
 
-const DEFAULT_LIMIT_SIZE: usize = 20;
 const DEFAULT_SLUG_LENGTH: usize = 8;
 
 pub type DateTime = chrono::DateTime<chrono::Utc>;
@@ -82,7 +81,7 @@ impl Serialize for Snippet {
     }
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub enum Direction {
     /// From older to newer snippets.
     #[allow(dead_code)]
@@ -91,7 +90,7 @@ pub enum Direction {
     Desc,
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct Pagination {
     /// Pagination direction.
     pub direction: Direction,
@@ -104,17 +103,21 @@ pub struct Pagination {
     pub marker: Option<String>,
 }
 
+impl Pagination {
+    pub const DEFAULT_LIMIT_SIZE: usize = 20;
+}
+
 impl Default for Pagination {
     fn default() -> Self {
         Pagination {
             direction: Direction::Desc,
-            limit: DEFAULT_LIMIT_SIZE,
+            limit: Self::DEFAULT_LIMIT_SIZE,
             marker: None,
         }
     }
 }
 
-#[derive(Debug, Default)]
+#[derive(Debug, Default, Clone)]
 pub struct ListSnippetsQuery {
     /// If set, only the snippets with the specified title will be returned.
     pub title: Option<String>,

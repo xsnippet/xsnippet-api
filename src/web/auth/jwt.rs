@@ -130,7 +130,7 @@ impl AuthValidator for JwtValidator {
 
                 let key = self
                     .jwks
-                    .find(&key_id)
+                    .find(key_id)
                     .filter(|key| key.alg == header.alg && key.r#use == "sig")
                     .ok_or_else(|| {
                         Error::Configuration(format!("Signing key {:?} can't be found", key_id))
@@ -141,7 +141,7 @@ impl AuthValidator for JwtValidator {
             alg => return Err(Error::Input(format!("Unsupported algorithm: {:?}", alg))),
         };
 
-        match jsonwebtoken::decode::<Claims>(&token, &key, &self.validation) {
+        match jsonwebtoken::decode::<Claims>(token, &key, &self.validation) {
             Ok(data) => Ok(User::Authenticated {
                 name: data.claims.sub,
                 permissions: data.claims.permissions,

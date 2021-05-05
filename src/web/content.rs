@@ -1,17 +1,20 @@
 use std::io::Read;
 
-use response::Responder;
 use serde::de::Deserialize;
 use serde::Serialize;
 
-use rocket::data::{Data, FromData, Outcome, Transform, Transform::*, Transformed};
-use rocket::http::{Accept, ContentType, QMediaType, Status};
+use rocket::http::{Accept, ContentType, HeaderMap, QMediaType, Status};
 use rocket::outcome::Outcome::*;
 use rocket::request::{self, FromRequest, Request};
-use rocket::response;
+use rocket::response::{self, Responder, Response};
+use rocket::{
+    data::{Data, FromData, Outcome, Transform, Transform::*, Transformed},
+    request::FromFormValue,
+};
 use rocket_contrib::json::Json;
 
 use crate::errors::ApiError;
+use crate::storage::Pagination;
 
 /// The default limit for the request size (to prevent DoS attacks). Can be
 /// overriden in the config by setting `max_request_size` to a different value
@@ -21,6 +24,10 @@ const MAX_REQUEST_SIZE: u64 = 1024 * 1024;
 const SUPPORTED_MEDIA_TYPES: [ContentType; 1] = [ContentType::JSON];
 const SUPPORTED_MEDIA_TYPES_ERROR: &str = "Support media types: application/json";
 const PREFERRED_MEDIA_TYPE: ContentType = ContentType::JSON;
+// Pagination limit boundaries. Values outside of the boundary are not allowed
+// and will fail the request.
+const PAGINATION_LIMIT_MIN: usize = 1;
+const PAGINATION_LIMIT_MAX: usize = 20;
 
 /// A wrapper struct that implements [`FromData`], allowing to accept data
 /// serialized into different formats. The value of the Content-Type request
@@ -64,7 +71,7 @@ where
 
         let content_type = request.content_type().unwrap_or(&ContentType::JSON);
         if content_type == &ContentType::JSON {
-            match serde_json::from_str(&data) {
+            match serde_json::from_str(data) {
                 Ok(v) => Success(Input(v)),
                 Err(e) => {
                     if e.is_syntax() {
@@ -112,6 +119,54 @@ impl<'a, T: Serialize> Responder<'a> for Output<T> {
             )
             .respond_to(request),
             _ => unreachable!(),
+        }
+    }
+}
+
+/// A Rocket responder that generates response with extra HTTP headers.
+pub struct WithHttpHeaders<'h, R>(pub HeaderMap<'h>, pub Option<R>);
+
+impl<'r, R: Responder<'r>> Responder<'r> for WithHttpHeaders<'r, R> {
+    fn respond_to(self, request: &Request) -> Result<Response<'r>, Status> {
+        let mut build = Response::build();
+
+        if let Some(responder) = self.1 {
+            build.merge(responder.respond_to(request)?);
+        }
+
+        for header in self.0.into_iter() {
+            build.header(header);
+        }
+
+        build.ok()
+    }
+}
+
+/// A guard that implements extra validation for pagination's 'limit' value.
+/// Essentially ensures it lies within an allowed range.
+pub struct PaginationLimit(pub usize);
+
+impl Default for PaginationLimit {
+    fn default() -> Self {
+        PaginationLimit(Pagination::DEFAULT_LIMIT_SIZE)
+    }
+}
+
+impl FromFormValue<'_> for PaginationLimit {
+    type Error = ApiError;
+
+    fn from_form_value(form_value: &rocket::http::RawStr) -> Result<Self, Self::Error> {
+        match form_value.parse::<usize>() {
+            Ok(limit) => {
+                if !(PAGINATION_LIMIT_MIN..=PAGINATION_LIMIT_MAX).contains(&limit) {
+                    return Err(ApiError::BadRequest(format!(
+                        "Limit must be an integer between {} and {}",
+                        PAGINATION_LIMIT_MIN, PAGINATION_LIMIT_MAX
+                    )));
+                }
+                Ok(PaginationLimit(limit))
+            }
+            Err(message) => Err(ApiError::BadRequest(message.to_string())),
         }
     }
 }

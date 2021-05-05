@@ -1,3 +1,4 @@
+import atexit
 import base64
 import json
 import math
@@ -14,10 +15,13 @@ import alembic.config
 import gabbi.driver
 import gabbi.fixture
 import jwt
+import requests
+import requests.utils
 import sqlalchemy
 
 from cryptography.hazmat.primitives.asymmetric import rsa
 from gabbi.driver import test_pytest
+from gabbi.handlers import base
 
 
 XSNIPPET_API_HOST = "127.0.0.1"
@@ -100,11 +104,8 @@ class XSnippetApi(gabbi.fixture.GabbiFixture):
         # it can be used by the fixture to create new databases again
         os.environ["ROCKET_DATABASE_URL"] = str(self.management_db.url)
 
-    def start_fixture(self):
-        """Start the live server."""
 
-        self.setup_db()
-
+    def start_server(self):
         environ = os.environ.copy()
         environ.update(self.environ)
 
@@ -120,23 +121,41 @@ class XSnippetApi(gabbi.fixture.GabbiFixture):
                                         stderr=subprocess.STDOUT)
         _wait_for_socket(XSNIPPET_API_HOST, XSNIPPET_API_PORT, self._launch_timeout)
 
+    def stop_server(self):
+        if self.process:
+            self.process.terminate()
+            try:
+                self.process.wait(timeout=self._shutdown_timeout)
+            except TimeoutError:
+                self.process.kill()
+            finally:
+                self.application_log.seek(0)
+                print('xsnippet-api log:')
+                print(self.application_log.read().decode())
+                self.application_log.close()
+
+                self.process = None
+
+    def start_fixture(self):
+        """Start the live server."""
+
+        self.setup_db()
+        self.start_server()
+
+        # Due to the issue in Gabbi, when `pytest` is invoked with either
+        # `--exitfirst/-x` or `--maxfail`, and there are enough failures to
+        # trigger premature exit, Gabbi won't invoke `.stop_fixture()` and we
+        # will end up with lingering `xsnippet-api` process.
+        #
+        # https://github.com/cdent/gabbi/blob/0aec41e2fe0d065144b679a798829b70b244a3b0/gabbi/pytester.py#L51-L73
+        # https://github.com/cdent/gabbi/blob/0aec41e2fe0d065144b679a798829b70b244a3b0/gabbi/pytester.py#L134-L137
+        atexit.register(self.stop_server)
+
     def stop_fixture(self):
         """Stop the live server."""
 
         try:
-            if self.process:
-                self.process.terminate()
-                try:
-                    self.process.wait(timeout=self._shutdown_timeout)
-                except TimeoutError:
-                    self.process.kill()
-                finally:
-                    self.application_log.seek(0)
-                    print('xsnippet-api log:')
-                    print(self.application_log.read().decode())
-                    self.application_log.close()
-
-                    self.process = None
+            self.stop_server()
         finally:
             self.teardown_db()
 
@@ -265,6 +284,76 @@ class XSnippetApiWithCustomAuthProvider(XSnippetApi):
         })
 
 
+class XSnippetApiWithSnippets(XSnippetApi):
+    """Start live server of XSnippet API with pre-created snippets."""
+
+    snippets = [
+        {
+            "content": "01",
+            "title": "caching decorator",
+            "syntax": "python",
+            "tags": ["decorator", "caching"],
+        },
+        {
+            "content": "02",
+            "title": "rocket content negotiation guard",
+            "syntax": "rust",
+        },
+        {
+            "content": "03",
+            "title": "auth decorator",
+            "syntax": "python",
+            "tags": ["decorator"],
+        },
+        {
+            "content": "04",
+        },
+        {
+            "content": "05",
+        },
+        {
+            "content": "06",
+        },
+        {
+            "content": "07",
+        },
+        {
+            "content": "08",
+        },
+        {
+            "content": "09",
+        },
+        {
+            "content": "10",
+        },
+    ]
+
+    def start_fixture(self):
+        super().start_fixture()
+
+        session = requests.Session()
+        endpoint = f"http://{XSNIPPET_API_HOST}:{XSNIPPET_API_PORT}/v1/snippets"
+
+        # Snippets are inserted in reverse because they are returned in
+        # descending order by default.
+        for snippet in reversed(self.snippets):
+            response = session.post(endpoint, data=json.dumps(snippet))
+            response.raise_for_status()
+
+
+class LinkHeaderResponseHandler(base.ResponseHandler):
+    """Link HTTP header response handler for Gabbi."""
+
+    test_key_suffix = "link_header"
+    test_key_value = []
+
+    def action(self, test, item, value=None):
+        item = test.replace_template(item)
+        link_items = requests.utils.parse_header_links(test.response["Link"])
+
+        test.assertIn(item, link_items)
+
+
 def _wait_for_socket(host, port, timeout):
     """Wait for socket to start accepting connections."""
 
@@ -289,5 +378,6 @@ def pytest_generate_tests(metafunc):
         host=XSNIPPET_API_HOST,
         port=XSNIPPET_API_PORT,
         fixture_module=sys.modules[__name__],
+        response_handlers=[LinkHeaderResponseHandler],
         metafunc=metafunc,
     )
