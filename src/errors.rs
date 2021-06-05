@@ -32,7 +32,7 @@ impl ApiError {
     /// Reason why the request failed.
     pub fn reason(&self) -> &str {
         match self {
-            ApiError::BadRequest(msg) => &msg,
+            ApiError::BadRequest(msg) => msg,
             ApiError::Forbidden(msg) => &msg,
             ApiError::NotAcceptable(msg) => &msg,
             ApiError::Conflict(msg) => &msg,
