@@ -1,0 +1,256 @@
+common:
+  - &datetime_regex /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d+(\+\d{2}:\d{2})|Z$/
+  - &request_id_regex /^[0-9a-fA-F]{8}-([0-9a-fA-F]{4}-){3}[0-9a-fA-F]{12}$/
+  - &slug_regex /^[a-zA-Z0-9]+$/
+
+fixtures:
+  - XSnippetApiWithSnippets
+
+tests:
+  - name: get recent snippets
+    GET: /v1/snippets
+    query_parameters:
+      limit: 4
+    response_headers:
+      content-type: application/json
+      x-request-id: *request_id_regex
+    response_link_header:
+      - url: /v1/snippets?limit=4
+        rel: first
+      - url: /v1/snippets?limit=4&marker=$HISTORY['get recent snippets'].$RESPONSE['$.[3].id']
+        rel: next
+    response_json_paths:
+      $.[0].id: *slug_regex
+      $.[0].content: "01"
+      $.[0].title: "caching decorator"
+      $.[0].syntax: "python"
+      $.[0].tags: ["decorator", "caching"]
+      $.[0].created_at: *datetime_regex
+      $.[0].updated_at: *datetime_regex
+      $.[0].`len`: 7
+
+      $.[1].id: *slug_regex
+      $.[1].content: "02"
+      $.[1].title: "rocket content negotiation guard"
+      $.[1].syntax: "rust"
+      $.[1].tags: []
+      $.[1].created_at: *datetime_regex
+      $.[1].updated_at: *datetime_regex
+      $.[1].`len`: 7
+
+      $.[2].id: *slug_regex
+      $.[2].content: "03"
+      $.[2].title: "auth decorator"
+      $.[2].syntax: "python"
+      $.[2].tags: ["decorator"]
+      $.[2].created_at: *datetime_regex
+      $.[2].updated_at: *datetime_regex
+      $.[2].`len`: 7
+
+      $.[3].id: *slug_regex
+      $.[3].content: "04"
+      $.[3].title: null
+      $.[3].syntax: null
+      $.[3].tags: []
+      $.[3].created_at: *datetime_regex
+      $.[3].updated_at: *datetime_regex
+      $.[3].`len`: 7
+
+      $.`len`: 4
+    status: 200
+
+  - name: get next page (second page)
+    GET: /v1/snippets
+    query_parameters:
+      limit: 4
+      marker: $HISTORY['get recent snippets'].$RESPONSE['$.[3].id']
+    response_headers:
+      content-type: application/json
+      x-request-id: *request_id_regex
+    response_link_header:
+      - url: /v1/snippets?limit=4
+        rel: first
+      - url: /v1/snippets?limit=4&marker=$HISTORY['get next page (second page)'].$RESPONSE['$.[3].id']
+        rel: next
+      - url: /v1/snippets?limit=4
+        rel: prev
+    response_json_paths:
+      $.[0].id: *slug_regex
+      $.[0].content: "05"
+      $.[0].title: null
+      $.[0].syntax: null
+      $.[0].tags: []
+      $.[0].created_at: *datetime_regex
+      $.[0].updated_at: *datetime_regex
+      $.[0].`len`: 7
+
+      $.[1].id: *slug_regex
+      $.[1].content: "06"
+      $.[1].title: null
+      $.[1].syntax: null
+      $.[1].tags: []
+      $.[1].created_at: *datetime_regex
+      $.[1].updated_at: *datetime_regex
+      $.[1].`len`: 7
+
+      $.[2].id: *slug_regex
+      $.[2].content: "07"
+      $.[2].title: null
+      $.[2].syntax: null
+      $.[2].tags: []
+      $.[2].created_at: *datetime_regex
+      $.[2].updated_at: *datetime_regex
+      $.[2].`len`: 7
+
+      $.[3].id: *slug_regex
+      $.[3].content: "08"
+      $.[3].title: null
+      $.[3].syntax: null
+      $.[3].tags: []
+      $.[3].created_at: *datetime_regex
+      $.[3].updated_at: *datetime_regex
+      $.[3].`len`: 7
+
+      $.`len`: 4
+
+  - name: get next page (last page)
+    GET: /v1/snippets
+    query_parameters:
+      limit: 4
+      marker: $HISTORY['get next page (second page)'].$RESPONSE['$.[3].id']
+    response_headers:
+      content-type: application/json
+      x-request-id: *request_id_regex
+    response_link_header:
+      - url: /v1/snippets?limit=4
+        rel: first
+      - url: /v1/snippets?limit=4&marker=$HISTORY['get recent snippets'].$RESPONSE['$.[3].id']
+        rel: prev
+    response_json_paths:
+      $.[0].id: *slug_regex
+      $.[0].content: "09"
+      $.[0].title: null
+      $.[0].syntax: null
+      $.[0].tags: []
+      $.[0].created_at: *datetime_regex
+      $.[0].updated_at: *datetime_regex
+      $.[0].`len`: 7
+
+      $.[1].id: *slug_regex
+      $.[1].content: "10"
+      $.[1].title: null
+      $.[1].syntax: null
+      $.[1].tags: []
+      $.[1].created_at: *datetime_regex
+      $.[1].updated_at: *datetime_regex
+      $.[1].`len`: 7
+
+      $.`len`: 2
+
+  - name: get first page with offset
+    GET: /v1/snippets
+    query_parameters:
+      limit: 4
+      marker: $HISTORY['get recent snippets'].$RESPONSE['$.[1].id']
+    response_headers:
+      content-type: application/json
+      x-request-id: *request_id_regex
+    response_link_header:
+      - url: /v1/snippets?limit=4
+        rel: first
+      - url: /v1/snippets?limit=4&marker=$HISTORY['get first page with offset'].$RESPONSE['$.[3].id']
+        rel: next
+      - url: /v1/snippets?limit=4
+        rel: prev
+    response_json_paths:
+      $.[0].id: *slug_regex
+      $.[0].content: "03"
+      $.[0].title: "auth decorator"
+      $.[0].syntax: "python"
+      $.[0].tags: ["decorator"]
+      $.[0].created_at: *datetime_regex
+      $.[0].updated_at: *datetime_regex
+      $.[0].`len`: 7
+
+      $.[1].id: *slug_regex
+      $.[1].content: "04"
+      $.[1].title: null
+      $.[1].syntax: null
+      $.[1].tags: []
+      $.[1].created_at: *datetime_regex
+      $.[1].updated_at: *datetime_regex
+      $.[1].`len`: 7
+
+      $.[2].id: *slug_regex
+      $.[2].content: "05"
+      $.[2].title: null
+      $.[2].syntax: null
+      $.[2].tags: []
+      $.[2].created_at: *datetime_regex
+      $.[2].updated_at: *datetime_regex
+      $.[2].`len`: 7
+
+      $.[3].id: *slug_regex
+      $.[3].content: "06"
+      $.[3].title: null
+      $.[3].syntax: null
+      $.[3].tags: []
+      $.[3].created_at: *datetime_regex
+      $.[3].updated_at: *datetime_regex
+      $.[3].`len`: 7
+
+      $.`len`: 4
+    status: 200
+
+  - name: get last page
+    GET: /v1/snippets
+    query_parameters:
+      limit: 4
+      marker: $HISTORY['get next page (second page)'].$RESPONSE['$.[1].id']
+    response_headers:
+      content-type: application/json
+      x-request-id: *request_id_regex
+    response_link_header:
+      - url: /v1/snippets?limit=4
+        rel: first
+      - url: /v1/snippets?limit=4&marker=$HISTORY['get recent snippets'].$RESPONSE['$.[1].id']
+        rel: prev
+    response_json_paths:
+      $.[0].id: *slug_regex
+      $.[0].content: "07"
+      $.[0].title: null
+      $.[0].syntax: null
+      $.[0].tags: []
+      $.[0].created_at: *datetime_regex
+      $.[0].updated_at: *datetime_regex
+      $.[0].`len`: 7
+
+      $.[1].id: *slug_regex
+      $.[1].content: "08"
+      $.[1].title: null
+      $.[1].syntax: null
+      $.[1].tags: []
+      $.[1].created_at: *datetime_regex
+      $.[1].updated_at: *datetime_regex
+      $.[1].`len`: 7
+
+      $.[2].id: *slug_regex
+      $.[2].content: "09"
+      $.[2].title: null
+      $.[2].syntax: null
+      $.[2].tags: []
+      $.[2].created_at: *datetime_regex
+      $.[2].updated_at: *datetime_regex
+      $.[2].`len`: 7
+
+      $.[3].id: *slug_regex
+      $.[3].content: "10"
+      $.[3].title: null
+      $.[3].syntax: null
+      $.[3].tags: []
+      $.[3].created_at: *datetime_regex
+      $.[3].updated_at: *datetime_regex
+      $.[3].`len`: 7
+
+      $.`len`: 4
+    status: 200

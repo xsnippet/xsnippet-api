@@ -1,14 +1,18 @@
 use std::convert::TryFrom;
 
+use percent_encoding::{utf8_percent_encode, AsciiSet, CONTROLS};
 use rocket::http::uri::Origin;
+use rocket::http::{HeaderMap, RawStr};
 use rocket::response::status::Created;
 use rocket::State;
 use serde::Deserialize;
 
 use crate::application::Config;
 use crate::errors::ApiError;
-use crate::storage::{Changeset, DateTime, Snippet, Storage};
-use crate::web::{BearerAuth, Input, NegotiatedContentType, Output};
+use crate::storage::{Changeset, DateTime, Direction, ListSnippetsQuery, Snippet, Storage};
+use crate::web::{
+    BearerAuth, Input, NegotiatedContentType, Output, PaginationLimit, WithHttpHeaders,
+};
 
 fn create_snippet_impl(
     storage: &dyn Storage,
@@ -19,6 +23,68 @@ fn create_snippet_impl(
 
     let location = vec![base_path.to_string(), new_snippet.id.to_string()].join("/");
     Ok(Created(location, Some(Output(new_snippet))))
+}
+
+fn create_link_header(
+    origin: &Origin,
+    next_marker: Option<String>,
+    prev_marker: Option<String>,
+    prev_needed: bool,
+) -> String {
+    const QUERY_ENCODE_SET: &AsciiSet = &CONTROLS
+        .add(b' ')
+        .add(b'"')
+        .add(b'#')
+        .add(b'<')
+        .add(b'>')
+        .add(b'&');
+
+    let query_wo_marker = origin.query().map(|q| {
+        q.split('&')
+            .filter_map(|v| {
+                let v = RawStr::from_str(v).percent_decode_lossy();
+                if !v.starts_with("marker=") {
+                    Some(utf8_percent_encode(&v, QUERY_ENCODE_SET).to_string())
+                } else {
+                    None
+                }
+            })
+            .collect::<Vec<_>>()
+            .join("&")
+    });
+    let query_first = query_wo_marker.clone();
+    let mut query_next = next_marker.map(|marker| format!("marker={}", marker));
+    let mut query_prev = prev_marker.map(|marker| format!("marker={}", marker));
+
+    // If a request URL does contain query parameters (other than marker), we
+    // must reuse them together with next/prev markers.
+    if let Some(query_wo_marker) = query_wo_marker {
+        query_next = query_next.map(|query| format!("{}&{}", query_wo_marker, query));
+        query_prev = query_prev.map(|query| format!("{}&{}", query_wo_marker, query));
+    }
+
+    // If a previous page is the first page, we don't have 'prev_marker' set
+    // yet the link must be generated. If that's the case, reuse query
+    // parameters we are using to generate a link to the first page.
+    if query_prev.is_none() && prev_needed {
+        query_prev = query_first.clone();
+    }
+
+    vec![
+        // (query string, rel, is_required)
+        (&query_first, "first", true),
+        (&query_next, "next", query_next.is_some()),
+        (&query_prev, "prev", prev_needed),
+    ]
+    .into_iter()
+    .filter(|item| item.2)
+    .map(|item| match item.0 {
+        Some(query) => (vec![origin.path(), query.as_str()].join("?"), item.1),
+        None => (origin.path().to_owned(), item.1),
+    })
+    .map(|item| format!("<{}>; rel=\"{}\"", item.0, item.1))
+    .collect::<Vec<_>>()
+    .join(", ")
 }
 
 #[derive(Deserialize)]
@@ -75,6 +141,68 @@ pub fn create_snippet(
 ) -> Result<Created<Output<Snippet>>, ApiError> {
     let snippet = Snippet::try_from((&*config, body?.0))?;
     create_snippet_impl(&**storage, &snippet, origin.path())
+}
+
+fn split_marker(mut snippets: Vec<Snippet>, limit: usize) -> (Option<String>, Vec<Snippet>) {
+    if snippets.len() > limit {
+        snippets.truncate(limit);
+        (snippets.last().map(|m| m.id.to_owned()), snippets)
+    } else {
+        (None, snippets)
+    }
+}
+
+#[allow(clippy::too_many_arguments)]
+#[get("/snippets?<title>&<syntax>&<tag>&<marker>&<limit>")]
+pub fn list_snippets<'o, 'h>(
+    storage: State<Box<dyn Storage>>,
+    origin: &'o Origin,
+    title: Option<String>,
+    syntax: Option<String>,
+    tag: Option<String>,
+    limit: Option<Result<PaginationLimit, ApiError>>,
+    marker: Option<String>,
+    _content_type: NegotiatedContentType,
+    _user: BearerAuth,
+) -> Result<WithHttpHeaders<'h, Output<Vec<Snippet>>>, ApiError> {
+    let mut criteria = ListSnippetsQuery {
+        title,
+        syntax,
+        tags: tag.map(|v| vec![v]),
+        ..Default::default()
+    };
+
+    // Fetch one more record in order to detect if there's a next page, and
+    // generate appropriate Link entry accordingly.
+    let limit = limit
+        .unwrap_or_else(|| Ok(<PaginationLimit as Default>::default()))?
+        .0;
+    criteria.pagination.limit = limit + 1;
+    criteria.pagination.marker = marker;
+
+    let snippets = storage.list(criteria.clone())?;
+    let mut prev_needed = false;
+    let (next_marker, snippets) = split_marker(snippets, limit);
+    let prev_marker = if criteria.pagination.marker.is_some() && !snippets.is_empty() {
+        // In order to generate Link entry for previous page we have no choice
+        // but to issue the query one more time into opposite direction.
+        criteria.pagination.direction = Direction::Asc;
+        criteria.pagination.marker = Some(snippets[0].id.to_owned());
+        let prev_snippets = storage.list(criteria)?;
+        prev_needed = !prev_snippets.is_empty();
+
+        prev_snippets.get(limit).map(|m| m.id.to_owned())
+    } else {
+        None
+    };
+
+    let mut headers_map = HeaderMap::new();
+    headers_map.add_raw(
+        "Link",
+        create_link_header(origin, next_marker, prev_marker, prev_needed),
+    );
+
+    Ok(WithHttpHeaders(headers_map, Some(Output(snippets))))
 }
 
 #[derive(Deserialize)]

@@ -1,0 +1,42 @@
+common:
+  - &datetime_regex /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d+(\+\d{2}:\d{2})|Z$/
+  - &request_id_regex /^[0-9a-fA-F]{8}-([0-9a-fA-F]{4}-){3}[0-9a-fA-F]{12}$/
+  - &slug_regex /^[a-zA-Z0-9]+$/
+
+fixtures:
+  - XSnippetApiWithSnippets
+
+tests:
+  - name: get next page (marker not found)
+    GET: /v1/snippets
+    query_parameters:
+      limit: 4
+      marker: lEGalACG
+    response_headers:
+      content-type: application/json
+      x-request-id: *request_id_regex
+    response_json_paths:
+      $.message: Snippet with id `lEGalACG` is not found
+    status: 404
+
+  - name: get page (limit is zero)
+    GET: /v1/snippets
+    query_parameters:
+      limit: 0
+    response_headers:
+      content-type: application/json
+      x-request-id: *request_id_regex
+    response_json_paths:
+      $.message: Limit must be an integer between 1 and 20
+    status: 400
+
+  - name: get page (limit is out of bound)
+    GET: /v1/snippets
+    query_parameters:
+      limit: 21
+    response_headers:
+      content-type: application/json
+      x-request-id: *request_id_regex
+    response_json_paths:
+      $.message: Limit must be an integer between 1 and 20
+    status: 400
