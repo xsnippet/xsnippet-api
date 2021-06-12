@@ -341,6 +341,86 @@ class XSnippetApiWithSnippets(XSnippetApi):
             response.raise_for_status()
 
 
+class XSnippetApiWithImportedSnippets(XSnippetApiWithCustomAuthProvider):
+    """Start live server of XSnippet API with pre-imported snippets.
+
+    The difference between this fixture and XSnippetApiWithSnippets is that
+    snippets are "imported" rather than created, i.e. they already have some
+    values of the `id` and `created_at` fields that must be preserved. Also,
+    regardless of the order in which snippets are imported, the pagination
+    will work based on the value of `created_at`. When values of `created_at`
+    are identical, creation order is preserved.
+    """
+
+    snippets = [
+        {
+            "id": "06",
+            "content": "06",
+            "created_at": "2021-06-05T15:06:05Z",
+        },
+        {
+            "id": "02",
+            "content": "02",
+            "created_at": "2021-06-05T15:06:09Z",
+        },
+        # the next 3 have the identical `created_at` value, and will be sorted
+        # in the creation order. The test will verify that 03 is considered to
+        # be more recent than 05.
+        {
+            "id": "05",
+            "content": "05",
+            "created_at": "2021-06-05T15:06:08Z",
+        },
+        {
+            "id": "04",
+            "content": "04",
+            "created_at": "2021-06-05T15:06:08Z",
+        },
+        {
+            "id": "03",
+            "content": "03",
+            "created_at": "2021-06-05T15:06:08Z",
+        },
+        {
+            "id": "09",
+            "content": "09",
+            "created_at": "2021-06-05T15:06:02Z",
+        },
+        {
+            "id": "07",
+            "content": "07",
+            "created_at": "2021-06-05T15:06:04Z",
+        },
+        {
+            "id": "01",
+            "content": "01",
+            "created_at": "2021-06-05T15:06:10Z",
+        },
+        {
+            "id": "08",
+            "content": "08",
+            "created_at": "2021-06-05T15:06:03Z",
+        },
+        {
+            "id": "10",
+            "content": "10",
+            "created_at": "2021-06-05T15:06:01Z",
+        },
+    ]
+
+    def start_fixture(self):
+        super().start_fixture()
+
+        token = self.tokens["TOKEN_IMPORT"]
+        session = requests.Session()
+        endpoint = f"http://{XSNIPPET_API_HOST}:{XSNIPPET_API_PORT}/v1/snippets/import"
+
+        for snippet in self.snippets:
+            response = session.post(endpoint, data=json.dumps(snippet),
+                                    headers={"Authorization": f"Bearer {token}"})
+            response.raise_for_status()
+
+
 class LinkHeaderResponseHandler(base.ResponseHandler):
     """Link HTTP header response handler for Gabbi."""
 
