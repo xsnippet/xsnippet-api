@@ -3,6 +3,8 @@
 //! XSnippet API is a RESTful API for a simple web-service for sharing code
 //! snippets on the Internet.
 
+// Clippy bug: https://github.com/rust-lang/rust-clippy/issues/7422
+#![allow(clippy::nonstandard_macro_braces)]
 #![feature(proc_macro_hygiene, decl_macro)]
 
 #[macro_use]

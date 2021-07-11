@@ -184,7 +184,7 @@ impl Storage for SqlStorage {
         conn.transaction::<_, StorageError, _>(|| {
             let mut query = snippets::table.into_boxed();
 
-            // filters
+            // Filters
             if let Some(title) = criteria.title {
                 query = query.filter(snippets::title.eq(title));
             }
@@ -199,7 +199,11 @@ impl Storage for SqlStorage {
                 query = query.filter(snippets::id.eq_any(snippet_ids));
             }
 
-            // pagination
+            // Pagination. marker_internal_id is used to resolve the ties because the value
+            // of created_at is not guaranteed to be unique. In practice, we use
+            // microsecond precision for datetime fields, so duplicates are only
+            // expected in tests and, potentially, in snippets imported from
+            // Mongo that have second precision
             if let Some(marker) = criteria.pagination.marker {
                 let (marker_internal_id, marker) = self.get_snippet(&conn, &marker)?;
                 if let Some(marker_created_at) = marker.created_at {
@@ -207,16 +211,20 @@ impl Storage for SqlStorage {
                         Direction::Desc => query
                             .filter(
                                 snippets::created_at
-                                    .le(marker_created_at)
-                                    .and(snippets::id.lt(marker_internal_id)),
+                                    .lt(marker_created_at)
+                                    .or(snippets::created_at
+                                        .eq(marker_created_at)
+                                        .and(snippets::id.lt(marker_internal_id))),
                             )
                             .order_by(snippets::created_at.desc())
                             .then_order_by(snippets::id.desc()),
                         Direction::Asc => query
                             .filter(
                                 snippets::created_at
-                                    .ge(marker_created_at)
-                                    .and(snippets::id.gt(marker_internal_id)),
+                                    .gt(marker_created_at)
+                                    .or(snippets::created_at
+                                        .eq(marker_created_at)
+                                        .and(snippets::id.gt(marker_internal_id))),
                             )
                             .order_by(snippets::created_at.asc())
                             .then_order_by(snippets::id.asc()),
@@ -397,8 +405,8 @@ mod tests {
         }
     }
 
-    fn reference_snippets() -> Vec<Snippet> {
-        vec![
+    fn reference_snippets(created_at: Option<chrono::DateTime<chrono::Utc>>) -> Vec<Snippet> {
+        let mut snippets = vec![
             Snippet::new(
                 Some("Hello world".to_string()),
                 Some("python".to_string()),
@@ -420,7 +428,15 @@ mod tests {
                 vec![Changeset::new(1, "println!(42);".to_string())],
                 vec![],
             ),
-        ]
+        ];
+
+        if created_at.is_some() {
+            for snippet in snippets.iter_mut() {
+                snippet.created_at = created_at;
+            }
+        }
+
+        snippets
     }
 
     #[test]
@@ -428,7 +444,7 @@ mod tests {
         // This will be properly covered by higher level tests, so we just
         // want to perform a basic smoke check here.
         with_storage(|storage| {
-            let reference = reference_snippets().into_iter().next().unwrap();
+            let reference = reference_snippets(None).into_iter().next().unwrap();
             let mut updated_reference = Snippet::new(
                 Some("Hello world!".to_string()),
                 Some("python".to_string()),
@@ -487,7 +503,7 @@ mod tests {
             );
 
             // now insert reference snippets and try some queries
-            let reference = reference_snippets();
+            let reference = reference_snippets(None);
             for snippet in reference.iter() {
                 storage.create(snippet).expect("Failed to create a snippet");
             }
@@ -536,10 +552,8 @@ mod tests {
         });
     }
 
-    #[test]
-    fn pagination() {
+    fn pagination(reference: Vec<Snippet>) {
         with_storage(|storage| {
-            let reference = reference_snippets();
             for snippet in reference.iter() {
                 storage.create(snippet).expect("Failed to create a snippet");
             }
@@ -574,5 +588,15 @@ mod tests {
                 compare_snippets(expected, actual);
             }
         });
+    }
+
+    #[test]
+    fn pagination_with_monotonically_increasing_created_at() {
+        pagination(reference_snippets(None));
+    }
+
+    #[test]
+    fn pagination_with_identical_created_at() {
+        pagination(reference_snippets(Some(chrono::Utc::now())));
     }
 }
