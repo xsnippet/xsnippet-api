@@ -37,12 +37,15 @@ impl Jwks {
 #[derive(Debug, Deserialize)]
 struct Claims {
     /// Audience (who or that the token is intended for). E.g. "https://api.xsnippet.org".
+    #[allow(unused)]
     aud: String,
     /// Issuer (who created and signed this token). E.g. "https://xsnippet.eu.auth0.com/".
+    #[allow(unused)]
     iss: String,
     /// Subject (whom the token refers to). E.g. "spam@eggs.foo".
     sub: String,
     /// Expiration time (seconds since Unix epoch).
+    #[allow(unused)]
     exp: usize,
     /// Subject permissions (e.g. vec!["import"])
     permissions: Vec<Permission>,
