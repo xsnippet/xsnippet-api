@@ -71,12 +71,13 @@ jobs:
           toolchain: ${{ matrix.rust-version }}
           override: true
 
-      - name: Start PostgreSQL
-        uses: ./.github/actions/setup-postgres
+      - name: Setup PostgreSQL
+        uses: ikalnytskyi/action-setup-postgres@v1
+        id: postgres
 
       - name: Set ROCKET_DATABASE_URL
         run: |
-          echo "ROCKET_DATABASE_URL=postgresql://postgres:postgres@localhost/postgres" >> $GITHUB_ENV
+          echo "ROCKET_DATABASE_URL=${{ steps.postgres.outputs.connection-uri }}" >> $GITHUB_ENV
 
       - name: Install Alembic and psycopg2
         run: |
@@ -118,11 +119,12 @@ jobs:
           toolchain: nightly
           override: true
 
-      - name: Start PostgreSQL
-        uses: ./.github/actions/setup-postgres
+      - name: Setup PostgreSQL
+        uses: ikalnytskyi/action-setup-postgres@v1
+        id: postgres
 
       - run: |
-          echo "ROCKET_DATABASE_URL=postgresql://postgres:postgres@localhost/postgres" >> $GITHUB_ENV
+          echo "ROCKET_DATABASE_URL=${{ steps.postgres.outputs.connection-uri }}" >> $GITHUB_ENV
 
       - run: cargo build
       - run: python -m venv testvenv
