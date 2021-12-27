@@ -1,3 +1,4 @@
+use std::fmt;
 use std::io::Read;
 
 use serde::de::Deserialize;
@@ -21,8 +22,8 @@ use crate::storage::Pagination;
 const MAX_REQUEST_SIZE: u64 = 1024 * 1024;
 /// The list of supported formats. When changed, the implementation of
 /// Input::from_data() must be updated accordingly.
-const SUPPORTED_MEDIA_TYPES: [ContentType; 1] = [ContentType::JSON];
-const SUPPORTED_MEDIA_TYPES_ERROR: &str = "Support media types: application/json";
+const SUPPORTED_MEDIA_TYPES: [ContentType; 2] = [ContentType::JSON, ContentType::Plain];
+const SUPPORTED_MEDIA_TYPES_ERROR: &str = "Supported media types: application/json, text/plain";
 const PREFERRED_MEDIA_TYPE: ContentType = ContentType::JSON;
 // Pagination limit boundaries. Values outside of the boundary are not allowed
 // and will fail the request.
@@ -98,7 +99,7 @@ where
 /// headers.
 pub struct Output<T>(pub T);
 
-impl<'a, T: Serialize> Responder<'a> for Output<T> {
+impl<'a, T: Serialize + fmt::Display> Responder<'a> for Output<T> {
     fn respond_to(self, request: &Request) -> response::Result<'a> {
         let Output(value) = self;
 
@@ -106,6 +107,8 @@ impl<'a, T: Serialize> Responder<'a> for Output<T> {
             Success(NegotiatedContentType(content_type)) => {
                 if content_type == ContentType::JSON {
                     Json(value).respond_to(request)
+                } else if content_type == ContentType::Plain {
+                    response::content::Plain(value.to_string()).respond_to(request)
                 } else {
                     // this shouldn't be possible as by this point content negotiation has already
                     // succeded

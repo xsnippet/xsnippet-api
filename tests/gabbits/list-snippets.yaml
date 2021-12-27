@@ -1,0 +1,127 @@
+common:
+  - &datetime_regex /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d+(\+\d{2}:\d{2})|Z$/
+  - &request_id_regex /^[0-9a-fA-F]{8}-([0-9a-fA-F]{4}-){3}[0-9a-fA-F]{12}$/
+  - &slug_regex /^[a-zA-Z0-9]+$/
+
+fixtures:
+  - XSnippetApiWithSnippets
+
+tests:
+  - name: get recent snippets
+    GET: /v1/snippets
+    query_parameters:
+      tag: decorator
+    response_headers:
+      content-type: application/json
+      x-request-id: *request_id_regex
+    response_json_paths:
+      $.[0].id: *slug_regex
+      $.[0].content: "01"
+      $.[0].title: "caching decorator"
+      $.[0].syntax: "python"
+      $.[0].tags: ["decorator", "caching"]
+      $.[0].created_at: *datetime_regex
+      $.[0].updated_at: *datetime_regex
+      $.[0].`len`: 7
+
+      $.[1].id: *slug_regex
+      $.[1].content: "03"
+      $.[1].title: "auth decorator"
+      $.[1].syntax: "python"
+      $.[1].tags: ["decorator"]
+      $.[1].created_at: *datetime_regex
+      $.[1].updated_at: *datetime_regex
+      $.[1].`len`: 7
+
+      $.`len`: 2
+    status: 200
+
+  - name: get recent snippets (accept anything)
+    GET: /v1/snippets
+    request_headers:
+      accept: "*/*"
+    query_parameters:
+      tag: decorator
+    response_headers:
+      content-type: application/json
+      x-request-id: *request_id_regex
+    response_json_paths:
+      $.[0].id: *slug_regex
+      $.[0].content: "01"
+      $.[0].title: "caching decorator"
+      $.[0].syntax: "python"
+      $.[0].tags: ["decorator", "caching"]
+      $.[0].created_at: *datetime_regex
+      $.[0].updated_at: *datetime_regex
+      $.[0].`len`: 7
+
+      $.[1].id: *slug_regex
+      $.[1].content: "03"
+      $.[1].title: "auth decorator"
+      $.[1].syntax: "python"
+      $.[1].tags: ["decorator"]
+      $.[1].created_at: *datetime_regex
+      $.[1].updated_at: *datetime_regex
+      $.[1].`len`: 7
+
+      $.`len`: 2
+    status: 200
+
+  - name: get recent snippets (accept a specific non-default content type)
+    request_headers:
+      accept: "text/plain"
+    GET: /v1/snippets
+    query_parameters:
+      tag: decorator
+    response_headers:
+      content-type: text/plain; charset=utf-8
+      x-request-id: *request_id_regex
+    response_strings:
+      - Snippet(id="$HISTORY['get recent snippets'].$RESPONSE['$.[0].id']", title="caching decorator", syntax="python")
+      - Snippet(id="$HISTORY['get recent snippets'].$RESPONSE['$.[1].id']", title="auth decorator", syntax="python")
+    status: 200
+
+  - name: get recent snippets (multiple accept types)
+    request_headers:
+      accept: "application/xml, application/json"
+    GET: /v1/snippets
+    query_parameters:
+      tag: decorator
+    response_headers:
+      content-type: application/json
+      x-request-id: *request_id_regex
+    response_json_paths:
+      $.[0].id: *slug_regex
+      $.[0].content: "01"
+      $.[0].title: "caching decorator"
+      $.[0].syntax: "python"
+      $.[0].tags: ["decorator", "caching"]
+      $.[0].created_at: *datetime_regex
+      $.[0].updated_at: *datetime_regex
+      $.[0].`len`: 7
+
+      $.[1].id: *slug_regex
+      $.[1].content: "03"
+      $.[1].title: "auth decorator"
+      $.[1].syntax: "python"
+      $.[1].tags: ["decorator"]
+      $.[1].created_at: *datetime_regex
+      $.[1].updated_at: *datetime_regex
+      $.[1].`len`: 7
+
+      $.`len`: 2
+    status: 200
+
+  - name: get recent snippets (multiple supported accept types)
+    request_headers:
+      accept: "text/plain, application/json"
+    GET: /v1/snippets
+    query_parameters:
+      tag: decorator
+    response_headers:
+      content-type: text/plain; charset=utf-8
+      x-request-id: *request_id_regex
+    response_strings:
+      - Snippet(id="$HISTORY['get recent snippets'].$RESPONSE['$.[0].id']", title="caching decorator", syntax="python")
+      - Snippet(id="$HISTORY['get recent snippets'].$RESPONSE['$.[1].id']", title="auth decorator", syntax="python")
+    status: 200

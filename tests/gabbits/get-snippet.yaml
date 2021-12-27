@@ -80,6 +80,17 @@ tests:
       $.`len`: 7
     status: 200
 
+  - name: retrieve previously created snippet by ID (accept a specific non-default content type)
+    GET: /v1/snippets/$HISTORY['create a new snippet'].$RESPONSE['id']
+    request_headers:
+      accept: "text/plain"
+    response_headers:
+      content-type: text/plain; charset=utf-8
+      x-request-id: *request_id_regex
+    response_strings:
+      - print('Hello, World!')
+    status: 200
+
   - name: retrieve previously created snippet by ID (multiple accept types)
     GET: /v1/snippets/$HISTORY['create a new snippet'].$RESPONSE['id']
     request_headers:
@@ -98,6 +109,17 @@ tests:
         - eggs
         - spam
       $.`len`: 7
+    status: 200
+
+  - name: retrieve previously created snippet by ID (multiple supported accept types)
+    GET: /v1/snippets/$HISTORY['create a new snippet'].$RESPONSE['id']
+    request_headers:
+      accept: "text/plain, application/json"
+    response_headers:
+      content-type: text/plain; charset=utf-8
+      x-request-id: *request_id_regex
+    response_strings:
+      - print('Hello, World!')
     status: 200
 
   - name: retrieve previously created snippet by ID (multiple weighted accept types)

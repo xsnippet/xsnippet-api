@@ -1,4 +1,5 @@
 use std::convert::From;
+use std::fmt;
 
 use rocket::http;
 use rocket::request::Request;
@@ -93,5 +94,12 @@ impl<'r> Responder<'r> for ApiError {
                 .status(http_status)
                 .ok()
         }
+    }
+}
+
+impl fmt::Display for ApiError {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        let status = self.status();
+        write!(f, "{}: {}", status.code, status.reason)
     }
 }

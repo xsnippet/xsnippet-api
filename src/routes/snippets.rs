@@ -9,7 +9,9 @@ use serde::Deserialize;
 
 use crate::application::Config;
 use crate::errors::ApiError;
-use crate::storage::{Changeset, DateTime, Direction, ListSnippetsQuery, Snippet, Storage};
+use crate::storage::{
+    Changeset, DateTime, Direction, ListSnippetsQuery, Snippet, Snippets, Storage,
+};
 use crate::web::{
     BearerAuth, Input, NegotiatedContentType, Output, PaginationLimit, WithHttpHeaders,
 };
@@ -164,7 +166,7 @@ pub fn list_snippets<'o, 'h>(
     marker: Option<String>,
     _content_type: NegotiatedContentType,
     _user: BearerAuth,
-) -> Result<WithHttpHeaders<'h, Output<Vec<Snippet>>>, ApiError> {
+) -> Result<WithHttpHeaders<'h, Output<Snippets>>, ApiError> {
     let mut criteria = ListSnippetsQuery {
         title,
         syntax,
@@ -202,7 +204,10 @@ pub fn list_snippets<'o, 'h>(
         create_link_header(origin, next_marker, prev_marker, prev_needed),
     );
 
-    Ok(WithHttpHeaders(headers_map, Some(Output(snippets))))
+    Ok(WithHttpHeaders(
+        headers_map,
+        Some(Output(Snippets(snippets))),
+    ))
 }
 
 #[derive(Deserialize)]

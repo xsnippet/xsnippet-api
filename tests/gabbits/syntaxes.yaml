@@ -48,6 +48,21 @@ tests:
     response_headers:
       x-request-id: *request_id_regex
 
+  - name: test /syntaxes (explicitly accept a specific non-default content type)
+    GET: /v1/syntaxes
+    request_headers:
+      accept: text/plain
+    status: 200
+    response_strings:
+      - clojure
+      - json
+      - lua
+      - python
+      - rust
+    response_headers:
+      content-type: text/plain; charset=utf-8
+      x-request-id: *request_id_regex
+
   - name: test /syntaxes (multiple accept types)
     GET: /v1/syntaxes
     request_headers:
@@ -61,6 +76,21 @@ tests:
         - python
         - rust
     response_headers:
+      x-request-id: *request_id_regex
+
+  - name: test /syntaxes (multiple supported accept types)
+    GET: /v1/syntaxes
+    request_headers:
+      accept: "text/plain, application/json"
+    status: 200
+    response_strings:
+      - clojure
+      - json
+      - lua
+      - python
+      - rust
+    response_headers:
+      content-type: text/plain; charset=utf-8
       x-request-id: *request_id_regex
 
   - name: test /syntaxes (multiple weighted accept types)

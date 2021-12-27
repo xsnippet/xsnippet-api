@@ -16,7 +16,7 @@ tests:
       x-request-id: *request_id_regex
     response_json_paths:
       $:
-        message: "Support media types: application/json"
+        message: "Supported media types: application/json, text/plain"
 
   - name: create a new snippet (unsupported accept type)
     POST: /v1/snippets

@@ -1,3 +1,4 @@
+use std::fmt;
 use std::iter;
 
 use rand::Rng;
@@ -78,6 +79,38 @@ impl Serialize for Snippet {
         s.serialize_field("created_at", &self.created_at)?;
         s.serialize_field("updated_at", &self.updated_at)?;
         s.end()
+    }
+}
+
+impl fmt::Display for Snippet {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        if let Some(content) = self.changesets.last().map(|v| &v.content) {
+            write!(f, "{}", content)?
+        }
+
+        Ok(())
+    }
+}
+
+#[derive(Serialize)]
+pub struct Snippets(pub Vec<Snippet>);
+
+impl fmt::Display for Snippets {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        let Snippets(snippets) = self;
+        for snippet in snippets {
+            let id = snippet.id.as_str();
+            let title = snippet.title.as_deref().unwrap_or("untitled");
+            let syntax = snippet.syntax.as_deref().unwrap_or("text");
+
+            writeln!(
+                f,
+                "Snippet(id=\"{}\", title=\"{}\", syntax=\"{}\")",
+                id, title, syntax
+            )?;
+        }
+
+        Ok(())
     }
 }
 

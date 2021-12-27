@@ -3,7 +3,9 @@ mod models;
 mod sql;
 
 pub use errors::StorageError;
-pub use models::{Changeset, DateTime, Direction, ListSnippetsQuery, Pagination, Snippet};
+pub use models::{
+    Changeset, DateTime, Direction, ListSnippetsQuery, Pagination, Snippet, Snippets,
+};
 pub use sql::SqlStorage;
 
 /// CRUD interface for storing/loading snippets from a persistent storage.
