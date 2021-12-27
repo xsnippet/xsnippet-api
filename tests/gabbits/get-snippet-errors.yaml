@@ -35,3 +35,15 @@ tests:
     status: 404
     response_headers:
       x-request-id: *request_id_regex
+
+  - name: retrieve the raw content of a snippet (not found)
+    GET: /v1/snippets/foobar
+    request_headers:
+      accept: text/plain
+    response_headers:
+      content-type: text/plain; charset=utf-8
+    response_strings:
+      - Snippet with id `foobar` is not found
+    status: 404
+    response_headers:
+      x-request-id: *request_id_regex

@@ -11,7 +11,8 @@ use crate::application::Config;
 use crate::errors::ApiError;
 use crate::storage::{Changeset, DateTime, Direction, ListSnippetsQuery, Snippet, Storage};
 use crate::web::{
-    BearerAuth, Input, NegotiatedContentType, Output, PaginationLimit, WithHttpHeaders,
+    BearerAuth, DoNotAcceptAny, Input, NegotiatedContentType, Output, PaginationLimit,
+    WithHttpHeaders,
 };
 
 fn create_snippet_impl(
@@ -260,7 +261,27 @@ pub fn import_snippet(
     create_snippet_impl(&**storage, &snippet, base_path)
 }
 
-#[get("/snippets/<id>")]
+#[get("/snippets/<id>", format = "text/plain", rank = 1)]
+pub fn get_raw_snippet(
+    storage: State<Box<dyn Storage>>,
+    id: String,
+    _user: BearerAuth,
+    // W/o this, a request specifying any media type (i.e. */*), would be matched by this route,
+    // which is not what we want. We can't add the desired format to the route below, because it's
+    // supposed to perform content negotiation and return an ApiError when a user requests an
+    // unsupported format.
+    _not_any: DoNotAcceptAny,
+) -> Result<String, ApiError> {
+    Ok(storage
+        .get(&id)?
+        .changesets
+        .into_iter()
+        .last()
+        .map(|c| c.content)
+        .unwrap_or_default())
+}
+
+#[get("/snippets/<id>", rank = 2)]
 pub fn get_snippet(
     storage: State<Box<dyn Storage>>,
     id: String,

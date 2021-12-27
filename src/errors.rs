@@ -1,12 +1,11 @@
-use std::convert::From;
-
 use rocket::http;
 use rocket::request::Request;
 use rocket::response::{self, Responder, Response};
+use rocket::Outcome;
 use serde::{ser::SerializeStruct, Serialize, Serializer};
 
 use crate::storage::StorageError;
-use crate::web::Output;
+use crate::web::{NegotiatedContentType, Output};
 
 /// All possible unsuccessful outcomes of an API request.
 ///
@@ -86,12 +85,22 @@ impl<'r> Responder<'r> for ApiError {
                 .status(http::Status::InternalServerError)
                 .ok()
         } else {
-            // otherwise, present the error in the requested data format
             let http_status = self.status();
             debug!("ApiError: {:?}", self);
-            Response::build_from(Output(self).respond_to(request)?)
+
+            match request.guard::<NegotiatedContentType>() {
+                // otherwise, present the error in the requested data format if content negotiation
+                // has succeeded
+                Outcome::Success(_) => Response::build_from(Output(self).respond_to(request)?)
+                    .status(http_status)
+                    .ok(),
+                // or as plain text if content negotiation has failed
+                _ => Response::build_from(
+                    response::content::Plain(self.reason().to_string()).respond_to(request)?,
+                )
                 .status(http_status)
-                .ok()
+                .ok(),
+            }
         }
     }
 }
