@@ -2,7 +2,7 @@
 name = "xsnippet-api"
 version = "5.0.0"
 authors = ["XSnippet Team <dev@xsnippet.org>"]
-edition = "2018"
+edition = "2021"
 description = "XSnippet is a simple web-service for sharing code snippets on the Internet."
 readme = "README.md"
 homepage = "https://xsnippet.org/"
