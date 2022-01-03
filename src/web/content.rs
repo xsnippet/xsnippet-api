@@ -232,3 +232,20 @@ impl<'a, 'r> FromRequest<'a, 'r> for NegotiatedContentType {
         }
     }
 }
+
+/// A request guard that only accepts request that specify a specific media type
+/// via the Accept header.
+pub struct DoNotAcceptAny;
+
+impl<'a, 'r> FromRequest<'a, 'r> for DoNotAcceptAny {
+    type Error = ApiError;
+
+    fn from_request(request: &'a Request<'r>) -> request::Outcome<Self, Self::Error> {
+        match request.accept() {
+            // Accept is passed and it's not */*
+            Some(accept) if !accept.preferred().is_any() => Success(DoNotAcceptAny),
+            // Accept is not passed, or it's not specific (i.e. */*)
+            _ => Forward(()),
+        }
+    }
+}
