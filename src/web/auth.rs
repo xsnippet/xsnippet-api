@@ -9,7 +9,7 @@ use serde::Deserialize;
 
 pub use jwt::JwtValidator;
 
-#[derive(Debug, PartialEq, Deserialize)]
+#[derive(Debug, PartialEq, Eq, Deserialize)]
 pub enum Permission {
     /// Allows users to import snippets (i.e. to create new snippets and set
     /// the values of some protected Snippet fields like `id` or `created_at`).
@@ -17,7 +17,7 @@ pub enum Permission {
     Import,
 }
 
-#[derive(Debug, PartialEq)]
+#[derive(Debug, PartialEq, Eq)]
 pub enum User {
     /// Authenticated user. Can create, retrieve, update, and delete private
     /// snippets. May have additional permissions.

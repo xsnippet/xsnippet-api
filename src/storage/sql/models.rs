@@ -96,10 +96,8 @@ pub fn combine_rows(
                 snippet,
                 changesets_by_snippet_id
                     .remove(&snippet_id)
-                    .unwrap_or_else(Vec::new),
-                tags_by_snippet_id
-                    .remove(&snippet_id)
-                    .unwrap_or_else(Vec::new),
+                    .unwrap_or_default(),
+                tags_by_snippet_id.remove(&snippet_id).unwrap_or_default(),
             ))
         })
         .collect()
