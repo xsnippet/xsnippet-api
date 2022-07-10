@@ -106,7 +106,7 @@ jobs:
       - uses: actions-rs/cargo@v1
         with:
           command: rustdoc
-          args: -- -D intra-doc-link-resolution-failure
+          args: -- -D rustdoc::broken_intra_doc_links
 
   tests:
     runs-on: ubuntu-latest

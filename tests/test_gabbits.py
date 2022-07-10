@@ -460,4 +460,5 @@ def pytest_generate_tests(metafunc):
         fixture_module=sys.modules[__name__],
         response_handlers=[LinkHeaderResponseHandler],
         metafunc=metafunc,
+        test_loader_name=__name__,
     )
