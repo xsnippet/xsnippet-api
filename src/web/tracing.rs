@@ -104,7 +104,7 @@ impl Fairing for RequestSpan {
             if let Some(span) = cell.borrow_mut().take() {
                 let status = response.status();
 
-                span.record("status", &status.code);
+                span.record("status", status.code);
                 if status.class().is_success() {
                     info!("request succeeded");
                 } else {
