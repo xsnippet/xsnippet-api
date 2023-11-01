@@ -22,7 +22,7 @@ fn create_snippet_impl(
 ) -> Result<Created<Output<Snippet>>, ApiError> {
     let new_snippet = storage.create(snippet)?;
 
-    let location = vec![base_path.to_string(), new_snippet.id.to_string()].join("/");
+    let location = [base_path.to_string(), new_snippet.id.to_string()].join("/");
     Ok(Created(location, Some(Output(new_snippet))))
 }
 
@@ -80,7 +80,7 @@ fn create_link_header(
     .into_iter()
     .filter(|item| item.2)
     .map(|item| match item.0 {
-        Some(query) => (vec![origin.path(), query.as_str()].join("?"), item.1),
+        Some(query) => ([origin.path(), query.as_str()].join("?"), item.1),
         None => (origin.path().to_owned(), item.1),
     })
     .map(|item| format!("<{}>; rel=\"{}\"", item.0, item.1))
@@ -155,9 +155,9 @@ fn split_marker(mut snippets: Vec<Snippet>, limit: usize) -> (Option<String>, Ve
 
 #[allow(clippy::too_many_arguments)]
 #[get("/snippets?<title>&<syntax>&<tag>&<marker>&<limit>")]
-pub fn list_snippets<'o, 'h>(
+pub fn list_snippets<'h>(
     storage: State<Box<dyn Storage>>,
-    origin: &'o Origin,
+    origin: &Origin,
     title: Option<String>,
     syntax: Option<String>,
     tag: Option<String>,
