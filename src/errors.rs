@@ -11,8 +11,8 @@ use crate::web::{NegotiatedContentType, Output};
 ///
 /// Allows to handle application errors in the unified manner:
 ///
-/// 1) all errors are serialized to the requested content type
-///    the HTTP status code is set accordingly
+/// 1) all errors are serialized to the requested content type the HTTP status
+///    code is set accordingly
 ///
 /// 2) implements conversions from internal errors types (e.g. the errors
 ///    returned by the Storage trait)

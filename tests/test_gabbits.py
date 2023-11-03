@@ -22,6 +22,7 @@ import sqlalchemy
 from cryptography.hazmat.primitives.asymmetric import rsa
 from gabbi.driver import test_pytest
 from gabbi.handlers import base
+from sqlalchemy import text
 
 
 XSNIPPET_API_HOST = "127.0.0.1"
@@ -83,26 +84,27 @@ class XSnippetApi(gabbi.fixture.GabbiFixture):
 
         with self.management_db.connect() as conn:
             conn.execute(
-                "CREATE DATABASE {database} OWNER {username};".format(
-                    **self.test_db_url.translate_connect_args()))
+                text("CREATE DATABASE {database} OWNER {username};".format(
+                     **self.test_db_url.translate_connect_args())))
 
         # apply schema migrations to the temporary database. Both
         # Alembic and XSnippet API expect the connection string to be
         # passed via the ROCKET_DATABASE_URL environment variable, so
         # we update the variable to point to the temporary database for
         # the duration of the test
-        os.environ["ROCKET_DATABASE_URL"] = str(self.test_db_url)
+        os.environ["ROCKET_DATABASE_URL"] = self.test_db_url.render_as_string(hide_password=False)
         alembic.config.main(["upgrade", "head"])
 
     def teardown_db(self):
         """Clean up the temporary database."""
 
         with self.management_db.connect() as conn:
-            conn.execute("DROP DATABASE IF EXISTS {};".format(self.test_db_url.database))
+            conn.execute(
+                text("DROP DATABASE IF EXISTS {};".format(self.test_db_url.database)))
 
         # restore the original value of ROCKET_DATABASE_URL, so that
         # it can be used by the fixture to create new databases again
-        os.environ["ROCKET_DATABASE_URL"] = str(self.management_db.url)
+        os.environ["ROCKET_DATABASE_URL"] = self.management_db.url.render_as_string(hide_password=False)
 
 
     def start_server(self):
