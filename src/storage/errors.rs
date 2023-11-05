@@ -10,7 +10,7 @@ pub enum StorageError {
     /// Snippet with this id can't be found
     NotFound { id: String },
     /// All other errors that can't be handled by the storage layer
-    InternalError(Box<dyn error::Error>),
+    InternalError(Box<dyn error::Error + Send>),
 }
 
 impl fmt::Display for StorageError {
