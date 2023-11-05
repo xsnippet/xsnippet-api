@@ -3,8 +3,7 @@ mod jwt;
 use std::{error, fmt};
 
 use rocket::http::Status;
-use rocket::outcome::Outcome;
-use rocket::request::{self, FromRequest, Request};
+use rocket::request::{self, FromRequest, Outcome, Request};
 use serde::Deserialize;
 
 pub use jwt::JwtValidator;
@@ -76,15 +75,17 @@ pub trait AuthValidator: Send + Sync {
 /// rocket::State<Box<dyn Validator>>.
 pub struct BearerAuth(pub User);
 
-impl<'a, 'r> FromRequest<'a, 'r> for BearerAuth {
+#[rocket::async_trait]
+impl<'r> FromRequest<'r> for BearerAuth {
     type Error = Error;
 
-    fn from_request(request: &'a Request<'r>) -> request::Outcome<Self, Self::Error> {
+    async fn from_request(request: &'r Request<'_>) -> request::Outcome<Self, Self::Error> {
         match request.headers().get_one("Authorization") {
             Some(value) => match value.split_once(' ') {
                 Some(("Bearer", token)) => {
                     if let Some(validator) = request
-                        .guard::<rocket::State<Box<dyn AuthValidator>>>()
+                        .guard::<&rocket::State<Box<dyn AuthValidator>>>()
+                        .await
                         .succeeded()
                     {
                         match validator.validate(token) {
@@ -93,8 +94,8 @@ impl<'a, 'r> FromRequest<'a, 'r> for BearerAuth {
                                 debug!("{}", err);
 
                                 match err {
-                                    Error::Input(_) => Outcome::Failure((Status::BadRequest, err)),
-                                    _ => Outcome::Failure((Status::Forbidden, err)),
+                                    Error::Input(_) => Outcome::Error((Status::BadRequest, err)),
+                                    _ => Outcome::Error((Status::Forbidden, err)),
                                 }
                             }
                         }
@@ -103,14 +104,14 @@ impl<'a, 'r> FromRequest<'a, 'r> for BearerAuth {
                             Error::Configuration("Token validator is not configured".to_string());
                         error!("{}", err);
 
-                        Outcome::Failure((Status::ServiceUnavailable, err))
+                        Outcome::Error((Status::ServiceUnavailable, err))
                     }
                 }
                 _ => {
                     let err = Error::Input(format!("Invalid Authorization header: {}", value));
                     debug!("{}", err);
 
-                    Outcome::Failure((Status::BadRequest, err))
+                    Outcome::Error((Status::BadRequest, err))
                 }
             },
             None => Outcome::Success(BearerAuth(User::Guest)),

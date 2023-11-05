@@ -1,8 +1,9 @@
 use std::cell::RefCell;
 
 use rocket::fairing::{Fairing, Info, Kind};
+use rocket::outcome::Outcome;
 use rocket::request::{self, FromRequest, Request};
-use rocket::{Data, Outcome, Response};
+use rocket::{Data, Response};
 use tracing::field::Empty;
 use tracing::span::EnteredSpan;
 
@@ -21,10 +22,11 @@ impl Default for RequestId {
     }
 }
 
-impl<'a, 'r> FromRequest<'a, 'r> for &'a RequestId {
+#[rocket::async_trait]
+impl<'r> FromRequest<'r> for &'r RequestId {
     type Error = ();
 
-    fn from_request(request: &'a Request<'r>) -> request::Outcome<Self, Self::Error> {
+    async fn from_request(request: &'r Request<'_>) -> request::Outcome<Self, Self::Error> {
         // on first access, generate a new value and store it in the request cache
         Outcome::Success(request.local_cache(RequestId::default))
     }
@@ -34,6 +36,7 @@ impl<'a, 'r> FromRequest<'a, 'r> for &'a RequestId {
 /// X-Request-Id response header.
 pub struct RequestIdHeader;
 
+#[rocket::async_trait]
 impl Fairing for RequestIdHeader {
     fn info(&self) -> Info {
         Info {
@@ -42,8 +45,8 @@ impl Fairing for RequestIdHeader {
         }
     }
 
-    fn on_response(&self, request: &Request, response: &mut Response) {
-        if let Some(request_id) = request.guard::<&RequestId>().succeeded() {
+    async fn on_response<'r>(&self, request: &'r Request<'_>, response: &mut Response<'r>) {
+        if let Some(request_id) = request.guard::<&RequestId>().await.succeeded() {
             response.set_raw_header("X-Request-Id", request_id.0.clone());
         } else {
             error!("Failed to generate a request id");
@@ -63,6 +66,13 @@ impl Fairing for RequestIdHeader {
 /// we need for determining the boundaries of a request span.
 pub struct RequestSpan;
 
+// TODO: Now that Rocket is using async internally, this is not guaranteed to
+// work correctly anymore, as tokio might execute the fairing and the request
+// handler on different OS threads. I haven't found a way to fix this. We will
+// need to wait for https://github.com/SergioBenitez/Rocket/pull/1579 that
+// creates a tracing span in Rocket itself and attaches it to the top-level
+// request future.
+//
 // It is extremely annoying that we need to resort to storing the span guard in
 // a thread local instead of the Rocket Request local cache, but those two have
 // incompatible requirements:
@@ -77,6 +87,7 @@ pub struct RequestSpan;
 // actual request handler are executed in the same thread.
 thread_local!(static REQUEST_SPAN: RefCell<Option<EnteredSpan>> = RefCell::new(None));
 
+#[rocket::async_trait]
 impl Fairing for RequestSpan {
     fn info(&self) -> Info {
         Info {
@@ -85,8 +96,8 @@ impl Fairing for RequestSpan {
         }
     }
 
-    fn on_request(&self, request: &mut Request, _: &Data) {
-        if let Some(RequestId(request_id)) = request.guard::<&RequestId>().succeeded() {
+    async fn on_request(&self, request: &mut Request<'_>, _: &mut Data<'_>) {
+        if let Some(RequestId(request_id)) = request.guard::<&RequestId>().await.succeeded() {
             let span = info_span!(
                 "request",
                 id = request_id.as_str(),
@@ -99,7 +110,7 @@ impl Fairing for RequestSpan {
         }
     }
 
-    fn on_response(&self, _: &Request, response: &mut Response) {
+    async fn on_response<'r>(&self, _: &'r Request<'_>, response: &mut Response<'r>) {
         REQUEST_SPAN.with(|cell| {
             if let Some(span) = cell.borrow_mut().take() {
                 let status = response.status();

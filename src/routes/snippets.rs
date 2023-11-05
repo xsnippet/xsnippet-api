@@ -22,8 +22,8 @@ fn create_snippet_impl(
 ) -> Result<Created<Output<Snippet>>, ApiError> {
     let new_snippet = storage.create(snippet)?;
 
-    let location = [base_path.to_string(), new_snippet.id.to_string()].join("/");
-    Ok(Created(location, Some(Output(new_snippet))))
+    let location = [base_path, new_snippet.id.as_str()].join("/");
+    Ok(Created::new(location).body(Output(new_snippet)))
 }
 
 fn create_link_header(
@@ -43,7 +43,7 @@ fn create_link_header(
     let query_wo_marker = origin.query().map(|q| {
         q.split('&')
             .filter_map(|v| {
-                let v = RawStr::from_str(v).percent_decode_lossy();
+                let v = RawStr::new(v).percent_decode_lossy();
                 if !v.starts_with("marker=") {
                     Some(utf8_percent_encode(&v, QUERY_ENCODE_SET).to_string())
                 } else {
@@ -80,8 +80,8 @@ fn create_link_header(
     .into_iter()
     .filter(|item| item.2)
     .map(|item| match item.0 {
-        Some(query) => ([origin.path(), query.as_str()].join("?"), item.1),
-        None => (origin.path().to_owned(), item.1),
+        Some(query) => ([origin.path().as_str(), query.as_str()].join("?"), item.1),
+        None => (origin.path().to_string(), item.1),
     })
     .map(|item| format!("<{}>; rel=\"{}\"", item.0, item.1))
     .collect::<Vec<_>>()
@@ -132,16 +132,16 @@ impl TryFrom<(&Config, NewSnippet)> for Snippet {
 }
 
 #[post("/snippets", data = "<body>")]
-pub fn create_snippet(
-    config: State<Config>,
-    storage: State<Box<dyn Storage>>,
-    origin: &Origin,
+pub async fn create_snippet(
+    config: &State<Config>,
+    storage: &State<Box<dyn Storage>>,
+    origin: &Origin<'_>,
     body: Result<Input<NewSnippet>, ApiError>,
-    _content_type: NegotiatedContentType,
+    _content_type: &NegotiatedContentType,
     _user: BearerAuth,
 ) -> Result<Created<Output<Snippet>>, ApiError> {
-    let snippet = Snippet::try_from((&*config, body?.0))?;
-    create_snippet_impl(&**storage, &snippet, origin.path())
+    let snippet = Snippet::try_from((config.inner(), body?.0))?;
+    create_snippet_impl(storage.as_ref(), &snippet, origin.path().as_str())
 }
 
 fn split_marker(mut snippets: Vec<Snippet>, limit: usize) -> (Option<String>, Vec<Snippet>) {
@@ -155,15 +155,15 @@ fn split_marker(mut snippets: Vec<Snippet>, limit: usize) -> (Option<String>, Ve
 
 #[allow(clippy::too_many_arguments)]
 #[get("/snippets?<title>&<syntax>&<tag>&<marker>&<limit>")]
-pub fn list_snippets<'h>(
-    storage: State<Box<dyn Storage>>,
-    origin: &Origin,
+pub async fn list_snippets<'h>(
+    storage: &State<Box<dyn Storage>>,
+    origin: &Origin<'_>,
     title: Option<String>,
     syntax: Option<String>,
     tag: Option<String>,
-    limit: Option<Result<PaginationLimit, ApiError>>,
+    limit: Result<PaginationLimit, rocket::form::Errors<'_>>,
     marker: Option<String>,
-    _content_type: NegotiatedContentType,
+    _content_type: &NegotiatedContentType,
     _user: BearerAuth,
 ) -> Result<WithHttpHeaders<'h, Output<Vec<Snippet>>>, ApiError> {
     let mut criteria = ListSnippetsQuery {
@@ -176,7 +176,7 @@ pub fn list_snippets<'h>(
     // Fetch one more record in order to detect if there's a next page, and
     // generate appropriate Link entry accordingly.
     let limit = limit
-        .unwrap_or_else(|| Ok(<PaginationLimit as Default>::default()))?
+        .map_err(|e| ApiError::BadRequest(e.first().map(|e| e.to_string()).unwrap_or_default()))?
         .0;
     criteria.pagination.limit = limit + 1;
     criteria.pagination.marker = marker;
@@ -239,13 +239,13 @@ impl TryFrom<(&Config, ImportSnippet)> for Snippet {
 }
 
 #[post("/snippets/import", data = "<body>")]
-pub fn import_snippet(
-    config: State<Config>,
-    storage: State<Box<dyn Storage>>,
-    origin: &Origin,
+pub async fn import_snippet(
+    config: &State<Config>,
+    storage: &State<Box<dyn Storage>>,
+    origin: &Origin<'_>,
     body: Result<Input<ImportSnippet>, ApiError>,
     user: BearerAuth,
-    _content_type: NegotiatedContentType,
+    _content_type: &NegotiatedContentType,
 ) -> Result<Created<Output<Snippet>>, ApiError> {
     if !user.0.can_import_snippets() {
         return Err(ApiError::Forbidden(
@@ -253,17 +253,17 @@ pub fn import_snippet(
         ));
     }
 
-    let snippet = Snippet::try_from((&*config, body?.0))?;
-    let base_path = origin
-        .path()
+    let snippet = Snippet::try_from((config.inner(), body?.0))?;
+    let path = origin.path();
+    let base_path = path
         .strip_suffix("/import")
-        .ok_or_else(|| ApiError::InternalError(format!("Invalid URI path: {}", origin.path())))?;
-    create_snippet_impl(&**storage, &snippet, base_path)
+        .ok_or_else(|| ApiError::InternalError(format!("Invalid URI path: {}", path)))?;
+    create_snippet_impl(storage.as_ref(), &snippet, base_path.as_str())
 }
 
 #[get("/snippets/<id>", format = "text/plain", rank = 1)]
-pub fn get_raw_snippet(
-    storage: State<Box<dyn Storage>>,
+pub async fn get_raw_snippet(
+    storage: &State<Box<dyn Storage>>,
     id: String,
     _user: BearerAuth,
     // W/o this, a request specifying any media type (i.e. */*), would be matched by this route,
@@ -282,9 +282,10 @@ pub fn get_raw_snippet(
 }
 
 #[get("/snippets/<id>", rank = 2)]
-pub fn get_snippet(
-    storage: State<Box<dyn Storage>>,
+pub async fn get_snippet(
+    storage: &State<Box<dyn Storage>>,
     id: String,
+    _content_type: &NegotiatedContentType,
     _user: BearerAuth,
 ) -> Result<Output<Snippet>, ApiError> {
     Ok(Output(storage.get(&id)?))

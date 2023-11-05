@@ -5,7 +5,6 @@
 
 // Clippy bug: https://github.com/rust-lang/rust-clippy/issues/7422
 #![allow(clippy::nonstandard_macro_braces)]
-#![feature(proc_macro_hygiene, decl_macro)]
 
 #[macro_use]
 extern crate diesel;
@@ -22,12 +21,11 @@ mod web;
 
 use tracing_subscriber::{fmt, EnvFilter};
 
-fn main() {
+#[rocket::launch]
+async fn rocket() -> _ {
     // set up logging of application events to stderr
-    let tracing_config = rocket::config::RocketConfig::active_default()
-        .expect("failed to read Rocket config")
-        .active()
-        .get_string("tracing")
+    let tracing_config = rocket::config::Config::figment()
+        .extract_inner::<String>("tracing")
         .unwrap_or_else(|_| String::from("info"));
     let subscriber = fmt()
         .with_env_filter(EnvFilter::new(tracing_config))
@@ -35,12 +33,5 @@ fn main() {
         .finish();
     tracing::subscriber::set_global_default(subscriber).expect("setting default subscriber failed");
 
-    let app = match application::create_app() {
-        Ok(app) => app,
-        Err(err) => {
-            error!("error: {}", err);
-            std::process::exit(1);
-        }
-    };
-    app.launch();
+    application::create_app()
 }

@@ -1,7 +1,6 @@
-use rocket::http;
+use rocket::http::{self, ContentType};
 use rocket::request::Request;
 use rocket::response::{self, Responder, Response};
-use rocket::Outcome;
 use serde::{ser::SerializeStruct, Serialize, Serializer};
 
 use crate::storage::StorageError;
@@ -76,8 +75,8 @@ impl Serialize for ApiError {
     }
 }
 
-impl<'r> Responder<'r> for ApiError {
-    fn respond_to(self, request: &Request) -> response::Result<'r> {
+impl<'r, 'o: 'r> Responder<'r, 'o> for ApiError {
+    fn respond_to(self, request: &'r Request) -> response::Result<'o> {
         if let ApiError::InternalError(_) = self {
             // do not give away any details for internal server errors
             error!("Internal server error: {}", self.reason());
@@ -88,18 +87,21 @@ impl<'r> Responder<'r> for ApiError {
             let http_status = self.status();
             debug!("ApiError: {:?}", self);
 
-            match request.guard::<NegotiatedContentType>() {
-                // otherwise, present the error in the requested data format if content negotiation
-                // has succeeded
-                Outcome::Success(_) => Response::build_from(Output(self).respond_to(request)?)
-                    .status(http_status)
-                    .ok(),
-                // or as plain text if content negotiation has failed
-                _ => Response::build_from(
-                    response::content::Plain(self.reason().to_string()).respond_to(request)?,
+            let NegotiatedContentType(content_type) =
+                request.local_cache(|| /* default */ NegotiatedContentType(ContentType::Text));
+
+            if *content_type == ContentType::Text {
+                // if content negotiation has failed, return the error as plain text
+                Response::build_from(
+                    response::content::RawText(self.reason().to_string()).respond_to(request)?,
                 )
                 .status(http_status)
-                .ok(),
+                .ok()
+            } else {
+                // otherwise, return the error in the requested data format
+                Response::build_from(Output(self).respond_to(request)?)
+                    .status(http_status)
+                    .ok()
             }
         }
     }
