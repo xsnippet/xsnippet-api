@@ -24,7 +24,11 @@ impl SqlStorage {
         Ok(Self { pool })
     }
 
-    fn get_snippet(&self, conn: &PgConnection, id: &str) -> Result<(i32, Snippet), StorageError> {
+    fn get_snippet(
+        &self,
+        conn: &mut PgConnection,
+        id: &str,
+    ) -> Result<(i32, Snippet), StorageError> {
         let result = snippets::table
             .filter(snippets::slug.eq(id))
             .get_result::<models::SnippetRow>(conn);
@@ -44,7 +48,11 @@ impl SqlStorage {
         Ok((snippet.id, Snippet::from((snippet, changesets, tags))))
     }
 
-    fn insert_snippet(&self, conn: &PgConnection, snippet: &Snippet) -> Result<i32, StorageError> {
+    fn insert_snippet(
+        &self,
+        conn: &mut PgConnection,
+        snippet: &Snippet,
+    ) -> Result<i32, StorageError> {
         let now = chrono::Utc::now();
         let result = diesel::insert_into(snippets::table)
             .values((
@@ -68,7 +76,11 @@ impl SqlStorage {
         }
     }
 
-    fn update_snippet(&self, conn: &PgConnection, snippet: &Snippet) -> Result<i32, StorageError> {
+    fn update_snippet(
+        &self,
+        conn: &mut PgConnection,
+        snippet: &Snippet,
+    ) -> Result<i32, StorageError> {
         let now = chrono::Utc::now();
         let result = diesel::update(snippets::table.filter(snippets::slug.eq(&snippet.id)))
             .set((
@@ -90,7 +102,7 @@ impl SqlStorage {
 
     fn upsert_changesets(
         &self,
-        conn: &PgConnection,
+        conn: &mut PgConnection,
         snippet_id: i32,
         snippet: &Snippet,
     ) -> Result<(), StorageError> {
@@ -123,7 +135,7 @@ impl SqlStorage {
 
     fn upsert_tags(
         &self,
-        conn: &PgConnection,
+        conn: &mut PgConnection,
         snippet_id: i32,
         snippet: &Snippet,
     ) -> Result<(), StorageError> {
@@ -143,7 +155,7 @@ impl SqlStorage {
 
     fn trim_removed_tags(
         &self,
-        conn: &PgConnection,
+        conn: &mut PgConnection,
         snippet_id: i32,
         snippet: &Snippet,
     ) -> Result<(), StorageError> {
@@ -162,26 +174,26 @@ impl SqlStorage {
 
 impl Storage for SqlStorage {
     fn create(&self, snippet: &Snippet) -> Result<Snippet, StorageError> {
-        let conn = self.pool.get()?;
-        conn.transaction::<_, StorageError, _>(|| {
+        let mut conn = self.pool.get()?;
+        conn.transaction::<_, StorageError, _>(|conn| {
             // insert the new snippet row first to get the generated primary key
-            let snippet_id = self.insert_snippet(&conn, snippet)?;
+            let snippet_id = self.insert_snippet(conn, snippet)?;
             // insert the associated changesets
-            self.upsert_changesets(&conn, snippet_id, snippet)?;
+            self.upsert_changesets(conn, snippet_id, snippet)?;
             // insert the associated tags
-            self.upsert_tags(&conn, snippet_id, snippet)?;
+            self.upsert_tags(conn, snippet_id, snippet)?;
 
             Ok(())
         })?;
 
         // reconstruct the created snippet from the state persisted to the database
-        let (_, created) = self.get_snippet(&conn, &snippet.id)?;
+        let (_, created) = self.get_snippet(&mut conn, &snippet.id)?;
         Ok(created)
     }
 
     fn list(&self, criteria: ListSnippetsQuery) -> Result<Vec<Snippet>, StorageError> {
-        let conn = self.pool.get()?;
-        conn.transaction::<_, StorageError, _>(|| {
+        let mut conn = self.pool.get()?;
+        conn.transaction::<_, StorageError, _>(|conn| {
             let mut query = snippets::table.into_boxed();
 
             // Filters
@@ -205,7 +217,7 @@ impl Storage for SqlStorage {
             // expected in tests and, potentially, in snippets imported from
             // Mongo that have second precision
             if let Some(marker) = criteria.pagination.marker {
-                let (marker_internal_id, marker) = self.get_snippet(&conn, &marker)?;
+                let (marker_internal_id, marker) = self.get_snippet(conn, &marker)?;
                 if let Some(marker_created_at) = marker.created_at {
                     query = match criteria.pagination.direction {
                         Direction::Desc => query
@@ -242,25 +254,25 @@ impl Storage for SqlStorage {
             }
             query = query.limit(criteria.pagination.limit as i64);
 
-            let snippets = query.get_results::<models::SnippetRow>(&conn)?;
+            let snippets = query.get_results::<models::SnippetRow>(conn)?;
             let snippet_ids = snippets
                 .iter()
                 .map(|snippet| snippet.id)
                 .collect::<Vec<i32>>();
             let changesets = changesets::table
                 .filter(changesets::snippet_id.eq_any(&snippet_ids))
-                .get_results::<models::ChangesetRow>(&conn)?;
+                .get_results::<models::ChangesetRow>(conn)?;
             let tags = tags::table
                 .filter(tags::snippet_id.eq_any(&snippet_ids))
-                .get_results::<models::TagRow>(&conn)?;
+                .get_results::<models::TagRow>(conn)?;
 
             Ok(models::combine_rows(snippets, changesets, tags))
         })
     }
 
     fn get(&self, id: &str) -> Result<Snippet, StorageError> {
-        let conn = self.pool.get()?;
-        let (_, snippet) = self.get_snippet(&conn, id)?;
+        let mut conn = self.pool.get()?;
+        let (_, snippet) = self.get_snippet(&mut conn, id)?;
         Ok(snippet)
     }
 
@@ -272,21 +284,21 @@ impl Storage for SqlStorage {
             Ok(persisted_state)
         } else {
             // otherwise, potentially update the title and the syntax
-            let conn = self.pool.get()?;
-            conn.transaction::<_, StorageError, _>(|| {
-                let snippet_id = self.update_snippet(&conn, snippet)?;
+            let mut conn = self.pool.get()?;
+            conn.transaction::<_, StorageError, _>(|conn| {
+                let snippet_id = self.update_snippet(conn, snippet)?;
                 // insert new changesets and tags
-                self.upsert_changesets(&conn, snippet_id, snippet)?;
-                self.upsert_tags(&conn, snippet_id, snippet)?;
+                self.upsert_changesets(conn, snippet_id, snippet)?;
+                self.upsert_tags(conn, snippet_id, snippet)?;
                 // and delete the removed tags
-                self.trim_removed_tags(&conn, snippet_id, snippet)?;
+                self.trim_removed_tags(conn, snippet_id, snippet)?;
 
                 Ok(())
             })?;
 
             // reconstruct the updated snippet from the state persisted to the database
             // (e.g. so that updated_at fields are correctly populated)
-            let (_, updated) = self.get_snippet(&conn, &snippet.id)?;
+            let (_, updated) = self.get_snippet(&mut conn, &snippet.id)?;
             Ok(updated)
         }
     }
@@ -294,9 +306,9 @@ impl Storage for SqlStorage {
     fn delete(&self, id: &str) -> Result<(), StorageError> {
         // CASCADE on foreign keys will take care of deleting associated changesets and
         // tags
-        let conn = self.pool.get()?;
+        let mut conn = self.pool.get()?;
         let deleted_rows =
-            diesel::delete(snippets::table.filter(snippets::slug.eq(id))).execute(&conn)?;
+            diesel::delete(snippets::table.filter(snippets::slug.eq(id))).execute(&mut conn)?;
         if deleted_rows == 0 {
             Err(StorageError::NotFound { id: id.to_owned() })
         } else {
@@ -371,7 +383,7 @@ mod tests {
                 .expect("Failed to build a db connection pool");
 
             {
-                let conn: PooledConnection<ConnectionManager<PgConnection>> =
+                let mut conn: PooledConnection<ConnectionManager<PgConnection>> =
                     pool.get().expect("Failed to establish a db connection");
 
                 // start a db transaction that will never be committed. All
@@ -384,13 +396,13 @@ mod tests {
                 // drop all existing rows in the very beginning of the
                 // transaction, so that tests always start with an empty db
                 diesel::delete(tags::table)
-                    .execute(&conn)
+                    .execute(&mut conn)
                     .expect("could not delete tags");
                 diesel::delete(changesets::table)
-                    .execute(&conn)
+                    .execute(&mut conn)
                     .expect("could not delete changesets");
                 diesel::delete(snippets::table)
-                    .execute(&conn)
+                    .execute(&mut conn)
                     .expect("could not delete snippets");
 
                 // return the connection with an open transaction back to the
