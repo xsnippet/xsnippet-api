@@ -15,12 +15,12 @@ use crate::web::{
     WithHttpHeaders,
 };
 
-fn create_snippet_impl(
+async fn create_snippet_impl(
     storage: &dyn Storage,
     snippet: &Snippet,
     base_path: &str,
 ) -> Result<Created<Output<Snippet>>, ApiError> {
-    let new_snippet = storage.create(snippet)?;
+    let new_snippet = storage.create(snippet).await?;
 
     let location = [base_path, new_snippet.id.as_str()].join("/");
     Ok(Created::new(location).body(Output(new_snippet)))
@@ -141,7 +141,7 @@ pub async fn create_snippet(
     _user: BearerAuth,
 ) -> Result<Created<Output<Snippet>>, ApiError> {
     let snippet = Snippet::try_from((config.inner(), body?.0))?;
-    create_snippet_impl(storage.as_ref(), &snippet, origin.path().as_str())
+    create_snippet_impl(storage.as_ref(), &snippet, origin.path().as_str()).await
 }
 
 fn split_marker(mut snippets: Vec<Snippet>, limit: usize) -> (Option<String>, Vec<Snippet>) {
@@ -181,7 +181,7 @@ pub async fn list_snippets<'h>(
     criteria.pagination.limit = limit + 1;
     criteria.pagination.marker = marker;
 
-    let snippets = storage.list(criteria.clone())?;
+    let snippets = storage.list(criteria.clone()).await?;
     let mut prev_needed = false;
     let (next_marker, snippets) = split_marker(snippets, limit);
     let prev_marker = if criteria.pagination.marker.is_some() && !snippets.is_empty() {
@@ -189,7 +189,7 @@ pub async fn list_snippets<'h>(
         // but to issue the query one more time into opposite direction.
         criteria.pagination.direction = Direction::Asc;
         criteria.pagination.marker = Some(snippets[0].id.to_owned());
-        let prev_snippets = storage.list(criteria)?;
+        let prev_snippets = storage.list(criteria).await?;
         prev_needed = !prev_snippets.is_empty();
 
         prev_snippets.get(limit).map(|m| m.id.to_owned())
@@ -258,7 +258,7 @@ pub async fn import_snippet(
     let base_path = path
         .strip_suffix("/import")
         .ok_or_else(|| ApiError::InternalError(format!("Invalid URI path: {}", path)))?;
-    create_snippet_impl(storage.as_ref(), &snippet, base_path.as_str())
+    create_snippet_impl(storage.as_ref(), &snippet, base_path.as_str()).await
 }
 
 #[get("/snippets/<id>", format = "text/plain", rank = 1)]
@@ -273,7 +273,8 @@ pub async fn get_raw_snippet(
     _not_any: DoNotAcceptAny,
 ) -> Result<String, ApiError> {
     Ok(storage
-        .get(&id)?
+        .get(&id)
+        .await?
         .changesets
         .into_iter()
         .last()
@@ -288,5 +289,5 @@ pub async fn get_snippet(
     _content_type: &NegotiatedContentType,
     _user: BearerAuth,
 ) -> Result<Output<Snippet>, ApiError> {
-    Ok(Output(storage.get(&id)?))
+    Ok(Output(storage.get(&id).await?))
 }
