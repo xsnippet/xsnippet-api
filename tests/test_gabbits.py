@@ -54,7 +54,7 @@ class XSnippetApi(gabbi.fixture.GabbiFixture):
         self.environ = {
             "ROCKET_ADDRESS": XSNIPPET_API_HOST,
             "ROCKET_PORT": str(XSNIPPET_API_PORT),
-            "ROCKET_LOG": "critical",
+            "ROCKET_LOG_LEVEL": "critical",
             "ROCKET_TRACING": "debug",
         }
 

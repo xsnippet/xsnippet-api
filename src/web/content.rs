@@ -1,17 +1,13 @@
-use std::io::Read;
-
-use serde::de::Deserialize;
+use serde::de::DeserializeOwned;
 use serde::Serialize;
 
+use rocket::data::{self, Data, FromData, ToByteUnit};
+use rocket::form::{self, FromFormField, ValueField};
 use rocket::http::{Accept, ContentType, HeaderMap, QMediaType, Status};
 use rocket::outcome::Outcome::*;
 use rocket::request::{self, FromRequest, Request};
 use rocket::response::{self, Responder, Response};
-use rocket::{
-    data::{Data, FromData, Outcome, Transform, Transform::*, Transformed},
-    request::FromFormValue,
-};
-use rocket_contrib::json::Json;
+use rocket::serde::json::Json;
 
 use crate::errors::ApiError;
 use crate::storage::Pagination;
@@ -42,50 +38,55 @@ const PAGINATION_LIMIT_MAX: usize = 20;
 #[derive(Debug)]
 pub struct Input<T>(pub T);
 
-impl<'a, T> FromData<'a> for Input<T>
+#[rocket::async_trait]
+impl<'r, T> FromData<'r> for Input<T>
 where
-    T: Deserialize<'a>,
+    T: DeserializeOwned,
 {
     type Error = ApiError;
-    type Owned = String;
-    type Borrowed = str;
 
-    fn transform(r: &Request, d: Data) -> Transform<Outcome<Self::Owned, Self::Error>> {
-        let size_limit = r
+    async fn from_data(request: &'r Request<'_>, data: Data<'r>) -> data::Outcome<'r, Self> {
+        let size_limit = request
             .limits()
             .get("max_request_size")
-            .unwrap_or(MAX_REQUEST_SIZE);
+            .unwrap_or_else(|| MAX_REQUEST_SIZE.bytes());
 
-        let mut buf = String::with_capacity(8192);
-        match d.open().take(size_limit).read_to_string(&mut buf) {
-            Ok(_) => Borrowed(Success(buf)),
-            Err(e) => Borrowed(Failure((
-                Status::BadRequest,
-                ApiError::BadRequest(e.to_string()),
-            ))),
-        }
-    }
+        let input = match data.open(size_limit).into_string().await {
+            Ok(string) if string.is_complete() => string.into_inner(),
+            Ok(_) => {
+                return Error((
+                    Status::PayloadTooLarge,
+                    ApiError::BadRequest("Payload too large".to_string()),
+                ))
+            }
+            Err(e) => {
+                return Error((
+                    Status::InternalServerError,
+                    ApiError::InternalError(e.to_string()),
+                ))
+            }
+        };
 
-    fn from_data(request: &Request, o: Transformed<'a, Self>) -> Outcome<Self, Self::Error> {
-        let data = o.borrowed()?;
-
-        let content_type = request.content_type().unwrap_or(&ContentType::JSON);
-        if content_type == &ContentType::JSON {
-            match serde_json::from_str(data) {
+        let content_type = request
+            .content_type()
+            .cloned()
+            .unwrap_or(PREFERRED_MEDIA_TYPE);
+        if content_type == ContentType::JSON {
+            match serde_json::from_str(&input) {
                 Ok(v) => Success(Input(v)),
                 Err(e) => {
                     if e.is_syntax() {
-                        Failure((
+                        Error((
                             Status::BadRequest,
                             ApiError::BadRequest("Invalid JSON".to_string()),
                         ))
                     } else {
-                        Failure((Status::BadRequest, ApiError::BadRequest(e.to_string())))
+                        Error((Status::BadRequest, ApiError::BadRequest(e.to_string())))
                     }
                 }
             }
         } else {
-            Failure((
+            Error((
                 Status::UnsupportedMediaType,
                 ApiError::UnsupportedMediaType(SUPPORTED_MEDIA_TYPES_ERROR),
             ))
@@ -98,27 +99,19 @@ where
 /// headers.
 pub struct Output<T>(pub T);
 
-impl<'a, T: Serialize> Responder<'a> for Output<T> {
-    fn respond_to(self, request: &Request) -> response::Result<'a> {
+impl<'r, 'o: 'r, T: Serialize> Responder<'r, 'o> for Output<T> {
+    fn respond_to(self, request: &'r Request) -> response::Result<'o> {
         let Output(value) = self;
+        let NegotiatedContentType(content_type) =
+            request.local_cache(|| /* default */ NegotiatedContentType(PREFERRED_MEDIA_TYPE));
 
-        match request.guard::<NegotiatedContentType>() {
-            Success(NegotiatedContentType(content_type)) => {
-                if content_type == ContentType::JSON {
-                    Json(value).respond_to(request)
-                } else {
-                    // this shouldn't be possible as by this point content negotiation has already
-                    // succeded
-                    error!("Failed to serialize data to {}", content_type);
-                    Err(Status::InternalServerError)
-                }
-            }
-            Failure((_, ApiError::NotAcceptable(msg))) => response::status::Custom(
-                Status::NotAcceptable,
-                response::content::Plain(msg.to_string()),
-            )
-            .respond_to(request),
-            _ => unreachable!(),
+        if content_type == &ContentType::JSON {
+            Json(value).respond_to(request)
+        } else {
+            // this shouldn't be possible as by this point content negotiation has already
+            // succeded
+            error!("Failed to serialize data to {}", content_type);
+            Err(Status::InternalServerError)
         }
     }
 }
@@ -126,8 +119,8 @@ impl<'a, T: Serialize> Responder<'a> for Output<T> {
 /// A Rocket responder that generates response with extra HTTP headers.
 pub struct WithHttpHeaders<'h, R>(pub HeaderMap<'h>, pub Option<R>);
 
-impl<'r, R: Responder<'r>> Responder<'r> for WithHttpHeaders<'r, R> {
-    fn respond_to(self, request: &Request) -> Result<Response<'r>, Status> {
+impl<'r, 'o: 'r, R: Responder<'r, 'o>> Responder<'r, 'o> for WithHttpHeaders<'o, R> {
+    fn respond_to(self, request: &'r Request<'_>) -> response::Result<'o> {
         let mut build = Response::build();
 
         if let Some(responder) = self.1 {
@@ -152,21 +145,27 @@ impl Default for PaginationLimit {
     }
 }
 
-impl FromFormValue<'_> for PaginationLimit {
-    type Error = ApiError;
+#[rocket::async_trait]
+impl FromFormField<'_> for PaginationLimit {
+    fn default() -> Option<Self> {
+        Some(Default::default())
+    }
 
-    fn from_form_value(form_value: &rocket::http::RawStr) -> Result<Self, Self::Error> {
-        match form_value.parse::<usize>() {
+    fn from_value(field: ValueField<'_>) -> form::Result<'_, Self> {
+        match field.value.parse::<usize>() {
             Ok(limit) => {
                 if !(PAGINATION_LIMIT_MIN..=PAGINATION_LIMIT_MAX).contains(&limit) {
-                    return Err(ApiError::BadRequest(format!(
+                    return Err(form::Error::validation(format!(
                         "Limit must be an integer between {} and {}",
                         PAGINATION_LIMIT_MIN, PAGINATION_LIMIT_MAX
-                    )));
+                    ))
+                    .into());
                 }
                 Ok(PaginationLimit(limit))
             }
-            Err(message) => Err(ApiError::BadRequest(message.to_string())),
+            Err(e) => {
+                Err(form::Error::validation(format!("Limit must be an integer: {}", e)).into())
+            }
         }
     }
 }
@@ -183,10 +182,11 @@ impl Default for NegotiatedContentType {
     }
 }
 
-impl<'a, 'r> FromRequest<'a, 'r> for NegotiatedContentType {
+#[rocket::async_trait]
+impl<'r> FromRequest<'r> for &'r NegotiatedContentType {
     type Error = ApiError;
 
-    fn from_request(request: &'a Request<'r>) -> request::Outcome<Self, Self::Error> {
+    async fn from_request(request: &'r Request<'_>) -> request::Outcome<Self, Self::Error> {
         // go through all requested media types in the request and check which of them
         // we support
         let mut supported_types = vec![];
@@ -216,16 +216,21 @@ impl<'a, 'r> FromRequest<'a, 'r> for NegotiatedContentType {
 
         if !supported_types.is_empty() {
             // pick the media type with the highest priority among the ones that we support
-            Success(NegotiatedContentType(ContentType(
+            let selected = NegotiatedContentType(ContentType(
                 Accept::new(supported_types)
                     .preferred()
                     .media_type()
                     .to_owned(),
-            )))
+            ));
+
+            // caching is only required to give [`Output`] access to the negotiated content type,
+            // as it can no longer call the [`NegotiatedContentType`] guard directly ([`Responder`]
+            // is a sync trait, while [`NegotiatedContentType`], as all request guards, is an async one)
+            Success(request.local_cache(|| selected))
         } else {
             // none of the media types specified in the requested are supported. There is
             // nothing we can do other than send a response with an error message
-            Failure((
+            Error((
                 Status::NotAcceptable,
                 ApiError::NotAcceptable(SUPPORTED_MEDIA_TYPES_ERROR),
             ))
@@ -237,15 +242,16 @@ impl<'a, 'r> FromRequest<'a, 'r> for NegotiatedContentType {
 /// via the Accept header.
 pub struct DoNotAcceptAny;
 
-impl<'a, 'r> FromRequest<'a, 'r> for DoNotAcceptAny {
+#[rocket::async_trait]
+impl<'r> FromRequest<'r> for DoNotAcceptAny {
     type Error = ApiError;
 
-    fn from_request(request: &'a Request<'r>) -> request::Outcome<Self, Self::Error> {
+    async fn from_request(request: &'r Request<'_>) -> request::Outcome<Self, Self::Error> {
         match request.accept() {
             // Accept is passed and it's not */*
             Some(accept) if !accept.preferred().is_any() => Success(DoNotAcceptAny),
             // Accept is not passed, or it's not specific (i.e. */*)
-            _ => Forward(()),
+            _ => Forward(Status::BadRequest),
         }
     }
 }

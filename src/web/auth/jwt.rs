@@ -53,13 +53,14 @@ struct Claims {
 
 impl Jwks {
     /// Returns a Jwks retrieved from the location identified by the given URI.
-    pub fn from_uri(uri: &str) -> Result<Self> {
-        let load_err = Error::Configuration(format!("Can't load Jwks state from {}", uri));
+    pub async fn from_uri(uri: &str) -> Result<Self> {
+        let load_err = || Error::Configuration(format!("Can't load Jwks state from {}", uri));
         let json = match uri.split_once("://") {
-            Some(("https", _)) => reqwest::blocking::get(uri)
-                .and_then(|response| response.text())
-                .map_err(|_| load_err)?,
-            Some(("file", path)) => std::fs::read_to_string(path).map_err(|_| load_err)?,
+            Some(("https", _)) => {
+                let response = reqwest::get(uri).await.map_err(|_| load_err())?;
+                response.text().await.map_err(|_| load_err())?
+            }
+            Some(("file", path)) => std::fs::read_to_string(path).map_err(|_| load_err())?,
             _ => {
                 return Err(Error::Configuration(
                     "URI scheme is not supported or URI is invalid".to_string(),
@@ -92,8 +93,8 @@ impl JwtValidator {
     /// * `audience` - The intended recipient of the tokens (e.g. "https://api.xsnippet.org")
     /// * `issuer`   - The principal that issues the tokens (e.g. "https://xsnippet.eu.auth0.com/")
     /// * `jwks_uri` - The location of JWT Key Set with keys used to validate the tokens (e.g. "https://xsnippet.eu.auth0.com/.well-known/jwks.json")
-    pub fn new(audience: String, issuer: String, jwks_uri: &str) -> Result<Self> {
-        let jwks = Jwks::from_uri(jwks_uri)?;
+    pub async fn new(audience: String, issuer: String, jwks_uri: &str) -> Result<Self> {
+        let jwks = Jwks::from_uri(jwks_uri).await?;
 
         //  The following token properties are going to be verified:
         //  * the expiration time
@@ -110,12 +111,13 @@ impl JwtValidator {
     }
 
     /// Returns a new JwtValidator constructed from the application config.
-    pub fn from_config(config: &Config) -> Result<Self> {
+    pub async fn from_config(config: &Config) -> Result<Self> {
         JwtValidator::new(
             config.jwt_audience.to_owned(),
             config.jwt_issuer.to_owned(),
             &config.jwt_jwks_uri,
         )
+        .await
     }
 }
 
@@ -175,6 +177,20 @@ mod tests {
     const UNKNOWN_KID_TOKEN: &str = "eyJ0eXAiOiJKV1QiLCJhbGciOiJSUzI1NiIsImtpZCI6ImVnZ3MifQ.eyJzdWIiOiJ1c2VyIiwiYXVkIjoieHNuaXBwZXQtYXBpLXRlc3RzLWF1ZCIsImlzcyI6InhzbmlwcGV0LWFwaS10ZXN0cy1pc3MiLCJleHAiOjQ3NzAzNzU1NDQsInBlcm1pc3Npb25zIjpbXX0.doA6EeVLnp-MLNRTRUzg03rw9oUn5vDGv59zNysrcFfvkEiiYAtZMu-YW_N3YtE0qv2FTaGAXHryMqsEk8rsFv4uepDuOpzutnRoB4JDFTpvJkKYE4HZjsd8eHSAjFEuCvDjm7wnxoW0zDXH_zj1FITht-c3ua6KbgeevvDjpUgaR52Zou9HRyNa6ns5OKO7yJofA32IZaO7QH69iQiZ4o9WA8PfFNyuVqyQVkvZwpr68JLgl4qTTX4NIWV4wU4OWbIGN6-p4QSkS_Ljkau9sRKjnx4NYPbICMGWVThn_MKOfg26DjGZlI_0HFYDBLogJkTmmyT-5IIIWUqBgUKWYA";
     const UNSUPPORTED_ALG_TOKEN: &str = "eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiIsImtpZCI6InRlc3Qta2V5In0.eyJzdWIiOiJ1c2VyIiwiYXVkIjoieHNuaXBwZXQtYXBpLXRlc3RzLWF1ZCIsImlzcyI6InhzbmlwcGV0LWFwaS10ZXN0cy1pc3MiLCJleHAiOjQ3NzAzNzU1NDQsInBlcm1pc3Npb25zIjpbXX0.doA6EeVLnp-MLNRTRUzg03rw9oUn5vDGv59zNysrcFfvkEiiYAtZMu-YW_N3YtE0qv2FTaGAXHryMqsEk8rsFv4uepDuOpzutnRoB4JDFTpvJkKYE4HZjsd8eHSAjFEuCvDjm7wnxoW0zDXH_zj1FITht-c3ua6KbgeevvDjpUgaR52Zou9HRyNa6ns5OKO7yJofA32IZaO7QH69iQiZ4o9WA8PfFNyuVqyQVkvZwpr68JLgl4qTTX4NIWV4wU4OWbIGN6-p4QSkS_Ljkau9sRKjnx4NYPbICMGWVThn_MKOfg26DjGZlI_0HFYDBLogJkTmmyT-5IIIWUqBgUKWYA";
 
+    fn new_jwt_validator(audience: String, issuer: String, jwks_uri: &str) -> Result<JwtValidator> {
+        let rt = tokio::runtime::Builder::new_current_thread()
+            .build()
+            .unwrap();
+        rt.block_on(JwtValidator::new(audience, issuer, jwks_uri))
+    }
+
+    fn new_jwks_from_uri(uri: &str) -> Result<Jwks> {
+        let rt = tokio::runtime::Builder::new_current_thread()
+            .build()
+            .unwrap();
+        rt.block_on(Jwks::from_uri(uri))
+    }
+
     fn with_jwks<F>(test: F)
     where
         F: FnOnce(&Path),
@@ -204,7 +220,8 @@ mod tests {
     #[test]
     fn jwks_from_uri() {
         with_jwks(|path| {
-            let jwks = Jwks::from_uri(&(String::from("file://") + path.to_str().unwrap())).unwrap();
+            let jwks =
+                new_jwks_from_uri(&(String::from("file://") + path.to_str().unwrap())).unwrap();
 
             let expected_key = Key {
                 alg: Algorithm::RS256,
@@ -229,7 +246,7 @@ mod tests {
             serde_json::to_writer(&mut writer, &Jwks { keys: Vec::new() }).unwrap();
         }
 
-        match Jwks::from_uri(&(String::from("file://") + file.path().to_str().unwrap())) {
+        match new_jwks_from_uri(&(String::from("file://") + file.path().to_str().unwrap())) {
             Err(Error::Configuration(msg)) => assert!(msg.contains("Jwks is empty")),
             _ => panic!("unexpected result"),
         };
@@ -243,7 +260,7 @@ mod tests {
             writer.write_all(b"[]").unwrap();
         }
 
-        match Jwks::from_uri(&(String::from("file://") + file.path().to_str().unwrap())) {
+        match new_jwks_from_uri(&(String::from("file://") + file.path().to_str().unwrap())) {
             Err(Error::Configuration(msg)) => {
                 assert!(msg.contains("Can't parse Jwks state as JSON"))
             }
@@ -253,12 +270,12 @@ mod tests {
 
     #[test]
     fn jwks_from_uri_invalid_uri() {
-        match Jwks::from_uri("ftp://foo/bar") {
+        match new_jwks_from_uri("ftp://foo/bar") {
             Err(Error::Configuration(msg)) => assert!(msg.contains("URI is invalid")),
             _ => panic!("unexpected result"),
         };
 
-        match Jwks::from_uri("http:/foo/bar") {
+        match new_jwks_from_uri("http:/foo/bar") {
             Err(Error::Configuration(msg)) => assert!(msg.contains("URI is invalid")),
             _ => panic!("unexpected result"),
         };
@@ -266,7 +283,7 @@ mod tests {
 
     #[test]
     fn jwks_from_uri_failed_load() {
-        match Jwks::from_uri(&String::from("file://spam")) {
+        match new_jwks_from_uri(&String::from("file://spam")) {
             Err(Error::Configuration(msg)) => assert!(msg.contains("Can't load Jwks state")),
             _ => panic!("unexpected result"),
         };
@@ -275,7 +292,7 @@ mod tests {
     #[test]
     fn validate() {
         with_jwks(|path| {
-            let validator = JwtValidator::new(
+            let validator = new_jwt_validator(
                 AUDIENCE.to_string(),
                 ISSUER.to_string(),
                 &(String::from("file://") + path.to_str().unwrap()),
@@ -325,7 +342,7 @@ mod tests {
     #[test]
     fn validate_invalid_params() {
         with_jwks(|path| {
-            let validator = JwtValidator::new(
+            let validator = new_jwt_validator(
                 "spam".to_string(),
                 ISSUER.to_string(),
                 &(String::from("file://") + path.to_str().unwrap()),
@@ -336,7 +353,7 @@ mod tests {
                 _ => panic!("unexpected result"),
             };
 
-            let validator = JwtValidator::new(
+            let validator = new_jwt_validator(
                 AUDIENCE.to_string(),
                 "eggs".to_string(),
                 &(String::from("file://") + path.to_str().unwrap()),

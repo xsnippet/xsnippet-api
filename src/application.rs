@@ -1,70 +1,77 @@
 use std::collections::BTreeSet;
-use std::error::Error;
+
+use rocket::fairing::AdHoc;
+use serde::Deserialize;
 
 use super::routes;
 use super::storage::{SqlStorage, Storage};
-use super::web::{AuthValidator, JwtValidator, RequestIdHeader, RequestSpan};
+use super::web::{AuthValidator, JwtValidator, RequestIdHeader};
 
-#[derive(Debug)]
+#[derive(Debug, Deserialize)]
 pub struct Config {
+    /// Database connection string
+    pub database_url: String,
+
     /// Keeps a set of supported syntaxes. When set, RESTful API rejects
     /// snippets with *unsupported* syntaxes. Normally this set must be
     /// kept in sync with a set of supported syntaxes in XSnippet Web in
     /// order to ensure that the web part can properly syntax-highlight
     /// snippets.
+    #[serde(default)]
     pub syntaxes: Option<BTreeSet<String>>,
 
     /// The intended recipient of the tokens (e.g. "https://api.xsnippet.org")
+    #[serde(default = "default_jwt_audience")]
     pub jwt_audience: String,
     /// The principal that issues the tokens (e.g. "https://xsnippet.eu.auth0.com/")
+    #[serde(default = "default_jwt_issuer")]
     pub jwt_issuer: String,
     /// The location of JWT Key Set with keys used to validate the tokens (e.g. "https://xsnippet.eu.auth0.com/.well-known/jwks.json")
+    #[serde(default = "default_jwks_uri")]
     pub jwt_jwks_uri: String,
 }
 
+fn default_jwt_audience() -> String {
+    "https://api.xsnippet.org".to_string()
+}
+fn default_jwt_issuer() -> String {
+    "https://xsnippet.eu.auth0.com/".to_string()
+}
+fn default_jwks_uri() -> String {
+    "https://xsnippet.eu.auth0.com/.well-known/jwks.json".to_string()
+}
+
 /// Create and return a Rocket application instance.
-///
-/// # Errors
-///
-/// Returns `Err(rocket::config::ConfigError)` if configuration supplied
-/// cannot be parsed or invalid.
-pub fn create_app() -> Result<rocket::Rocket, Box<dyn Error>> {
-    let app = rocket::ignite();
+pub fn create_app() -> rocket::Rocket<rocket::Build> {
+    let app = rocket::build().attach(AdHoc::try_on_ignite("Config", |app| async {
+        let config = match app.figment().extract::<Config>() {
+            Ok(config) => config,
+            Err(e) => {
+                error!("Failed to read config: {}", e);
+                return Err(app);
+            }
+        };
+        let storage: Box<dyn Storage> = match SqlStorage::new(&config.database_url) {
+            Ok(storage) => Box::new(storage),
+            Err(e) => {
+                error!("Failed to create a storage connection: {}", e);
+                return Err(app);
+            }
+        };
+        let auth: Box<dyn AuthValidator> = match JwtValidator::from_config(&config).await {
+            Ok(auth) => Box::new(auth),
+            Err(e) => {
+                error!("Failed to create an auth validator: {}", e);
+                return Err(app);
+            }
+        };
 
-    let syntaxes = app.config().get_slice("syntaxes");
-    let syntaxes = match syntaxes {
-        Ok(syntaxes) => Some(
-            syntaxes
-                .iter()
-                .map(|v| v.clone().try_into::<String>())
-                .collect::<Result<BTreeSet<_>, _>>()?,
-        ),
-        Err(rocket::config::ConfigError::Missing(_)) => None,
-        Err(err) => return Err(Box::new(err)),
-    };
-
-    let database_url = match app.config().get_string("database_url") {
-        Ok(database_url) => database_url,
-        Err(err) => return Err(Box::new(err)),
-    };
-
-    let config = Config {
-        syntaxes,
-        jwt_audience: app
-            .config()
-            .get_string("jwt_audience")
-            .unwrap_or_else(|_| String::from("https://api.xsnippet.org")),
-        jwt_issuer: app
-            .config()
-            .get_string("jwt_issuer")
-            .unwrap_or_else(|_| String::from("https://xsnippet.eu.auth0.com/")),
-        jwt_jwks_uri: app.config().get_string("jwt_jwks_uri").unwrap_or_else(|_| {
-            String::from("https://xsnippet.eu.auth0.com/.well-known/jwks.json")
-        }),
-    };
-
-    let storage: Box<dyn Storage> = Box::new(SqlStorage::new(&database_url)?);
-    let token_validator: Box<dyn AuthValidator> = Box::new(JwtValidator::from_config(&config)?);
+        Ok(app
+            .manage(config)
+            .manage(storage)
+            .manage(auth)
+            .attach(RequestIdHeader))
+    }));
 
     let routes = routes![
         routes::snippets::create_snippet,
@@ -74,11 +81,5 @@ pub fn create_app() -> Result<rocket::Rocket, Box<dyn Error>> {
         routes::syntaxes::get_syntaxes,
         routes::snippets::import_snippet,
     ];
-    Ok(app
-        .manage(config)
-        .manage(storage)
-        .manage(token_validator)
-        .attach(RequestIdHeader)
-        .attach(RequestSpan)
-        .mount("/v1", routes))
+    app.mount("/v1", routes)
 }

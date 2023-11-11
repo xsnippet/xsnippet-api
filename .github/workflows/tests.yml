@@ -40,7 +40,7 @@ jobs:
 
       - uses: actions-rs/toolchain@v1
         with:
-          toolchain: nightly
+          toolchain: stable
           profile: minimal
           components: clippy
           override: true
@@ -57,8 +57,6 @@ jobs:
           - ubuntu-latest
           - windows-latest
           - macos-latest
-        rust-version:
-          - nightly
 
     runs-on: ${{ matrix.os }}
 
@@ -68,7 +66,7 @@ jobs:
       - uses: actions-rs/toolchain@v1
         with:
           profile: minimal
-          toolchain: ${{ matrix.rust-version }}
+          toolchain: stable
           override: true
 
       - name: Setup PostgreSQL
@@ -99,7 +97,7 @@ jobs:
 
       - uses: actions-rs/toolchain@v1
         with:
-          toolchain: nightly
+          toolchain: stable
           profile: minimal
           override: true
 
@@ -116,7 +114,7 @@ jobs:
       - uses: actions-rs/toolchain@v1
         with:
           profile: minimal
-          toolchain: nightly
+          toolchain: stable
           override: true
 
       - name: Setup PostgreSQL
