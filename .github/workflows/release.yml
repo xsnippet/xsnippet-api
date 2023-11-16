@@ -21,18 +21,18 @@ jobs:
     outputs:
       upload_url: ${{ steps.create_release.outputs.upload_url }}
     steps:
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v4
 
       - id: release_params
         run: |
           if [[ "${GITHUB_REF}" == refs/tags/* ]]; then
-            echo "::set-output name=prerelease::false"
-            echo "::set-output name=release_tag::${GITHUB_REF#refs/tags/}"
-            echo "::set-output name=title::${GITHUB_REF#refs/tags/}"
+            echo "prerelease=false" >> $GITHUB_OUTPUT
+            echo "release_tag=${GITHUB_REF#refs/tags/}" >> $GITHUB_OUTPUT
+            echo "title=${GITHUB_REF#refs/tags/}" >> $GITHUB_OUTPUT
           else
-            echo "::set-output name=prerelease::true"
-            echo "::set-output name=release_tag::nightly"
-            echo "::set-output name=title::Development Build"
+            echo "prerelease=true" >> $GITHUB_OUTPUT
+            echo "release_tag=nightly" >> $GITHUB_OUTPUT
+            echo "title=Development Build" >> $GITHUB_OUTPUT
           fi
 
       - id: create_release
@@ -56,7 +56,7 @@ jobs:
     runs-on: ${{ matrix.os }}
 
     steps:
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v4
 
       - uses: actions-rs/toolchain@v1
         with:
