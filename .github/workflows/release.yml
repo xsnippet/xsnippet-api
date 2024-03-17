@@ -19,29 +19,23 @@ jobs:
   create_release:
     runs-on: ubuntu-latest
     outputs:
-      upload_url: ${{ steps.create_release.outputs.upload_url }}
+      release_tag: ${{ steps.create_release.outputs.release_tag }}
     steps:
       - uses: actions/checkout@v4
 
-      - id: release_params
+      - id: create_release
         run: |
           if [[ "${GITHUB_REF}" == refs/tags/* ]]; then
-            echo "prerelease=false" >> $GITHUB_OUTPUT
             echo "release_tag=${GITHUB_REF#refs/tags/}" >> $GITHUB_OUTPUT
-            echo "title=${GITHUB_REF#refs/tags/}" >> $GITHUB_OUTPUT
+            gh release create --generate-notes "${GITHUB_REF#refs/tags/}"
           else
-            echo "prerelease=true" >> $GITHUB_OUTPUT
             echo "release_tag=nightly" >> $GITHUB_OUTPUT
-            echo "title=Development Build" >> $GITHUB_OUTPUT
+            gh release delete --cleanup-tag --yes nightly
+            gh release create --generate-notes --prerelease --title "Development Build" nightly
           fi
-
-      - id: create_release
-        uses: "marvinpinto/action-automatic-releases@latest"
-        with:
-          repo_token: ${{ secrets.GITHUB_TOKEN }}
-          prerelease: ${{ steps.release_params.outputs.prerelease }}
-          automatic_release_tag: ${{ steps.release_params.outputs.release_tag }}
-          title: ${{ steps.release_params.outputs.title }}
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GH_REPO: ${{ github.event.repository.name }}
 
   build_assets:
     needs: create_release
@@ -78,21 +72,14 @@ jobs:
 
           pushd target/release
           if [ "$RUNNER_OS" == "Windows" ]; then
-            echo "ASSET_NAME=xsnippet-api-${target_arch}-${target_os}.exe.7z" >> $GITHUB_ENV
-            echo "ASSET_PATH=./target/release/xsnippet-api.exe.7z" >> $GITHUB_ENV
             7z a xsnippet-api.exe.7z xsnippet-api.exe
+            gh release upload "$RELEASE_TAG" "xsnippet-api.exe.7z#xsnippet-api-${target_arch}-${target_os}.exe.7z"
           else
-            echo "ASSET_NAME=xsnippet-api-${target_arch}-${target_os}.gz" >> $GITHUB_ENV
-            echo "ASSET_PATH=./target/release/xsnippet-api.gz" >> $GITHUB_ENV
             tar cvzf xsnippet-api.gz xsnippet-api
+            gh release upload "$RELEASE_TAG" "xsnippet-api.gz#xsnippet-api-${target_arch}-${target_os}.gz"
           fi
           popd
-
-      - uses: actions/upload-release-asset@v1
         env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        with:
-          upload_url: ${{ needs.create_release.outputs.upload_url }}
-          asset_name: ${{ env.ASSET_NAME }}
-          asset_path: ${{ env.ASSET_PATH }}
-          asset_content_type: application/octet-stream
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GH_REPO: ${{ github.event.repository.name }}
+          RELEASE_TAG: ${{ needs.create_release.outputs.release_tag }}
