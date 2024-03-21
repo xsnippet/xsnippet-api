@@ -35,7 +35,7 @@ jobs:
           fi
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          GH_REPO: ${{ github.event.repository.name }}
+          GH_REPO: ${{ env.GITHUB_REPOSITORY }}
 
   build_assets:
     needs: create_release
@@ -81,5 +81,5 @@ jobs:
           popd
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          GH_REPO: ${{ github.event.repository.name }}
+          GH_REPO: ${{ env.GITHUB_REPOSITORY }}
           RELEASE_TAG: ${{ needs.create_release.outputs.release_tag }}
