@@ -85,7 +85,7 @@ pub struct RequestSpan;
 //
 // Using a thread-local is fine, because both on_request()/on_response() and the
 // actual request handler are executed in the same thread.
-thread_local!(static REQUEST_SPAN: RefCell<Option<EnteredSpan>> = RefCell::new(None));
+thread_local!(static REQUEST_SPAN: RefCell<Option<EnteredSpan>> = const { RefCell::new(None) });
 
 #[rocket::async_trait]
 impl Fairing for RequestSpan {
