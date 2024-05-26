@@ -68,7 +68,7 @@ fn create_link_header(
     // yet the link must be generated. If that's the case, reuse query
     // parameters we are using to generate a link to the first page.
     if query_prev.is_none() && prev_needed {
-        query_prev = query_first.clone();
+        query_prev.clone_from(&query_first);
     }
 
     vec![
