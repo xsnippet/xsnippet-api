@@ -23,9 +23,11 @@ pub trait Storage: Send + Sync {
     async fn get(&self, id: &str) -> Result<Snippet, StorageError>;
 
     /// Update the state of the given snippet in the persistent storage
+    #[allow(dead_code)]
     async fn update(&self, snippet: &Snippet) -> Result<Snippet, StorageError>;
 
     /// Delete the snippet uniquely identified by a given id (a slug or a legacy
     /// numeric id)
+    #[allow(dead_code)]
     async fn delete(&self, id: &str) -> Result<(), StorageError>;
 }

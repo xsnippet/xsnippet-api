@@ -59,7 +59,7 @@ jobs:
           override: true
 
       - name: Setup PostgreSQL
-        uses: ikalnytskyi/action-setup-postgres@v1
+        uses: ikalnytskyi/action-setup-postgres@v6
 
       - uses: actions-rs/cargo@v1
         with:
