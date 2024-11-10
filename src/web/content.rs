@@ -13,7 +13,7 @@ use crate::errors::ApiError;
 use crate::storage::Pagination;
 
 /// The default limit for the request size (to prevent DoS attacks). Can be
-/// overriden in the config by setting `max_request_size` to a different value
+/// overridden in the config by setting `max_request_size` to a different value
 const MAX_REQUEST_SIZE: u64 = 1024 * 1024;
 /// The list of supported formats. When changed, the implementation of
 /// Input::from_data() must be updated accordingly.
@@ -109,7 +109,7 @@ impl<'r, 'o: 'r, T: Serialize> Responder<'r, 'o> for Output<T> {
             Json(value).respond_to(request)
         } else {
             // this shouldn't be possible as by this point content negotiation has already
-            // succeded
+            // succeeded
             error!("Failed to serialize data to {}", content_type);
             Err(Status::InternalServerError)
         }
@@ -173,7 +173,7 @@ impl FromFormField<'_> for PaginationLimit {
 /// A guard that analyzes the Accept header of a user request to determine what
 /// media type should be used for serializing the response.
 ///
-/// 406 Not Accetable is returned if a user requests an unsupported data format.
+/// 406 Not Acceptable is returned if a user requests an unsupported data format.
 pub struct NegotiatedContentType(pub ContentType);
 
 impl Default for NegotiatedContentType {
