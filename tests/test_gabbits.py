@@ -211,7 +211,7 @@ class XSnippetApiWithCustomAuthProvider(XSnippetApi):
             "ROCKET_JWT_JWKS_URI": "file://{}".format(self.jwks.name),
         })
 
-        # this is ugly, but apparentely there is no other way to generate some
+        # this is ugly, but apparently there is no other way to generate some
         # data in a Gabbi test fixture, and then use it in the YAML scenarios
         self.tokens = self._generate_tokens(private_key)
         os.environ.update(self.tokens)
