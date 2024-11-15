@@ -17,6 +17,7 @@ pub struct SnippetRow {
 
 #[derive(Queryable)]
 pub struct ChangesetRow {
+    #[allow(dead_code)]
     pub id: i32,
     pub snippet_id: i32,
     pub version: i32,
@@ -27,6 +28,7 @@ pub struct ChangesetRow {
 
 #[derive(Queryable)]
 pub struct TagRow {
+    #[allow(dead_code)]
     pub id: i32,
     pub snippet_id: i32,
     pub value: String,

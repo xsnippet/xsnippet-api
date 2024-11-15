@@ -43,6 +43,7 @@ impl User {
 }
 
 #[derive(Debug)]
+#[allow(dead_code)]
 pub enum Error {
     /// Server is misconfigured or the critical dependency is unavailable.
     Configuration(String),
