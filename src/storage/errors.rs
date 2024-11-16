@@ -2,7 +2,7 @@ use std::error;
 use std::fmt;
 
 /// All errors that can be returned by the storage layer wrapped into a single
-/// enum type for convinience.
+/// enum type for convenience.
 #[derive(Debug)]
 pub enum StorageError {
     /// Snippet with this id already exists in the database
