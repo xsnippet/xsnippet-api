@@ -38,6 +38,11 @@ jobs:
           GH_REPO: ${{ env.GITHUB_REPOSITORY }}
 
   build_assets:
+    permissions:
+      id-token: write
+      contents: read
+      attestations: write
+
     needs: create_release
 
     strategy:
@@ -66,7 +71,8 @@ jobs:
           command: build
           args: --release
 
-      - run: |
+      - id: build
+        run: |
           rustc --print cfg | grep = > rustc.vars
           source rustc.vars
 
@@ -80,7 +86,13 @@ jobs:
           fi
           gh release upload $RELEASE_TAG $ASSET_NAME
           popd
+
+          echo "asset_path=target/release/$ASSET_NAME" >> $GITHUB_OUTPUT
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           GH_REPO: ${{ env.GITHUB_REPOSITORY }}
           RELEASE_TAG: ${{ needs.create_release.outputs.release_tag }}
+
+      - uses: actions/attest-build-provenance@v1
+        with:
+          subject-path: ${{ steps.build.outputs.asset_path }}
