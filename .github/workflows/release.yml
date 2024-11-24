@@ -47,10 +47,19 @@ jobs:
 
     strategy:
       matrix:
-        os:
-          - ubuntu-latest
-          - windows-latest
-          - macos-latest
+        include:
+          - target: x86_64-unknown-linux-gnu
+            os: ubuntu-latest
+            name: xsnippet-api-x86_64-linux.gz
+          - target: aarch64-unknown-linux-gnu
+            os: ubuntu-latest
+            name: xsnippet-api-aarch64-linux.gz
+          - target: x86_64-pc-windows-msvc
+            os: windows-latest
+            name: xsnippet-api-x86_64-windows.exe.7z
+          - target: aarch64-apple-darwin
+            os: macos-latest
+            name: xsnippet-api-aarch64-macos.gz
 
     runs-on: ${{ matrix.os }}
 
@@ -66,31 +75,31 @@ jobs:
       - name: Setup PostgreSQL
         uses: ikalnytskyi/action-setup-postgres@v6
 
-      - uses: actions-rs/cargo@v1
-        with:
-          command: build
-          args: --release
-
       - id: build
         run: |
-          rustc --print cfg | grep = > rustc.vars
-          source rustc.vars
+          export HOST=$(rustc +nightly -Z unstable-options --print target-spec-json | jq --raw-output '."llvm-target"')
+          if [ "$HOST" = "$TARGET" ]; then
+            cargo build --release --target ${TARGET}
+          else
+            cargo install cross
+            cross build --release --target ${TARGET}
+          fi
 
-          pushd target/release
-          if [ "$RUNNER_OS" == "Windows" ]; then
-            export ASSET_NAME="xsnippet-api-${target_arch}-${target_os}.exe.7z"
+          pushd target/${TARGET}/release
+          if [ "$TARGET" =~ "windows" ]; then
             7z a $ASSET_NAME xsnippet-api.exe
           else
-            export ASSET_NAME="xsnippet-api-${target_arch}-${target_os}.gz"
             tar cvzf $ASSET_NAME xsnippet-api
           fi
           gh release upload $RELEASE_TAG $ASSET_NAME
           popd
 
-          echo "asset_path=target/release/$ASSET_NAME" >> $GITHUB_OUTPUT
+          echo "asset_path=$PWD/$ASSET_NAME" >> $GITHUB_OUTPUT
         env:
+          ASSET_NAME: ${{ matrix.name }}
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           GH_REPO: ${{ env.GITHUB_REPOSITORY }}
+          TARGET: ${{ matrix.target }}
           RELEASE_TAG: ${{ needs.create_release.outputs.release_tag }}
 
       - uses: actions/attest-build-provenance@v1
