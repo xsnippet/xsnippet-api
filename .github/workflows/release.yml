@@ -77,7 +77,15 @@ jobs:
 
       - id: build
         run: |
-          export HOST=$(rustc +nightly -Z unstable-options --print target-spec-json | jq --raw-output '."llvm-target"')
+          rustc --print cfg | grep = > rustc.vars
+          source rustc.vars
+
+          if [ -z "${target_env}" ]; then
+            export HOST="${target_arch}-${target_vendor}-${target_os}"
+          else
+            export HOST="${target_arch}-${target_vendor}-${target_os}-${target_env}"
+          fi
+
           if [ "$HOST" = "$TARGET" ]; then
             cargo build --release --target ${TARGET}
           else
@@ -86,7 +94,7 @@ jobs:
           fi
 
           pushd target/${TARGET}/release
-          if [ "$TARGET" =~ "windows" ]; then
+          if [[ "$TARGET" =~ "windows" ]]; then
             7z a $ASSET_NAME xsnippet-api.exe
           else
             tar cvzf $ASSET_NAME xsnippet-api
