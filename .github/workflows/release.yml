@@ -48,11 +48,20 @@ jobs:
     strategy:
       matrix:
         os:
-          - ubuntu-latest
-          - windows-latest
-          - macos-latest
+          - name: ubuntu-latest
+            cross_compile_os: linux
+            cross_compile_target: aarch64-unknown-linux-gnu
+          - name: ubuntu-latest
+            cross_compile_os:
+            cross_compile_target:
+          - name: windows-latest
+            cross_compile_os:
+            cross_compile_target:
+          - name: macos-latest
+            cross_compile_os:
+            cross_compile_target:
 
-    runs-on: ${{ matrix.os }}
+    runs-on: ${{ matrix.os.name }}
 
     steps:
       - uses: actions/checkout@v4
@@ -66,17 +75,34 @@ jobs:
       - name: Setup PostgreSQL
         uses: ikalnytskyi/action-setup-postgres@v6
 
-      - uses: actions-rs/cargo@v1
-        with:
-          command: build
-          args: --release
+      - run: |
+          if [ -z "${CROSS_COMPILE_TARGET}" ]; then
+            # normal build targetting the CPU architecture and the OS of the host
+            cargo build --release
+          else
+            # cross build with the specified rustc target
+            cargo install cross
+            cross build --release --target ${CROSS_COMPILE_TARGET}
+          fi
+        env:
+          CROSS_COMPILE_TARGET: ${{ matrix.os.cross_compile_target }}
 
       - id: build
         run: |
-          rustc --print cfg | grep = > rustc.vars
-          source rustc.vars
+          if [ -z "${CROSS_COMPILE_TARGET}" ]; then
+            # normal build targetting the CPU architecture and the OS of the host
+            rustc --print cfg | grep = > rustc.vars
+            source rustc.vars
 
-          pushd target/release
+            pushd target/release
+          else
+            # cross build with the specified rustc target
+            export target_os=${CROSS_COMPILE_OS}
+            export target_arch=${CROSS_COMPILE_TARGET}
+
+            pushd target/${CROSS_COMPILE_TARGET}/release
+          fi
+
           if [ "$RUNNER_OS" == "Windows" ]; then
             export ASSET_NAME="xsnippet-api-${target_arch}-${target_os}.exe.7z"
             7z a $ASSET_NAME xsnippet-api.exe
@@ -89,6 +115,8 @@ jobs:
 
           echo "asset_path=target/release/$ASSET_NAME" >> $GITHUB_OUTPUT
         env:
+          CROSS_COMPILE_OS: ${{ matrix.os.cross_compile_os }}
+          CROSS_COMPILE_TARGET: ${{ matrix.os.cross_compile_target }}
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           GH_REPO: ${{ env.GITHUB_REPOSITORY }}
           RELEASE_TAG: ${{ needs.create_release.outputs.release_tag }}
