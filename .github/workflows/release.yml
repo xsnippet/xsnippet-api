@@ -77,15 +77,7 @@ jobs:
 
       - id: build
         run: |
-          rustc --print cfg | grep = > rustc.vars
-          source rustc.vars
-
-          if [ -z "${target_env}" ]; then
-            export HOST="${target_arch}-${target_vendor}-${target_os}"
-          else
-            export HOST="${target_arch}-${target_vendor}-${target_os}-${target_env}"
-          fi
-
+          export HOST=$(rustc -vV | grep host: | awk '{print $2}')
           if [ "$HOST" = "$TARGET" ]; then
             cargo build --release --target ${TARGET}
           else
@@ -100,9 +92,8 @@ jobs:
             tar cvzf $ASSET_NAME xsnippet-api
           fi
           gh release upload $RELEASE_TAG $ASSET_NAME
-          popd
-
           echo "asset_path=$PWD/$ASSET_NAME" >> $GITHUB_OUTPUT
+          popd
         env:
           ASSET_NAME: ${{ matrix.name }}
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
