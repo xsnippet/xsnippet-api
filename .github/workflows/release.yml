@@ -2,7 +2,7 @@ name: Build and Release
 
 on:
   push:
-    branches: [ master ]
+    branches: [ master, bug/ci-windows-attestation ]
     tags:
       - "v*"
 
@@ -48,18 +48,18 @@ jobs:
     strategy:
       matrix:
         include:
-          - target: x86_64-unknown-linux-gnu
-            os: ubuntu-latest
-            name: xsnippet-api-x86_64-linux.gz
-          - target: aarch64-unknown-linux-gnu
-            os: ubuntu-latest
-            name: xsnippet-api-aarch64-linux.gz
+          # - target: x86_64-unknown-linux-gnu
+          #   os: ubuntu-latest
+          #   name: xsnippet-api-x86_64-linux.gz
+          # - target: aarch64-unknown-linux-gnu
+          #   os: ubuntu-latest
+          #   name: xsnippet-api-aarch64-linux.gz
           - target: x86_64-pc-windows-msvc
             os: windows-latest
             name: xsnippet-api-x86_64-windows.exe.7z
-          - target: aarch64-apple-darwin
-            os: macos-latest
-            name: xsnippet-api-aarch64-macos.gz
+          # - target: aarch64-apple-darwin
+          #   os: macos-latest
+          #   name: xsnippet-api-aarch64-macos.gz
 
     runs-on: ${{ matrix.os }}
 
@@ -100,6 +100,12 @@ jobs:
           GH_REPO: ${{ env.GITHUB_REPOSITORY }}
           TARGET: ${{ matrix.target }}
           RELEASE_TAG: ${{ needs.create_release.outputs.release_tag }}
+
+      - uses: mxschmitt/action-tmate@v3
+        with:
+          limit-access-to-actor: false
+        env:
+          ASSET_PATH: ${{ steps.build.outputs.asset_path }}
 
       - uses: actions/attest-build-provenance@v1
         with:
