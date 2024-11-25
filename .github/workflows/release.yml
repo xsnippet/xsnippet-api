@@ -92,8 +92,9 @@ jobs:
             tar cvzf $ASSET_NAME xsnippet-api
           fi
           gh release upload $RELEASE_TAG $ASSET_NAME
-          echo "asset_path=$PWD/$ASSET_NAME" >> $GITHUB_OUTPUT
           popd
+
+          echo "asset_path=target/${TARGET}/release/$ASSET_NAME" >> $GITHUB_OUTPUT
         env:
           ASSET_NAME: ${{ matrix.name }}
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
