@@ -75,33 +75,40 @@ jobs:
       - name: Setup PostgreSQL
         uses: ikalnytskyi/action-setup-postgres@v6
 
-      - id: build
+      - id: detect_host
         run: |
-          export HOST=$(rustc -vV | grep host: | awk '{print $2}')
-          if [ "$HOST" = "$TARGET" ]; then
-            cargo build --release --target ${TARGET}
-          else
-            cargo install cross
-            cross build --release --target ${TARGET}
-          fi
+          echo "host=$(rustc -vV | grep host: | awk '{print $2}')" >> $GITHUB_OUTPUT
 
-          pushd target/${TARGET}/release
-          if [[ "$TARGET" =~ "windows" ]]; then
-            7z a $ASSET_NAME xsnippet-api.exe
+      - name: Build
+        if: ${{ steps.detect_host.outputs.host == matrix.target }}
+        uses: actions-rs/cargo@v1
+        with:
+          command: build
+          args: --release --target ${{ matrix.target }}
+
+      - name: Build (cross-compile)
+        if: ${{ steps.detect_host.outputs.host != matrix.target }}
+        run: |
+          cargo install cross
+          cross build --release --target ${{ matrix.target }}
+
+      - id: upload
+        name: Upload artifacts
+        run: |
+          pushd target/${{ matrix.target }}/release
+          if [[ "${{ matrix.target }}" =~ "windows" ]]; then
+            7z a ${{ matrix.name }} xsnippet-api.exe
           else
-            tar cvzf $ASSET_NAME xsnippet-api
+            tar cvzf ${{ matrix.name }} xsnippet-api
           fi
-          gh release upload $RELEASE_TAG $ASSET_NAME
+          gh release upload ${{ needs.create_release.outputs.release_tag }} ${{ matrix.name }}
           popd
 
-          echo "asset_path=target/${TARGET}/release/$ASSET_NAME" >> $GITHUB_OUTPUT
+          echo "asset_path=target/${{ matrix.target }}/release/${{ matrix.name }}" >> $GITHUB_OUTPUT
         env:
-          ASSET_NAME: ${{ matrix.name }}
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           GH_REPO: ${{ env.GITHUB_REPOSITORY }}
-          TARGET: ${{ matrix.target }}
-          RELEASE_TAG: ${{ needs.create_release.outputs.release_tag }}
 
       - uses: actions/attest-build-provenance@v1
         with:
-          subject-path: ${{ steps.build.outputs.asset_path }}
+          subject-path: ${{ steps.upload.outputs.asset_path }}
