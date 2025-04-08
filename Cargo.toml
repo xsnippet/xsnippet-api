@@ -36,4 +36,4 @@ openssl-sys = { version = "0.9.104", features = ["vendored"] }
 
 [dev-dependencies]
 tempfile = "3.2.0"
-tokio = { version = "1.6.1", features = ["rt"] }
+tokio = { version = "1.43.1", features = ["rt"] }
