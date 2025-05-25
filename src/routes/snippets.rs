@@ -277,7 +277,7 @@ pub async fn get_raw_snippet(
         .await?
         .changesets
         .into_iter()
-        .last()
+        .next_back()
         .map(|c| c.content)
         .unwrap_or_default())
 }
