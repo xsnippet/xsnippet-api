@@ -64,6 +64,7 @@ impl Fairing for RequestIdHeader {
 /// A natural point of integration with Rocket is a fairing, which allows us to
 /// execute some code before and after each HTTP request, which is exactly what
 /// we need for determining the boundaries of a request span.
+#[allow(dead_code)]
 pub struct RequestSpan;
 
 // TODO: Now that Rocket is using async internally, this is not guaranteed to
