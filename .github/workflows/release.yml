@@ -73,7 +73,7 @@ jobs:
           override: true
 
       - name: Setup PostgreSQL
-        uses: ikalnytskyi/action-setup-postgres@v6
+        uses: ikalnytskyi/action-setup-postgres@v7
 
       - id: detect_host
         run: |

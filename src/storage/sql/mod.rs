@@ -303,6 +303,7 @@ impl Storage for SqlStorage {
         Ok(snippet)
     }
 
+    #[allow(dead_code)]
     async fn update(&self, snippet: &Snippet) -> Result<Snippet, StorageError> {
         // load the snippet from the db to check if we need to update anything
         let persisted_state = self.get(&snippet.id).await?;

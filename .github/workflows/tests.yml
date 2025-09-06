@@ -77,7 +77,7 @@ jobs:
           override: true
 
       - name: Setup PostgreSQL
-        uses: ikalnytskyi/action-setup-postgres@v6
+        uses: ikalnytskyi/action-setup-postgres@v7
         id: postgres
 
       - name: Set ROCKET_DATABASE_URL
@@ -127,7 +127,7 @@ jobs:
           override: true
 
       - name: Setup PostgreSQL
-        uses: ikalnytskyi/action-setup-postgres@v6
+        uses: ikalnytskyi/action-setup-postgres@v7
         id: postgres
 
       - run: |
