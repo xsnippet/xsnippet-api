@@ -12,7 +12,7 @@ pub struct RequestId(pub String);
 
 impl RequestId {
     pub fn new() -> Self {
-        RequestId(uuid::Uuid::new_v4().to_hyphenated().to_string())
+        RequestId(uuid::Uuid::new_v4().to_string())
     }
 }
 

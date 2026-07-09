@@ -1,6 +1,4 @@
-use std::iter;
-
-use rand::Rng;
+use rand::distr::{Alphanumeric, SampleString};
 use serde::{ser::SerializeStruct, Serialize, Serializer};
 
 const DEFAULT_SLUG_LENGTH: usize = 8;
@@ -51,10 +49,7 @@ impl Snippet {
 
     /// Generate a random unique snippet identifier (slug).
     pub fn random_id(length: usize) -> String {
-        let mut rng = rand::thread_rng();
-        iter::repeat_with(|| rng.sample(rand::distributions::Alphanumeric))
-            .take(length)
-            .collect()
+        Alphanumeric.sample_string(&mut rand::rng(), length)
     }
 }
 

@@ -19,22 +19,22 @@ publish = false
 debug = true
 
 [dependencies]
-chrono = { version = "0.4.19", features = ["serde"] }
-diesel = { version = "2.2.4", features = ["chrono"] }
-diesel-async = { version = "0.5.1", features = ["deadpool", "postgres"] }
+chrono = { version = "0.4.45", features = ["serde"] }
+diesel = { version = "2.3.10", features = ["chrono"] }
+diesel-async = { version = "0.9.2", features = ["deadpool", "postgres"] }
 futures-util = { version = "0.3.32", features = ["async-await-macro"] }
 jsonwebtoken = { version = "10.4.0", features = ["rust_crypto"] }
-rand = "0.7.3"
-reqwest = { version = "0.11.2", features = ["json"] }
-rocket = { version = "0.5.0", features = ["json"] }
-serde = { version = "1.0", features = ["derive"] }
-serde_json = "1.0"
-tracing = "0.1.25"
-tracing-subscriber = { version = "0.3.20", features = ["env-filter"] }
-uuid = { version = "0.8.2", features = ["v4"] }
-percent-encoding = "2.1.0"
-openssl-sys = { version = "0.9.104", features = ["vendored"] }
+rand = "0.10.2"
+reqwest = { version = "0.13.4", features = ["json"] }
+rocket = { version = "0.5.1", features = ["json"] }
+serde = { version = "1.0.228", features = ["derive"] }
+serde_json = "1.0.150"
+tracing = "0.1.44"
+tracing-subscriber = { version = "0.3.23", features = ["env-filter"] }
+uuid = { version = "1.23.4", features = ["v4"] }
+percent-encoding = "2.3.2"
+openssl-sys = { version = "0.9.117", features = ["vendored"] }
 
 [dev-dependencies]
-tempfile = "3.2.0"
-tokio = { version = "1.6.1", features = ["rt"] }
+tempfile = "3.27.0"
+tokio = { version = "1.52.3", features = ["rt"] }
