@@ -21,7 +21,7 @@ debug = true
 [dependencies]
 chrono = { version = "0.4.19", features = ["serde"] }
 diesel = { version = "2.2.4", features = ["chrono"] }
-diesel-async = { version = "0.5.1", features = ["deadpool", "postgres"] }
+diesel-async = { version = "0.9.0", features = ["deadpool", "postgres"] }
 futures-util = { version = "0.3.32", features = ["async-await-macro"] }
 jsonwebtoken = { version = "10.4.0", features = ["rust_crypto"] }
 rand = "0.7.3"
