@@ -22,7 +22,8 @@ debug = true
 chrono = { version = "0.4.19", features = ["serde"] }
 diesel = { version = "2.2.4", features = ["chrono"] }
 diesel-async = { version = "0.5.1", features = ["deadpool", "postgres"] }
-jsonwebtoken = "7.2.0"
+futures-util = { version = "0.3.32", features = ["async-await-macro"] }
+jsonwebtoken = { version = "10.4.0", features = ["rust_crypto"] }
 rand = "0.7.3"
 reqwest = { version = "0.11.2", features = ["json"] }
 rocket = { version = "0.5.0", features = ["json"] }

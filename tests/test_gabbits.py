@@ -39,7 +39,7 @@ def _base64urlUint(num):
     # RFC 7518: "The octet sequence MUST utilize the minimum number of octets needed to represent the value"
     length = math.ceil(math.log(num, 2) / 8)
 
-    return base64.urlsafe_b64encode(num.to_bytes(length, byteorder="big")).decode()
+    return base64.urlsafe_b64encode(num.to_bytes(length, byteorder="big")).decode().rstrip("=")
 
 
 class XSnippetApi(gabbi.fixture.GabbiFixture):

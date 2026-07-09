@@ -4,8 +4,6 @@ use serde::{Deserialize, Serialize};
 use super::{AuthValidator, Error, Permission, Result, User};
 use crate::application::Config;
 
-const SUPPORTED_ALGORITHMS: [Algorithm; 3] = [Algorithm::RS256, Algorithm::RS384, Algorithm::RS512];
-
 /// JSON Web Key. A cryptographic key used to validate JSON Web Tokens.
 #[derive(Debug, PartialEq, Deserialize, Serialize)]
 struct Key {
@@ -100,12 +98,9 @@ impl JwtValidator {
         //  * the expiration time
         //  * the issuer
         //  * the intended audience
-        let validation = Validation {
-            algorithms: SUPPORTED_ALGORITHMS.to_vec(),
-            aud: Some(std::iter::once(audience).collect()),
-            iss: Some(issuer),
-            ..Validation::default()
-        };
+        let mut validation = Validation::new_for_family(jsonwebtoken::AlgorithmFamily::Rsa);
+        validation.set_audience(&[audience]);
+        validation.set_issuer(&[issuer]);
 
         Ok(JwtValidator { jwks, validation })
     }
@@ -141,7 +136,9 @@ impl AuthValidator for JwtValidator {
                         Error::Configuration(format!("Signing key {:?} can't be found", key_id))
                     })?;
 
-                jsonwebtoken::DecodingKey::from_rsa_components(&key.n, &key.e)
+                jsonwebtoken::DecodingKey::from_rsa_components(&key.n, &key.e).map_err(|_| {
+                    Error::Configuration(format!("Signing key {:?} is invalid", key_id))
+                })?
             }
             alg => return Err(Error::Input(format!("Unsupported algorithm: {:?}", alg))),
         };
@@ -166,7 +163,7 @@ mod tests {
     const KID: &str = "test-key";
     const AUDIENCE: &str = "xsnippet-api-tests-aud";
     const ISSUER: &str = "xsnippet-api-tests-iss";
-    const N: &str = "qN5dCh1M2RA3aF6ZH4IRXIQYKvaWRG59F7lpQIUyUtkDiURmVem7x86EuGmmTmQPSRhx6fL4jF0GBkduAhYnFn_A8T6WfQXzXyI2cyqXsKaTkDMKvl7nHnGttQIuG8W2m7H74pklsPKxp0rPJ0zjV1N_lr_nZG_dayJhtEnChHpScaoTwqMitcOJfVacNxcRbTSDy1IZY5AW0TLdATUmc-ddJLQXxSV7bMur_4S1MP45tHrttChgtnmPpL3q4MHZjHR8aNRYPurkJkPwY0t6nrERTPk9DE4Mk5NtNzqZRBY7eT94pmodVUBGTVYhh7bFDGB26oyTk8_5aedO6syB6w==";
+    const N: &str = "qN5dCh1M2RA3aF6ZH4IRXIQYKvaWRG59F7lpQIUyUtkDiURmVem7x86EuGmmTmQPSRhx6fL4jF0GBkduAhYnFn_A8T6WfQXzXyI2cyqXsKaTkDMKvl7nHnGttQIuG8W2m7H74pklsPKxp0rPJ0zjV1N_lr_nZG_dayJhtEnChHpScaoTwqMitcOJfVacNxcRbTSDy1IZY5AW0TLdATUmc-ddJLQXxSV7bMur_4S1MP45tHrttChgtnmPpL3q4MHZjHR8aNRYPurkJkPwY0t6nrERTPk9DE4Mk5NtNzqZRBY7eT94pmodVUBGTVYhh7bFDGB26oyTk8_5aedO6syB6w";
     const E: &str = "AQAB";
 
     const USER_TOKEN: &str = "eyJ0eXAiOiJKV1QiLCJhbGciOiJSUzI1NiIsImtpZCI6InRlc3Qta2V5In0.eyJzdWIiOiJ1c2VyIiwiYXVkIjoieHNuaXBwZXQtYXBpLXRlc3RzLWF1ZCIsImlzcyI6InhzbmlwcGV0LWFwaS10ZXN0cy1pc3MiLCJleHAiOjQ3NzAzNzU1NDQsInBlcm1pc3Npb25zIjpbXX0.doA6EeVLnp-MLNRTRUzg03rw9oUn5vDGv59zNysrcFfvkEiiYAtZMu-YW_N3YtE0qv2FTaGAXHryMqsEk8rsFv4uepDuOpzutnRoB4JDFTpvJkKYE4HZjsd8eHSAjFEuCvDjm7wnxoW0zDXH_zj1FITht-c3ua6KbgeevvDjpUgaR52Zou9HRyNa6ns5OKO7yJofA32IZaO7QH69iQiZ4o9WA8PfFNyuVqyQVkvZwpr68JLgl4qTTX4NIWV4wU4OWbIGN6-p4QSkS_Ljkau9sRKjnx4NYPbICMGWVThn_MKOfg26DjGZlI_0HFYDBLogJkTmmyT-5IIIWUqBgUKWYA";
