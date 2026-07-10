@@ -8,7 +8,6 @@ use diesel::prelude::*;
 use diesel::result::{DatabaseErrorKind, Error::DatabaseError, Error::NotFound};
 use diesel_async::pooled_connection::deadpool::{BuildError, Pool, PoolError};
 use diesel_async::pooled_connection::AsyncDieselConnectionManager;
-use diesel_async::scoped_futures::ScopedFutureExt;
 use diesel_async::{AsyncConnection, AsyncPgConnection, RunQueryDsl};
 
 use super::{errors::StorageError, Direction, ListSnippetsQuery, Snippet, Storage};
@@ -192,18 +191,15 @@ impl SqlStorage {
 impl Storage for SqlStorage {
     async fn create(&self, snippet: &Snippet) -> Result<Snippet, StorageError> {
         let mut conn = self.pool.get().await?;
-        conn.transaction::<_, StorageError, _>(|conn| {
-            async {
-                // insert the new snippet row first to get the generated primary key
-                let snippet_id = self.insert_snippet(conn, snippet).await?;
-                // insert the associated changesets
-                self.upsert_changesets(conn, snippet_id, snippet).await?;
-                // insert the associated tags
-                self.upsert_tags(conn, snippet_id, snippet).await?;
+        conn.transaction::<_, StorageError, _>(async |conn| {
+            // insert the new snippet row first to get the generated primary key
+            let snippet_id = self.insert_snippet(conn, snippet).await?;
+            // insert the associated changesets
+            self.upsert_changesets(conn, snippet_id, snippet).await?;
+            // insert the associated tags
+            self.upsert_tags(conn, snippet_id, snippet).await?;
 
-                Ok(())
-            }
-            .scope_boxed()
+            Ok(())
         })
         .await?;
 
@@ -214,85 +210,82 @@ impl Storage for SqlStorage {
 
     async fn list(&self, criteria: ListSnippetsQuery) -> Result<Vec<Snippet>, StorageError> {
         let mut conn = self.pool.get().await?;
-        conn.transaction::<_, StorageError, _>(|conn| {
-            async {
-                let mut query = snippets::table.into_boxed();
+        conn.transaction::<_, StorageError, _>(async |conn| {
+            let mut query = snippets::table.into_boxed();
 
-                // Filters
-                if let Some(title) = criteria.title {
-                    query = query.filter(snippets::title.eq(title));
-                }
-                if let Some(syntax) = criteria.syntax {
-                    query = query.filter(snippets::syntax.eq(syntax));
-                }
-                if let Some(tags) = criteria.tags {
-                    let snippet_ids = tags::table
-                        .select(tags::snippet_id)
-                        .filter(tags::value.eq_any(tags));
+            // Filters
+            if let Some(title) = criteria.title {
+                query = query.filter(snippets::title.eq(title));
+            }
+            if let Some(syntax) = criteria.syntax {
+                query = query.filter(snippets::syntax.eq(syntax));
+            }
+            if let Some(tags) = criteria.tags {
+                let snippet_ids = tags::table
+                    .select(tags::snippet_id)
+                    .filter(tags::value.eq_any(tags));
 
-                    query = query.filter(snippets::id.eq_any(snippet_ids));
-                }
+                query = query.filter(snippets::id.eq_any(snippet_ids));
+            }
 
-                // Pagination. marker_internal_id is used to resolve the ties because the value
-                // of created_at is not guaranteed to be unique. In practice, we use
-                // microsecond precision for datetime fields, so duplicates are only
-                // expected in tests and, potentially, in snippets imported from
-                // Mongo that have second precision
-                if let Some(marker) = criteria.pagination.marker {
-                    let (marker_internal_id, marker) = self.get_snippet(conn, &marker).await?;
-                    if let Some(marker_created_at) = marker.created_at {
-                        query = match criteria.pagination.direction {
-                            Direction::Desc => query
-                                .filter(
-                                    snippets::created_at.lt(marker_created_at).or(
-                                        snippets::created_at
-                                            .eq(marker_created_at)
-                                            .and(snippets::id.lt(marker_internal_id)),
-                                    ),
-                                )
-                                .order_by(snippets::created_at.desc())
-                                .then_order_by(snippets::id.desc()),
-                            Direction::Asc => query
-                                .filter(
-                                    snippets::created_at.gt(marker_created_at).or(
-                                        snippets::created_at
-                                            .eq(marker_created_at)
-                                            .and(snippets::id.gt(marker_internal_id)),
-                                    ),
-                                )
-                                .order_by(snippets::created_at.asc())
-                                .then_order_by(snippets::id.asc()),
-                        };
-                    }
-                } else {
+            // Pagination. marker_internal_id is used to resolve the ties because the value
+            // of created_at is not guaranteed to be unique. In practice, we use
+            // microsecond precision for datetime fields, so duplicates are only
+            // expected in tests and, potentially, in snippets imported from
+            // Mongo that have second precision
+            if let Some(marker) = criteria.pagination.marker {
+                let (marker_internal_id, marker) = self.get_snippet(conn, &marker).await?;
+                if let Some(marker_created_at) = marker.created_at {
                     query = match criteria.pagination.direction {
                         Direction::Desc => query
+                            .filter(
+                                snippets::created_at
+                                    .lt(marker_created_at)
+                                    .or(snippets::created_at
+                                        .eq(marker_created_at)
+                                        .and(snippets::id.lt(marker_internal_id))),
+                            )
                             .order_by(snippets::created_at.desc())
                             .then_order_by(snippets::id.desc()),
                         Direction::Asc => query
+                            .filter(
+                                snippets::created_at
+                                    .gt(marker_created_at)
+                                    .or(snippets::created_at
+                                        .eq(marker_created_at)
+                                        .and(snippets::id.gt(marker_internal_id))),
+                            )
                             .order_by(snippets::created_at.asc())
                             .then_order_by(snippets::id.asc()),
                     };
                 }
-                query = query.limit(criteria.pagination.limit as i64);
-
-                let snippets = query.get_results::<models::SnippetRow>(conn).await?;
-                let snippet_ids = snippets
-                    .iter()
-                    .map(|snippet| snippet.id)
-                    .collect::<Vec<i32>>();
-                let changesets = changesets::table
-                    .filter(changesets::snippet_id.eq_any(&snippet_ids))
-                    .get_results::<models::ChangesetRow>(conn)
-                    .await?;
-                let tags = tags::table
-                    .filter(tags::snippet_id.eq_any(&snippet_ids))
-                    .get_results::<models::TagRow>(conn)
-                    .await?;
-
-                Ok(models::combine_rows(snippets, changesets, tags))
+            } else {
+                query = match criteria.pagination.direction {
+                    Direction::Desc => query
+                        .order_by(snippets::created_at.desc())
+                        .then_order_by(snippets::id.desc()),
+                    Direction::Asc => query
+                        .order_by(snippets::created_at.asc())
+                        .then_order_by(snippets::id.asc()),
+                };
             }
-            .scope_boxed()
+            query = query.limit(criteria.pagination.limit as i64);
+
+            let snippets = query.get_results::<models::SnippetRow>(conn).await?;
+            let snippet_ids = snippets
+                .iter()
+                .map(|snippet| snippet.id)
+                .collect::<Vec<i32>>();
+            let changesets = changesets::table
+                .filter(changesets::snippet_id.eq_any(&snippet_ids))
+                .get_results::<models::ChangesetRow>(conn)
+                .await?;
+            let tags = tags::table
+                .filter(tags::snippet_id.eq_any(&snippet_ids))
+                .get_results::<models::TagRow>(conn)
+                .await?;
+
+            Ok(models::combine_rows(snippets, changesets, tags))
         })
         .await
     }
@@ -313,18 +306,15 @@ impl Storage for SqlStorage {
         } else {
             // otherwise, potentially update the title and the syntax
             let mut conn = self.pool.get().await?;
-            conn.transaction::<_, StorageError, _>(|conn| {
-                async {
-                    let snippet_id = self.update_snippet(conn, snippet).await?;
-                    // insert new changesets and tags
-                    self.upsert_changesets(conn, snippet_id, snippet).await?;
-                    self.upsert_tags(conn, snippet_id, snippet).await?;
-                    // and delete the removed tags
-                    self.trim_removed_tags(conn, snippet_id, snippet).await?;
+            conn.transaction::<_, StorageError, _>(async |conn| {
+                let snippet_id = self.update_snippet(conn, snippet).await?;
+                // insert new changesets and tags
+                self.upsert_changesets(conn, snippet_id, snippet).await?;
+                self.upsert_tags(conn, snippet_id, snippet).await?;
+                // and delete the removed tags
+                self.trim_removed_tags(conn, snippet_id, snippet).await?;
 
-                    Ok(())
-                }
-                .scope_boxed()
+                Ok(())
             })
             .await?;
 
